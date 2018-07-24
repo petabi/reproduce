@@ -41,6 +41,8 @@ bool Pcap::get_next_stream()
   size_t process_len = 0;
   size_t packet_len = 0;
 
+  log_stream.str("");
+  log_stream.clear();
   packet_len = pcap_header_process();
   if (packet_len == -1)
     return false;
