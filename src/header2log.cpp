@@ -221,6 +221,8 @@ size_t Pcap::ipv4_process()
 
 bool Pcap::payload_process(size_t remain_len)
 {
+  if (remain_len == 0)
+    return true;
   char buffer[remain_len];
   if (fread(buffer, remain_len, 1, pcapfile) < 1)
     return false;
