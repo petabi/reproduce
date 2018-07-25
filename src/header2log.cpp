@@ -251,12 +251,12 @@ size_t Pcap::tcp_process()
   log_stream << " h_len_" << tcph.th_off * 4;
   // log_stream << " cwr_" << (unsigned int)tcph.cwr;
   // log_stream << " ecn_" << (unsigned int)tcph.ece;
-  log_stream << (tcph.th_flags & TH_URG) ? 'U' : '\0';
-  log_stream << (tcph.th_flags & TH_ACK) ? 'A' : '\0';
-  log_stream << (tcph.th_flags & TH_PUSH) ? 'P' : '\0';
-  log_stream << (tcph.th_flags & TH_RST) ? 'R' : '\0';
-  log_stream << (tcph.th_flags & TH_SYN) ? 'S' : '\0';
-  log_stream << (tcph.th_flags & TH_FIN) ? 'F' : '\0';
+  log_stream << (tcph.th_flags & TH_URG ? 'U' : '\0');
+  log_stream << (tcph.th_flags & TH_ACK ? 'A' : '\0');
+  log_stream << (tcph.th_flags & TH_PUSH ? 'P' : '\0');
+  log_stream << (tcph.th_flags & TH_RST ? 'R' : '\0');
+  log_stream << (tcph.th_flags & TH_SYN ? 'S' : '\0');
+  log_stream << (tcph.th_flags & TH_FIN ? 'F' : '\0');
   log_stream << " window_" << ntohs(tcph.th_win);
   log_stream << " checksum_" << ntohs(tcph.th_sum);
   log_stream << " urg_ptr_" << tcph.th_urp;
