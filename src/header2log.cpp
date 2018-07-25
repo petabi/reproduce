@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
+#include <functional>
 #include <iomanip>
 #include <net/ethernet.h>
 #include <netinet/if_ether.h>
@@ -46,8 +47,7 @@ bool Pcap::get_next_stream()
   packet_len = pcap_header_process();
   if (packet_len == -1)
     return false;
-  size_t (Pcap::*datalink_process)() = get_datalink_process();
-  process_len = (this->*datalink_process)();
+  process_len = std::invoke(get_datalink_process(), this);
   if (process_len == -1)
     return false;
   packet_len -= process_len;
