@@ -166,33 +166,35 @@ size_t Pcap::ethernet_process()
 
 size_t Pcap::ipv4_process()
 {
-  struct iphdr iph;
+  struct ip iph;
   int i = 0, opt = 0;
   int process_len = 0;
 
   if (fread(&iph, sizeof(iph), 1, pcapfile) < 1)
     return -1;
   process_len += sizeof(iph);
-  for (i = 0; i < sizeof(iph.saddr); i++) {
+  for (i = 0; i < sizeof(iph.ip_src); i++) {
     if (i != 0)
       log_stream << ".";
-    log_stream << std::dec << static_cast<int>(((unsigned char*)&iph.saddr)[i]);
+    log_stream << std::dec
+               << static_cast<int>(((unsigned char*)&iph.ip_src)[i]);
   }
   log_stream << " ";
-  for (i = 0; i < sizeof(iph.saddr); i++) {
+  for (i = 0; i < sizeof(iph.ip_src); i++) {
     if (i != 0)
       log_stream << ".";
-    log_stream << std::dec << static_cast<int>(((unsigned char*)&iph.daddr)[i]);
+    log_stream << std::dec
+               << static_cast<int>(((unsigned char*)&iph.ip_dst)[i]);
   }
   log_stream << " ";
-  opt = iph.ihl * 4 - sizeof(iph);
+  opt = iph.ip_hl * 4 - sizeof(iph);
   if (opt != 0) {
     fseek(pcapfile, opt, SEEK_CUR);
     process_len += opt;
     log_stream << "ip_option ";
   }
 
-  switch (iph.protocol) {
+  switch (iph.ip_p) {
   case 1:
     // PrintIcmpPacket(Buffer,Size);
     log_stream << "icmp";
