@@ -1,0 +1,4 @@
+---
+Checks: 'cert-*'
+HeaderFilterRegex: '(src|tests)/[^/]*$'
+---
