@@ -5,7 +5,7 @@
 #include <ctime>
 #include <iomanip>
 #include <net/ethernet.h>
-#include <netinet/ether.h>
+#include <netinet/if_ether.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/tcp.h>
@@ -166,33 +166,35 @@ size_t Pcap::ethernet_process()
 
 size_t Pcap::ipv4_process()
 {
-  struct iphdr iph;
+  struct ip iph;
   int i = 0, opt = 0;
   int process_len = 0;
 
   if (fread(&iph, sizeof(iph), 1, pcapfile) < 1)
     return -1;
   process_len += sizeof(iph);
-  for (i = 0; i < sizeof(iph.saddr); i++) {
+  for (i = 0; i < sizeof(iph.ip_src); i++) {
     if (i != 0)
       log_stream << ".";
-    log_stream << std::dec << static_cast<int>(((unsigned char*)&iph.saddr)[i]);
+    log_stream << std::dec
+               << static_cast<int>(((unsigned char*)&iph.ip_src)[i]);
   }
   log_stream << " ";
-  for (i = 0; i < sizeof(iph.saddr); i++) {
+  for (i = 0; i < sizeof(iph.ip_src); i++) {
     if (i != 0)
       log_stream << ".";
-    log_stream << std::dec << static_cast<int>(((unsigned char*)&iph.daddr)[i]);
+    log_stream << std::dec
+               << static_cast<int>(((unsigned char*)&iph.ip_dst)[i]);
   }
   log_stream << " ";
-  opt = iph.ihl * 4 - sizeof(iph);
+  opt = iph.ip_hl * 4 - sizeof(iph);
   if (opt != 0) {
     fseek(pcapfile, opt, SEEK_CUR);
     process_len += opt;
     log_stream << "ip_option ";
   }
 
-  switch (iph.protocol) {
+  switch (iph.ip_p) {
   case 1:
     // PrintIcmpPacket(Buffer,Size);
     log_stream << "icmp";
@@ -238,22 +240,22 @@ size_t Pcap::tcp_process()
     return -1;
   process_len += sizeof(tcph);
 
-  log_stream << " src_port_" << ntohs(tcph.source);
-  log_stream << " dst_port_" << ntohs(tcph.dest);
-  log_stream << " seq_num_" << ntohl(tcph.seq);
-  log_stream << " ack_num_" << ntohl(tcph.ack_seq);
-  log_stream << " h_len_" << tcph.doff * 4;
+  log_stream << " src_port_" << ntohs(tcph.th_sport);
+  log_stream << " dst_port_" << ntohs(tcph.th_dport);
+  log_stream << " seq_num_" << ntohl(tcph.th_seq);
+  log_stream << " ack_num_" << ntohl(tcph.th_ack);
+  log_stream << " h_len_" << tcph.th_off * 4;
   // log_stream << " cwr_" << (unsigned int)tcph.cwr;
   // log_stream << " ecn_" << (unsigned int)tcph.ece;
-  log_stream << (tcph.urg) ? 'U' : '\0';
-  log_stream << (tcph.ack) ? 'A' : '\0';
-  log_stream << (tcph.psh) ? 'P' : '\0';
-  log_stream << (tcph.rst) ? 'R' : '\0';
-  log_stream << (tcph.syn) ? 'S' : '\0';
-  log_stream << (tcph.fin) ? 'F' : '\0';
-  log_stream << " window_" << ntohs(tcph.window);
-  log_stream << " checksum_" << ntohs(tcph.check);
-  log_stream << " urg_ptr_" << tcph.urg_ptr;
+  log_stream << (tcph.th_flags & TH_URG) ? 'U' : '\0';
+  log_stream << (tcph.th_flags & TH_ACK) ? 'A' : '\0';
+  log_stream << (tcph.th_flags & TH_PUSH) ? 'P' : '\0';
+  log_stream << (tcph.th_flags & TH_RST) ? 'R' : '\0';
+  log_stream << (tcph.th_flags & TH_SYN) ? 'S' : '\0';
+  log_stream << (tcph.th_flags & TH_FIN) ? 'F' : '\0';
+  log_stream << " window_" << ntohs(tcph.th_win);
+  log_stream << " checksum_" << ntohs(tcph.th_sum);
+  log_stream << " urg_ptr_" << tcph.th_urp;
 
   return process_len;
 }
@@ -266,9 +268,9 @@ size_t Pcap::udp_process()
     return -1;
   process_len += sizeof(udph);
 
-  log_stream << " src_port_" << ntohs(udph.source);
-  log_stream << " det_port_" << ntohs(udph.dest);
-  log_stream << " length_" << ntohs(udph.len);
+  log_stream << " src_port_" << ntohs(udph.uh_sport);
+  log_stream << " det_port_" << ntohs(udph.uh_dport);
+  log_stream << " length_" << ntohs(udph.uh_ulen);
   // log_stream << " checksum_" << ntohs(udph.check);
 
   return process_len;
@@ -276,18 +278,18 @@ size_t Pcap::udp_process()
 
 size_t Pcap::icmp_process()
 {
-  struct icmphdr icmph;
+  struct icmp icmph;
   size_t process_len = 0;
   if (fread(&icmph, sizeof(icmph), 1, pcapfile) < 1)
     return -1;
   process_len += sizeof(icmph);
-  log_stream << " type_" << (unsigned int)(icmph.type);
+  log_stream << " type_" << (unsigned int)(icmph.icmp_type);
 
-  if ((unsigned int)(icmph.type) == 11)
+  if ((unsigned int)(icmph.icmp_type) == 11)
     log_stream << " ttl_expired ";
-  else if ((unsigned int)(icmph.type) == ICMP_ECHOREPLY)
+  else if ((unsigned int)(icmph.icmp_type) == ICMP_ECHOREPLY)
     log_stream << " echo_reply ";
-  log_stream << " code_" << (unsigned int)(icmph.code);
+  log_stream << " code_" << (unsigned int)(icmph.icmp_code);
   // log_stream << " checksum_" << ntohs(icmph.checksum);
   // log_stream << " id_" << ntohs(icmph.id);
   // log_stream << " seq_" << ntohs(icmph.sequence));
