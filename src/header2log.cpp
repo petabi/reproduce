@@ -268,9 +268,9 @@ size_t Pcap::udp_process()
     return -1;
   process_len += sizeof(udph);
 
-  log_stream << " src_port_" << ntohs(udph.source);
-  log_stream << " det_port_" << ntohs(udph.dest);
-  log_stream << " length_" << ntohs(udph.len);
+  log_stream << " src_port_" << ntohs(udph.uh_sport);
+  log_stream << " det_port_" << ntohs(udph.uh_dport);
+  log_stream << " length_" << ntohs(udph.uh_ulen);
   // log_stream << " checksum_" << ntohs(udph.check);
 
   return process_len;
