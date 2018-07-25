@@ -240,22 +240,22 @@ size_t Pcap::tcp_process()
     return -1;
   process_len += sizeof(tcph);
 
-  log_stream << " src_port_" << ntohs(tcph.source);
-  log_stream << " dst_port_" << ntohs(tcph.dest);
-  log_stream << " seq_num_" << ntohl(tcph.seq);
-  log_stream << " ack_num_" << ntohl(tcph.ack_seq);
-  log_stream << " h_len_" << tcph.doff * 4;
+  log_stream << " src_port_" << ntohs(tcph.th_sport);
+  log_stream << " dst_port_" << ntohs(tcph.th_dport);
+  log_stream << " seq_num_" << ntohl(tcph.th_seq);
+  log_stream << " ack_num_" << ntohl(tcph.th_ack);
+  log_stream << " h_len_" << tcph.th_off * 4;
   // log_stream << " cwr_" << (unsigned int)tcph.cwr;
   // log_stream << " ecn_" << (unsigned int)tcph.ece;
-  log_stream << (tcph.urg) ? 'U' : '\0';
-  log_stream << (tcph.ack) ? 'A' : '\0';
-  log_stream << (tcph.psh) ? 'P' : '\0';
-  log_stream << (tcph.rst) ? 'R' : '\0';
-  log_stream << (tcph.syn) ? 'S' : '\0';
-  log_stream << (tcph.fin) ? 'F' : '\0';
-  log_stream << " window_" << ntohs(tcph.window);
-  log_stream << " checksum_" << ntohs(tcph.check);
-  log_stream << " urg_ptr_" << tcph.urg_ptr;
+  log_stream << (tcph.th_flags & TH_URG) ? 'U' : '\0';
+  log_stream << (tcph.th_flags & TH_ACK) ? 'A' : '\0';
+  log_stream << (tcph.th_flags & TH_PUSH) ? 'P' : '\0';
+  log_stream << (tcph.th_flags & TH_RST) ? 'R' : '\0';
+  log_stream << (tcph.th_flags & TH_SYN) ? 'S' : '\0';
+  log_stream << (tcph.th_flags & TH_FIN) ? 'F' : '\0';
+  log_stream << " window_" << ntohs(tcph.th_win);
+  log_stream << " checksum_" << ntohs(tcph.th_sum);
+  log_stream << " urg_ptr_" << tcph.th_urp;
 
   return process_len;
 }
