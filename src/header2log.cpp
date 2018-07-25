@@ -278,18 +278,18 @@ size_t Pcap::udp_process()
 
 size_t Pcap::icmp_process()
 {
-  struct icmphdr icmph;
+  struct icmp icmph;
   size_t process_len = 0;
   if (fread(&icmph, sizeof(icmph), 1, pcapfile) < 1)
     return -1;
   process_len += sizeof(icmph);
-  log_stream << " type_" << (unsigned int)(icmph.type);
+  log_stream << " type_" << (unsigned int)(icmph.icmp_type);
 
-  if ((unsigned int)(icmph.type) == 11)
+  if ((unsigned int)(icmph.icmp_type) == 11)
     log_stream << " ttl_expired ";
-  else if ((unsigned int)(icmph.type) == ICMP_ECHOREPLY)
+  else if ((unsigned int)(icmph.icmp_type) == ICMP_ECHOREPLY)
     log_stream << " echo_reply ";
-  log_stream << " code_" << (unsigned int)(icmph.code);
+  log_stream << " code_" << (unsigned int)(icmph.icmp_code);
   // log_stream << " checksum_" << ntohs(icmph.checksum);
   // log_stream << " id_" << ntohs(icmph.id);
   // log_stream << " seq_" << ntohs(icmph.sequence));
