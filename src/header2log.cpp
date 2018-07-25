@@ -284,9 +284,9 @@ size_t Pcap::icmp_process()
 {
   struct icmp icmph;
   size_t process_len = 0;
-  if (fread(&icmph, sizeof(icmph), 1, pcapfile) < 1)
+  if (fread(&icmph, ICMP_MINLEN, 1, pcapfile) < 1)
     return -1;
-  process_len += sizeof(icmph);
+  process_len += ICMP_MINLEN;
   log_stream << " type_" << (unsigned int)(icmph.icmp_type);
 
   if ((unsigned int)(icmph.icmp_type) == 11)
