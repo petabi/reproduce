@@ -1,7 +1,7 @@
 #ifndef RDKAFKA_PRODUCER_H
 #define RDKAFKA_PRODUCER_H
-#include "rdkafka.h"
 #include <iostream>
+#include <librdkafka/rdkafka.h>
 #include <string>
 
 class Rdkafka_producer {
