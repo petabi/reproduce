@@ -5,7 +5,7 @@
 #include <ctime>
 #include <iomanip>
 #include <net/ethernet.h>
-#include <netinet/ether.h>
+#include <netinet/if_ether.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/tcp.h>
