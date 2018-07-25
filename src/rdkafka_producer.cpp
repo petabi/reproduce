@@ -6,11 +6,17 @@ bool Rdkafka_producer::server_conf(const std::string& brokers,
 {
   char errstr[512]; /* librdkafka API error reporting buffer */
   conf = rd_kafka_conf_new();
+  /* producer config */
   if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers.c_str(), errstr,
                         sizeof(errstr)) != RD_KAFKA_CONF_OK) {
     fprintf(stdout, "%s\n", errstr);
     return false;
   }
+  // TODO : optimize rd_kafka_conf_set config parameters
+  rd_kafka_conf_set(conf, "queue.buffering.max.messages", "1000000", NULL, 0);
+  rd_kafka_conf_set(conf, "queue.buffering.max.kbytes", "2000000", NULL, 0);
+  rd_kafka_conf_set(conf, "message.send.max.retries", "3", NULL, 0);
+
   rd_kafka_conf_set_dr_msg_cb(conf, dr_msg_cb);
   rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
   if (!rk) {
@@ -103,8 +109,6 @@ bool Rdkafka_producer::produce(const std::string& message)
   /* Wait for final messages to be delivered or fail.
    * rd_kafka_flush() is an abstraction over rd_kafka_poll() which
    * waits for all messages to be delivered. */
-  fprintf(stdout, "%% Flushing final messages..\n");
-  rd_kafka_flush(rk, 10 * 1000 /* wait for max 10 seconds */);
   return true;
 }
 
@@ -124,6 +128,9 @@ void Rdkafka_producer::dr_msg_cb(rd_kafka_t* rk,
 
 Rdkafka_producer::~Rdkafka_producer()
 {
+
+  fprintf(stdout, "%% Flushing final messages..\n");
+  rd_kafka_flush(rk, 10 * 1000 /* wait for max 10 seconds */);
   /* Destroy topic object */
   rd_kafka_topic_destroy(rkt);
 

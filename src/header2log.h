@@ -1,5 +1,6 @@
 #ifndef HEADER2LOG_H
 #define HEADER2LOG_H
+#include "rdkafka_producer.h"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -42,13 +43,15 @@ public:
   bool open_pcap(const std::string& filename);
   bool skip_bytes(size_t size);
   bool get_next_stream();
-  bool produce_to_rdkafka(const std::string& brokers, const std::string& topic);
+  bool conf_rdkafka(const std::string& brokers, const std::string& topic);
+  bool produce_to_rdkafka();
   void print_log_stream();
 
 private:
   FILE* pcapfile;
   std::ostringstream log_stream;
   unsigned int linktype;
+  Rdkafka_producer rp;
   size_t (Pcap::*get_datalink_process())();
   bool global_header_process();
   size_t pcap_header_process();

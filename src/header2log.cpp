@@ -57,12 +57,16 @@ bool Pcap::get_next_stream()
   return true;
 }
 
-bool Pcap::produce_to_rdkafka(const std::string& brokers,
-                              const std::string& topic)
+bool Pcap::conf_rdkafka(const std::string& brokers, const std::string& topic)
 {
-  Rdkafka_producer rp;
   if (rp.server_conf(brokers, topic) == false)
     return false;
+
+  return true;
+}
+
+bool Pcap::produce_to_rdkafka()
+{
   if (rp.produce(log_stream.str()) == false)
     return false;
 

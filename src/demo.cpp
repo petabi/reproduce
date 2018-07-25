@@ -16,11 +16,15 @@ int main(int argc, char** argv)
     cout << "pcap file is wrong..\n";
     return -1;
   }
+  if (!pcap.conf_rdkafka(broker, topic)) {
+    cout << "configure rdkafka failed..\n";
+    return -1;
+  }
   // skip by bytes
   // pcap.skip_bytes(1000);
   while (!end) {
     if (pcap.get_next_stream()) {
-      pcap.produce_to_rdkafka(broker, topic);
+      pcap.produce_to_rdkafka();
       // print log stream per packet
       // pcap.print_log_stream();
     } else
