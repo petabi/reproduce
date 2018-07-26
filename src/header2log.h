@@ -1,17 +1,13 @@
 #ifndef HEADER2LOG_H
 #define HEADER2LOG_H
 #include "rdkafka_producer.h"
+#include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <string>
 
-#ifdef MSDOS /* must be 32-bit */
-typedef long bpf_int32;
-typedef unsigned long bpf_u_int32;
-#else
-typedef int bpf_int32;
-typedef unsigned int bpf_u_int32;
-#endif
+typedef int32_t bpf_int32;
+typedef uint32_t bpf_u_int32;
 typedef unsigned short u_short;
 
 struct pcap_file_header {
