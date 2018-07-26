@@ -24,7 +24,6 @@ bool Pcap::open_pcap(const std::string& filename)
 
 bool Pcap::skip_bytes(size_t size)
 {
-  size_t process_len = 0;
   size_t packet_len = 0;
   while (packet_len < size) {
     packet_len = pcap_header_process();
