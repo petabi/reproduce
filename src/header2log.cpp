@@ -14,6 +14,7 @@
 
 #include "header2log.h"
 #include "rdkafka_producer.h"
+#include "service_port.h"
 
 bool Pcap::open_pcap(const std::string& filename)
 {
@@ -50,7 +51,7 @@ bool Pcap::get_next_stream()
   if (packet_len == static_cast<size_t>(-1))
     return false;
   process_len = std::invoke(get_datalink_process(), this);
-  if (packet_len == static_cast<size_t>(-1))
+  if (process_len == static_cast<size_t>(-1))
     return false;
   packet_len -= process_len;
   if (!payload_process(packet_len))
