@@ -1,4 +1,4 @@
 ---
-Checks: 'cert-*'
+Checks: 'cert-*,modernize-*,performance-*'
 HeaderFilterRegex: '(src|tests)/[^/]*$'
 ---
