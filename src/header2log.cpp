@@ -15,7 +15,7 @@
 bool Pcap::open_pcap(const std::string& filename)
 {
   pcapfile = fopen(filename.c_str(), "r");
-  if (pcapfile == NULL)
+  if (pcapfile == nullptr)
     return false;
   if (global_header_process() == false)
     return false;
@@ -97,16 +97,16 @@ size_t (Pcap::*Pcap::get_datalink_process())()
     return &Pcap::ethernet_process;
   case 6:
     log_stream << " Token Ring ";
-    return NULL;
+    return nullptr;
   case 10:
     log_stream << " FDDI ";
-    return NULL;
+    return nullptr;
   case 0:
     log_stream << " Loopback ";
-    return NULL;
+    return nullptr;
   default:
     log_stream << " Unknown link type : " << linktype;
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -114,7 +114,7 @@ size_t Pcap::pcap_header_process()
 {
   // Pcap File Header
   struct pcap_pkthdr pp;
-  char* cap_time = NULL;
+  char* cap_time = nullptr;
   long sec;
   if (fread(&pp, sizeof(pp), 1, pcapfile) < 1)
     return -1;

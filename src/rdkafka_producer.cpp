@@ -13,9 +13,10 @@ bool Rdkafka_producer::server_conf(const std::string& brokers,
     return false;
   }
   // TODO : optimize rd_kafka_conf_set config parameters
-  rd_kafka_conf_set(conf, "queue.buffering.max.messages", "1000000", NULL, 0);
-  rd_kafka_conf_set(conf, "queue.buffering.max.kbytes", "2000000", NULL, 0);
-  rd_kafka_conf_set(conf, "message.send.max.retries", "3", NULL, 0);
+  rd_kafka_conf_set(conf, "queue.buffering.max.messages", "1000000", nullptr,
+                    0);
+  rd_kafka_conf_set(conf, "queue.buffering.max.kbytes", "2000000", nullptr, 0);
+  rd_kafka_conf_set(conf, "message.send.max.retries", "3", nullptr, 0);
 
   rd_kafka_conf_set_dr_msg_cb(conf, dr_msg_cb);
   rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
@@ -30,7 +31,7 @@ bool Rdkafka_producer::server_conf(const std::string& brokers,
    * Both the producer instance (rd_kafka_t) and topic objects (topic_t)
    * are long-lived objects that should be reused as much as possible.
    */
-  rkt = rd_kafka_topic_new(rk, topic.c_str(), NULL);
+  rkt = rd_kafka_topic_new(rk, topic.c_str(), nullptr);
   if (!rkt) {
     fprintf(stdout, "%% Failed to create topic object: %s\n",
             rd_kafka_err2str(rd_kafka_last_error()));
@@ -58,11 +59,11 @@ bool Rdkafka_producer::produce(const std::string& message)
             /* Message payload (value) and length */
             (void*)message.c_str(), msg_len,
             /* Optional key and its length */
-            NULL, 0,
+            nullptr, 0,
             /* Message opaque, provided in
              * delivery report callback as
              * msg_opaque. */
-            NULL) == -1) {
+            nullptr) == -1) {
       /**
        * Failed to *enqueue* message for producing.
        */
