@@ -6,9 +6,9 @@
 #include <sstream>
 #include <string>
 
-typedef int32_t bpf_int32;
-typedef uint32_t bpf_u_int32;
-typedef unsigned short u_short;
+using bpf_int32 = int32_t;
+using bpf_u_int32 = uint32_t;
+using u_short = unsigned short;
 
 struct pcap_file_header {
   bpf_u_int32 magic;
