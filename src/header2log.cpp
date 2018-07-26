@@ -1,5 +1,6 @@
 #include <net/ethernet.h>
 #include <netinet/if_ether.h>
+#include <netinet/in.h>
 #include <netinet/ip.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/tcp.h>
@@ -29,7 +30,7 @@ bool Pcap::skip_bytes(size_t size)
   size_t packet_len = 0;
   while (packet_len < size) {
     packet_len = pcap_header_process();
-    if (packet_len == -1) {
+    if (packet_len == static_cast<size_t>(-1)) {
       return false;
     }
     if (!payload_process(packet_len))
@@ -46,10 +47,10 @@ bool Pcap::get_next_stream()
   log_stream.str("");
   log_stream.clear();
   packet_len = pcap_header_process();
-  if (packet_len == -1)
+  if (packet_len == static_cast<size_t>(-1))
     return false;
   process_len = std::invoke(get_datalink_process(), this);
-  if (process_len == -1)
+  if (packet_len == static_cast<size_t>(-1))
     return false;
   packet_len -= process_len;
   if (!payload_process(packet_len))
@@ -154,16 +155,42 @@ size_t Pcap::ethernet_process()
   }
   log_stream << " ";
   switch (htons(eh.ether_type)) {
+  case ETHERTYPE_PUP:
+    log_stream << "PUP ";
+    break;
+  case ETHERTYPE_SPRITE:
+    log_stream << "SPRITE ";
+    break;
   case ETHERTYPE_IP:
     log_stream << "IPv4 ";
     process_len += ipv4_process();
     break;
-
   case ETHERTYPE_ARP:
     log_stream << "ARP ";
     break;
-
+  case ETHERTYPE_REVARP:
+    log_stream << "REVARP ";
+    break;
+  case ETHERTYPE_AT:
+    log_stream << "AT ";
+    break;
+  case ETHERTYPE_AARP:
+    log_stream << "AARP ";
+    break;
+  case ETHERTYPE_VLAN:
+    log_stream << "VLAN ";
+    break;
+  case ETHERTYPE_IPX:
+    log_stream << "IPX ";
+    break;
+  case ETHERTYPE_IPV6:
+    log_stream << "IPV6 ";
+    break;
+  case ETHERTYPE_LOOPBACK:
+    log_stream << "LOOPBACK ";
+    break;
   default:
+    log_stream << "UKNOWN_INTERNET_" << htons(eh.ether_type);
     break;
   }
   return process_len;
@@ -172,8 +199,8 @@ size_t Pcap::ethernet_process()
 size_t Pcap::ipv4_process()
 {
   struct ip iph;
-  int i = 0, opt = 0;
-  int process_len = 0;
+  size_t i = 0, opt = 0;
+  size_t process_len = 0;
 
   if (fread(&iph, sizeof(iph), 1, pcapfile) < 1)
     return -1;
@@ -200,24 +227,80 @@ size_t Pcap::ipv4_process()
   }
 
   switch (iph.ip_p) {
-  case 1:
-    // PrintIcmpPacket(Buffer,Size);
-    log_stream << "icmp";
+  case IPPROTO_ICMP:
+    log_stream << "ICMP ";
     process_len += icmp_process();
     break;
-
-  case 2:
-    log_stream << "igmp";
+  case IPPROTO_IGMP:
+    log_stream << "IGMP ";
     break;
-
-  case 6:
-    log_stream << "tcp";
+  case IPPROTO_IPIP:
+    log_stream << "IPIP ";
+    break;
+  case IPPROTO_TCP:
+    log_stream << "TCP ";
     process_len += tcp_process();
     break;
-
-  case 17:
-    log_stream << "udp";
+  case IPPROTO_EGP:
+    log_stream << "EGP ";
+    break;
+  case IPPROTO_PUP:
+    log_stream << "PUP ";
+    break;
+  case IPPROTO_UDP:
+    log_stream << "UDP ";
     process_len += udp_process();
+    break;
+  case IPPROTO_IDP:
+    log_stream << "IDP ";
+    break;
+  case IPPROTO_TP:
+    log_stream << "TP ";
+    break;
+  case IPPROTO_DCCP:
+    log_stream << "DCCP ";
+    break;
+  case IPPROTO_IPV6:
+    log_stream << "IPV6 ";
+    break;
+  case IPPROTO_RSVP:
+    log_stream << "RSVP ";
+    break;
+  case IPPROTO_GRE:
+    log_stream << "GRE ";
+    break;
+  case IPPROTO_ESP:
+    log_stream << "ESP ";
+    break;
+  case IPPROTO_AH:
+    log_stream << "AH ";
+    break;
+  case IPPROTO_MTP:
+    log_stream << "MTP ";
+    break;
+  case IPPROTO_BEETPH:
+    log_stream << "BEETPH ";
+    break;
+  case IPPROTO_ENCAP:
+    log_stream << "ENCAP ";
+    break;
+  case IPPROTO_PIM:
+    log_stream << "PIM ";
+    break;
+  case IPPROTO_COMP:
+    log_stream << "COMP ";
+    break;
+  case IPPROTO_SCTP:
+    log_stream << "SCTP ";
+    break;
+  case IPPROTO_UDPLITE:
+    log_stream << "UDPLITE ";
+    break;
+  case IPPROTO_MPLS:
+    log_stream << "MPLS ";
+    break;
+  case IPPROTO_RAW:
+    log_stream << "RAW ";
     break;
 
   default:
@@ -240,7 +323,7 @@ bool Pcap::payload_process(size_t remain_len)
 size_t Pcap::tcp_process()
 {
   struct tcphdr tcph;
-  int process_len = 0;
+  size_t process_len = 0;
   if (fread(&tcph, sizeof(tcph), 1, pcapfile) < 1)
     return -1;
   process_len += sizeof(tcph);
@@ -262,13 +345,19 @@ size_t Pcap::tcp_process()
   log_stream << " checksum_" << ntohs(tcph.th_sum);
   log_stream << " urg_ptr_" << tcph.th_urp;
 
+  uint16_t service = static_cast<uint16_t>(
+      std::min(std::min(ntohs(tcph.th_sport), ntohs(tcph.th_dport)),
+               MAX_DEFINED_PORT_NUMBER));
+  if (service < MAX_DEFINED_PORT_NUMBER)
+    log_stream << " " << TCP_PORT_SERV_DICT.find(service)->second;
+
   return process_len;
 }
 
 size_t Pcap::udp_process()
 {
   struct udphdr udph;
-  int process_len = 0;
+  size_t process_len = 0;
   if (fread(&udph, sizeof(udph), 1, pcapfile) < 1)
     return -1;
   process_len += sizeof(udph);
