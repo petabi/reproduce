@@ -1,5 +1,6 @@
-#include "rdkafka_producer.h"
 #include <cstdio>
+
+#include "rdkafka_producer.h"
 
 bool Rdkafka_producer::server_conf(const std::string& brokers,
                                    const std::string& topic)

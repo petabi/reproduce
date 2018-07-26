@@ -1,10 +1,12 @@
 #ifndef HEADER2LOG_H
 #define HEADER2LOG_H
-#include "rdkafka_producer.h"
+
 #include <cstdint>
 #include <iostream>
 #include <sstream>
 #include <string>
+
+#include "rdkafka_producer.h"
 
 using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
