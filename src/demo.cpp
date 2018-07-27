@@ -30,7 +30,7 @@ int main(int argc, char** argv)
         end = true;
     }
   } catch (exception const& e) {
-    cout << "Exception: " << e.what();
+    cerr << "Exception: " << e.what();
   }
   return 0;
 }

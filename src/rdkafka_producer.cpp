@@ -66,7 +66,7 @@ bool Rdkafka_producer::produce(const std::string& message)
       /**
        * Failed to *enqueue* message for producing.
        */
-      std::cout << "%% Failed to produce to topic " << rd_kafka_topic_name(rkt)
+      std::cerr << "%% Failed to produce to topic " << rd_kafka_topic_name(rkt)
                 << " : " << rd_kafka_err2str(rd_kafka_last_error()) << '\n';
 
       /* Poll to handle delivery reports */
@@ -84,10 +84,8 @@ bool Rdkafka_producer::produce(const std::string& message)
         rd_kafka_poll(rk, 1000 /*block for max 1000ms*/);
       }
     } else {
-      fprintf(stdout,
-              "%% Enqueued message (%zd bytes) "
-              "for topic %s\n",
-              msg_len, rd_kafka_topic_name(rkt));
+      std::cout << "%% Enqueued message (" << msg_len << " bytes) for topic "
+                << rd_kafka_topic_name(rkt) + '\n';
       stop = true;
     }
   }
@@ -116,13 +114,11 @@ void Rdkafka_producer::dr_msg_cb(rd_kafka_t* rk,
                                  void* opaque)
 {
   if (rkmessage->err)
-    std::cout << "%% Message delivery failed: "
+    std::cerr << "%% Message delivery failed: "
               << rd_kafka_err2str(rkmessage->err) << '\n';
   else
-    fprintf(stdout,
-            "%% Message delivered (%zd bytes, "
-            "partition %" PRId32 ")\n",
-            rkmessage->len, rkmessage->partition);
+    std::cout << "%% Message delivered (" << rkmessage->len
+              << " bytes, partition " << rkmessage->partition << '\n';
 }
 
 Rdkafka_producer::~Rdkafka_producer()

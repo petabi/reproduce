@@ -41,11 +41,11 @@ public:
   Pcap(const std::string& filename);
   Pcap(const Pcap&) = delete;
   Pcap& operator=(const Pcap&) = delete;
-  Pcap(const Pcap&&) = delete;
+  Pcap(Pcap&& other) noexcept;
   Pcap& operator=(const Pcap&&) = delete;
-  ~Pcap() { fclose(pcapfile); };
+  ~Pcap();
   bool skip_bytes(size_t size);
-  const std::string get_next_stream();
+  std::string get_next_stream();
 
 private:
   FILE* pcapfile;

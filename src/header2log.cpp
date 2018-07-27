@@ -22,13 +22,29 @@ Pcap::Pcap(const std::string& filename)
     throw std::runtime_error("could not open [" + filename + "]");
 
   struct pcap_file_header pfh;
-  if (fread(&pfh, (int)sizeof(pfh), 1, pcapfile) < 1)
+  if (fread(&pfh, sizeof(pfh), 1, pcapfile) < 1)
     throw std::runtime_error(filename + " is not an appropriate pcap file");
   if (pfh.magic != 0xa1b2c3d4) {
     throw std::runtime_error(filename + " is not an appropriate pcap file");
   }
 
   linktype = pfh.linktype;
+}
+
+Pcap::Pcap(Pcap&& other) noexcept : log_stream(std::move(other.log_stream))
+{
+  FILE* tmp = other.pcapfile;
+  other.pcapfile = nullptr;
+  if (pcapfile != nullptr) {
+    fclose(pcapfile);
+  }
+  pcapfile = tmp;
+}
+
+Pcap::~Pcap()
+{
+  if (pcapfile != nullptr)
+    fclose(pcapfile);
 }
 
 bool Pcap::skip_bytes(size_t size)
@@ -45,7 +61,7 @@ bool Pcap::skip_bytes(size_t size)
   return true;
 }
 
-const std::string Pcap::get_next_stream()
+std::string Pcap::get_next_stream()
 {
   size_t process_len = 0;
   size_t packet_len = 0;
