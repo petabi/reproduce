@@ -8,8 +8,14 @@
 class Rdkafka_producer {
 
 public:
+  Rdkafka_producer() = delete;
+
+  Rdkafka_producer(const std::string& brokers, const std::string& topic);
+  Rdkafka_producer(const Rdkafka_producer&) = delete;
+  Rdkafka_producer& operator=(const Rdkafka_producer&) = delete;
+  Rdkafka_producer(const Rdkafka_producer&&) = delete;
+  Rdkafka_producer& operator=(const Rdkafka_producer&&) = delete;
   ~Rdkafka_producer();
-  bool server_conf(const std::string& brokers, const std::string& topic);
   bool produce(const std::string& message);
 
 private:
