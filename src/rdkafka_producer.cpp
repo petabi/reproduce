@@ -1,8 +1,9 @@
 #include <cstdio>
+#include <iostream>
 
 #include "rdkafka_producer.h"
 
-bool Rdkafka_producer::server_conf(const std::string& brokers,
+Rdkafka_producer::Rdkafka_producer(const std::string& brokers,
                                    const std::string& topic)
 {
   char errstr[512]; /* librdkafka API error reporting buffer */
@@ -10,20 +11,22 @@ bool Rdkafka_producer::server_conf(const std::string& brokers,
   /* producer config */
   if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers.c_str(), errstr,
                         sizeof(errstr)) != RD_KAFKA_CONF_OK) {
-    fprintf(stdout, "%s\n", errstr);
-    return false;
+    rd_kafka_conf_destroy(conf);
+    throw std::runtime_error(errstr);
   }
   // TODO : optimize rd_kafka_conf_set config parameters
-  rd_kafka_conf_set(conf, "queue.buffering.max.messages", "1000000", nullptr,
-                    0);
-  rd_kafka_conf_set(conf, "queue.buffering.max.kbytes", "2000000", nullptr, 0);
+  // rd_kafka_conf_set(conf, "queue.buffering.max.messages", "1000000", nullptr,
+  //                  0);
+  // rd_kafka_conf_set(conf, "queue.buffering.max.kbytes", "2000000", nullptr,
+  // 0);
   rd_kafka_conf_set(conf, "message.send.max.retries", "3", nullptr, 0);
 
   rd_kafka_conf_set_dr_msg_cb(conf, dr_msg_cb);
   rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
   if (!rk) {
-    fprintf(stdout, "%% Failed to create new producer: %s\n", errstr);
-    return false;
+    rd_kafka_conf_destroy(conf);
+    throw std::runtime_error(std::string("%% Failed to create new producer:") +
+                             errstr);
   }
 
   /* Create topic object that will be reused for each message
@@ -34,13 +37,36 @@ bool Rdkafka_producer::server_conf(const std::string& brokers,
    */
   rkt = rd_kafka_topic_new(rk, topic.c_str(), nullptr);
   if (!rkt) {
-    fprintf(stdout, "%% Failed to create topic object: %s\n",
-            rd_kafka_err2str(rd_kafka_last_error()));
+    rd_kafka_conf_destroy(conf);
     rd_kafka_destroy(rk);
-    return false;
+    throw std::runtime_error(std::string("%% Failed to create topic object: ") +
+                             rd_kafka_err2str(rd_kafka_last_error()));
   }
-  return true;
 }
+
+Rdkafka_producer::Rdkafka_producer(Rdkafka_producer&& other) noexcept
+{
+  std::cout << "%% Flushing final messages..\n";
+  rd_kafka_flush(rk, 10 * 1000 /* wait for max 10 seconds */);
+  rd_kafka_t* other_rk = other.rk;
+  rd_kafka_topic_t* other_rkt = other.rkt;
+  rd_kafka_conf_t* other_conf = other.conf;
+  other.rk = nullptr;
+  other.rkt = nullptr;
+  other.conf = nullptr;
+  if (conf != nullptr)
+    rd_kafka_conf_destroy(conf);
+  if (rk != nullptr) {
+    rd_kafka_destroy(rk);
+  }
+  if (rkt != nullptr) {
+    rd_kafka_topic_destroy(rkt);
+  }
+  conf = other_conf;
+  rk = other_rk;
+  rkt = other_rkt;
+}
+
 bool Rdkafka_producer::produce(const std::string& message)
 {
 
@@ -68,9 +94,8 @@ bool Rdkafka_producer::produce(const std::string& message)
       /**
        * Failed to *enqueue* message for producing.
        */
-      fprintf(stdout, "%% Failed to produce to topic %s: %s\n",
-              rd_kafka_topic_name(rkt),
-              rd_kafka_err2str(rd_kafka_last_error()));
+      std::cerr << "%% Failed to produce to topic " << rd_kafka_topic_name(rkt)
+                << " : " << rd_kafka_err2str(rd_kafka_last_error()) << '\n';
 
       /* Poll to handle delivery reports */
       if (rd_kafka_last_error() == RD_KAFKA_RESP_ERR__QUEUE_FULL) {
@@ -87,10 +112,8 @@ bool Rdkafka_producer::produce(const std::string& message)
         rd_kafka_poll(rk, 1000 /*block for max 1000ms*/);
       }
     } else {
-      fprintf(stdout,
-              "%% Enqueued message (%zd bytes) "
-              "for topic %s\n",
-              msg_len, rd_kafka_topic_name(rkt));
+      std::cout << "%% Enqueued message (" << msg_len << " bytes) for topic "
+                << rd_kafka_topic_name(rkt) + '\n';
       stop = true;
     }
   }
@@ -119,23 +142,22 @@ void Rdkafka_producer::dr_msg_cb(rd_kafka_t* rk,
                                  void* opaque)
 {
   if (rkmessage->err)
-    fprintf(stdout, "%% Message delivery failed: %s\n",
-            rd_kafka_err2str(rkmessage->err));
+    std::cerr << "%% Message delivery failed: "
+              << rd_kafka_err2str(rkmessage->err) << '\n';
   else
-    fprintf(stdout,
-            "%% Message delivered (%zd bytes, "
-            "partition %" PRId32 ")\n",
-            rkmessage->len, rkmessage->partition);
+    std::cout << "%% Message delivered (" << rkmessage->len
+              << " bytes, partition " << rkmessage->partition << '\n';
 }
 
 Rdkafka_producer::~Rdkafka_producer()
 {
 
-  fprintf(stdout, "%% Flushing final messages..\n");
-  rd_kafka_flush(rk, 10 * 1000 /* wait for max 10 seconds */);
-  /* Destroy topic object */
-  rd_kafka_topic_destroy(rkt);
-
-  /* Destroy the producer instance */
-  rd_kafka_destroy(rk);
+  std::cout << "%% Flushing final messages..\n";
+  // rd_kafka_flush(rk, 10 * 1000 /* wait for max 10 seconds */);
+  if (conf != nullptr)
+    rd_kafka_conf_destroy(conf);
+  if (rk != nullptr)
+    rd_kafka_destroy(rk);
+  if (rkt != nullptr)
+    rd_kafka_topic_destroy(rkt);
 }

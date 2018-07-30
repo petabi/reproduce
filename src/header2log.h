@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 
 #include "rdkafka_producer.h"
@@ -36,22 +37,21 @@ struct pcap_pkthdr {
 class Pcap {
 
 public:
-  Pcap(){};
-  ~Pcap() { fclose(pcapfile); };
-  bool open_pcap(const std::string& filename);
+  Pcap() = delete;
+  Pcap(const std::string& filename);
+  Pcap(const Pcap&) = delete;
+  Pcap& operator=(const Pcap&) = delete;
+  Pcap(Pcap&& other) noexcept;
+  Pcap& operator=(const Pcap&&) = delete;
+  ~Pcap();
   bool skip_bytes(size_t size);
-  bool get_next_stream();
-  bool conf_rdkafka(const std::string& brokers, const std::string& topic);
-  bool produce_to_rdkafka();
-  void print_log_stream();
+  std::string get_next_stream();
 
 private:
   FILE* pcapfile;
   std::ostringstream log_stream;
   unsigned int linktype;
-  Rdkafka_producer rp;
   size_t (Pcap::*get_datalink_process())();
-  bool global_header_process();
   size_t pcap_header_process();
   size_t ethernet_process();
   size_t ipv4_process();

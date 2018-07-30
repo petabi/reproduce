@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "header2log.h"
+#include "rdkafka_producer.h"
 
 using namespace std;
 
@@ -9,27 +10,30 @@ const char* topic = "pcap";
 
 int main(int argc, char** argv)
 {
-  bool end = false;
-  if (argc != 2)
-    return -1;
+  try {
+    if (argc != 2)
+      return -1;
+    string pcap_path = argv[1];
+    Pcap pcap(pcap_path);
+    Rdkafka_producer rp(broker, topic);
+    string message;
+    bool end = false;
 
-  Pcap pcap;
-  if (!pcap.open_pcap(argv[1])) {
-    cout << "pcap file is wrong..\n";
-    return -1;
+    cout << "Start!!!\n";
+    // skip by bytes
+    // pcap.skip_bytes(1000);
+
+    while (!end) {
+      message = pcap.get_next_stream();
+      if (!message.empty()) {
+        rp.produce(message);
+        cout << message << '\n';
+      } else
+        end = true;
+    }
+    cout << "End!!!\n";
+  } catch (exception const& e) {
+    cerr << "Exception: " << e.what();
   }
-  if (!pcap.conf_rdkafka(broker, topic)) {
-    cout << "configure rdkafka failed..\n";
-    return -1;
-  }
-  // skip by bytes
-  // pcap.skip_bytes(1000);
-  while (!end) {
-    if (pcap.get_next_stream()) {
-      pcap.produce_to_rdkafka();
-      // print log stream per packet
-      // pcap.print_log_stream();
-    } else
-      end = true;
-  }
+  return 0;
 }

@@ -10,18 +10,41 @@
 #include <ctime>
 #include <functional>
 #include <iomanip>
+#include <stdexcept>
 
 #include "header2log.h"
 #include "rdkafka_producer.h"
 
-bool Pcap::open_pcap(const std::string& filename)
+Pcap::Pcap(const std::string& filename)
 {
   pcapfile = fopen(filename.c_str(), "r");
   if (pcapfile == nullptr)
-    return false;
-  if (global_header_process() == false)
-    return false;
-  return true;
+    throw std::runtime_error("could not open [" + filename + "]");
+
+  struct pcap_file_header pfh;
+  if (fread(&pfh, sizeof(pfh), 1, pcapfile) < 1)
+    throw std::runtime_error(filename + " is not an appropriate pcap file");
+  if (pfh.magic != 0xa1b2c3d4) {
+    throw std::runtime_error(filename + " is not an appropriate pcap file");
+  }
+
+  linktype = pfh.linktype;
+}
+
+Pcap::Pcap(Pcap&& other) noexcept : log_stream(std::move(other.log_stream))
+{
+  FILE* tmp = other.pcapfile;
+  other.pcapfile = nullptr;
+  if (pcapfile != nullptr) {
+    fclose(pcapfile);
+  }
+  pcapfile = tmp;
+}
+
+Pcap::~Pcap()
+{
+  if (pcapfile != nullptr)
+    fclose(pcapfile);
 }
 
 bool Pcap::skip_bytes(size_t size)
@@ -38,7 +61,7 @@ bool Pcap::skip_bytes(size_t size)
   return true;
 }
 
-bool Pcap::get_next_stream()
+std::string Pcap::get_next_stream()
 {
   size_t process_len = 0;
   size_t packet_len = 0;
@@ -47,47 +70,15 @@ bool Pcap::get_next_stream()
   log_stream.clear();
   packet_len = pcap_header_process();
   if (packet_len == -1)
-    return false;
+    return {};
   process_len = std::invoke(get_datalink_process(), this);
   if (process_len == -1)
-    return false;
+    throw std::runtime_error("failed to read packet header");
   packet_len -= process_len;
   if (!payload_process(packet_len))
-    return false;
+    throw std::runtime_error("failed to read packet payload");
 
-  return true;
-}
-
-bool Pcap::conf_rdkafka(const std::string& brokers, const std::string& topic)
-{
-  if (rp.server_conf(brokers, topic) == false)
-    return false;
-
-  return true;
-}
-
-bool Pcap::produce_to_rdkafka()
-{
-  if (rp.produce(log_stream.str()) == false)
-    return false;
-
-  return true;
-}
-
-void Pcap::print_log_stream() { std::cout << log_stream.str() << '\n'; }
-
-bool Pcap::global_header_process()
-{
-  struct pcap_file_header pfh;
-  if (fread(&pfh, (int)sizeof(pfh), 1, pcapfile) < 1)
-    return false;
-  if (pfh.magic != 0xa1b2c3d4) {
-    std::cout << "pcap is worng..\n";
-    return false;
-  }
-
-  linktype = pfh.linktype;
-  return true;
+  return log_stream.str();
 }
 
 size_t (Pcap::*Pcap::get_datalink_process())()
