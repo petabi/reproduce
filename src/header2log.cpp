@@ -70,7 +70,7 @@ std::string Pcap::get_next_stream()
   log_stream.clear();
   packet_len = pcap_header_process();
   if (packet_len == -1)
-    throw std::runtime_error("failed to read pcap header");
+    return {};
   process_len = std::invoke(get_datalink_process(), this);
   if (process_len == -1)
     throw std::runtime_error("failed to read packet header");

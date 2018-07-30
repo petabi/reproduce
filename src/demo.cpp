@@ -19,16 +19,19 @@ int main(int argc, char** argv)
     string message;
     bool end = false;
 
+    cout << "Start!!!\n";
     // skip by bytes
     // pcap.skip_bytes(1000);
 
     while (!end) {
       message = pcap.get_next_stream();
-      if (rp.produce(message)) {
-        cout << message;
+      if (!message.empty()) {
+        rp.produce(message);
+        cout << message << '\n';
       } else
         end = true;
     }
+    cout << "End!!!\n";
   } catch (exception const& e) {
     cerr << "Exception: " << e.what();
   }

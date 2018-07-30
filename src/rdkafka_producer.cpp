@@ -11,17 +11,20 @@ Rdkafka_producer::Rdkafka_producer(const std::string& brokers,
   /* producer config */
   if (rd_kafka_conf_set(conf, "bootstrap.servers", brokers.c_str(), errstr,
                         sizeof(errstr)) != RD_KAFKA_CONF_OK) {
+    rd_kafka_conf_destroy(conf);
     throw std::runtime_error(errstr);
   }
   // TODO : optimize rd_kafka_conf_set config parameters
-  rd_kafka_conf_set(conf, "queue.buffering.max.messages", "1000000", nullptr,
-                    0);
-  rd_kafka_conf_set(conf, "queue.buffering.max.kbytes", "2000000", nullptr, 0);
+  // rd_kafka_conf_set(conf, "queue.buffering.max.messages", "1000000", nullptr,
+  //                  0);
+  // rd_kafka_conf_set(conf, "queue.buffering.max.kbytes", "2000000", nullptr,
+  // 0);
   rd_kafka_conf_set(conf, "message.send.max.retries", "3", nullptr, 0);
 
   rd_kafka_conf_set_dr_msg_cb(conf, dr_msg_cb);
   rk = rd_kafka_new(RD_KAFKA_PRODUCER, conf, errstr, sizeof(errstr));
   if (!rk) {
+    rd_kafka_conf_destroy(conf);
     throw std::runtime_error(std::string("%% Failed to create new producer:") +
                              errstr);
   }
@@ -34,11 +37,36 @@ Rdkafka_producer::Rdkafka_producer(const std::string& brokers,
    */
   rkt = rd_kafka_topic_new(rk, topic.c_str(), nullptr);
   if (!rkt) {
+    rd_kafka_conf_destroy(conf);
     rd_kafka_destroy(rk);
     throw std::runtime_error(std::string("%% Failed to create topic object: ") +
                              rd_kafka_err2str(rd_kafka_last_error()));
   }
 }
+
+Rdkafka_producer::Rdkafka_producer(Rdkafka_producer&& other) noexcept
+{
+  std::cout << "%% Flushing final messages..\n";
+  rd_kafka_flush(rk, 10 * 1000 /* wait for max 10 seconds */);
+  rd_kafka_t* other_rk = other.rk;
+  rd_kafka_topic_t* other_rkt = other.rkt;
+  rd_kafka_conf_t* other_conf = other.conf;
+  other.rk = nullptr;
+  other.rkt = nullptr;
+  other.conf = nullptr;
+  if (conf != nullptr)
+    rd_kafka_conf_destroy(conf);
+  if (rk != nullptr) {
+    rd_kafka_destroy(rk);
+  }
+  if (rkt != nullptr) {
+    rd_kafka_topic_destroy(rkt);
+  }
+  conf = other_conf;
+  rk = other_rk;
+  rkt = other_rkt;
+}
+
 bool Rdkafka_producer::produce(const std::string& message)
 {
 
@@ -125,10 +153,11 @@ Rdkafka_producer::~Rdkafka_producer()
 {
 
   std::cout << "%% Flushing final messages..\n";
-  rd_kafka_flush(rk, 10 * 1000 /* wait for max 10 seconds */);
-  /* Destroy topic object */
-  rd_kafka_topic_destroy(rkt);
-
-  /* Destroy the producer instance */
-  rd_kafka_destroy(rk);
+  // rd_kafka_flush(rk, 10 * 1000 /* wait for max 10 seconds */);
+  if (conf != nullptr)
+    rd_kafka_conf_destroy(conf);
+  if (rk != nullptr)
+    rd_kafka_destroy(rk);
+  if (rkt != nullptr)
+    rd_kafka_topic_destroy(rkt);
 }
