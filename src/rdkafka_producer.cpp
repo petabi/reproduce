@@ -113,7 +113,7 @@ bool Rdkafka_producer::produce(const std::string& message)
       }
     } else {
       std::cout << "%% Enqueued message (" << msg_len << " bytes) for topic "
-                << rd_kafka_topic_name(rkt) + '\n';
+                << rd_kafka_topic_name(rkt) << '\n';
       stop = true;
     }
   }
