@@ -26,6 +26,8 @@ Last Modified : 2018-07-20
 #define ICMP_H
 #endif
 
+#include "ipv4.h"
+
 typedef unsigned char ipv4[4];
 typedef unsigned char byte;
 
