@@ -52,12 +52,15 @@ private:
   std::ostringstream log_stream;
   unsigned int linktype;
   size_t (Pcap::*get_datalink_process())();
+  size_t (Pcap::*get_internet_process(uint16_t ether_type))();
+  size_t (Pcap::*get_transport_process(uint8_t ip_p))();
   size_t pcap_header_process();
   size_t ethernet_process();
   size_t ipv4_process();
   size_t icmp_process();
   size_t udp_process();
   size_t tcp_process();
+  size_t null_process();
   bool payload_process(size_t remain_len);
 };
 
