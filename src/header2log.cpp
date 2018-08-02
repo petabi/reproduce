@@ -458,7 +458,6 @@ size_t Pcap::ipv4_process()
   process_len += std::invoke(get_transport_process(iph.ip_p), this);
   if (process_len == static_cast<size_t>(-1))
     throw std::runtime_error("failed to read transport header");
-
   return process_len;
 }
 
