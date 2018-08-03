@@ -57,11 +57,14 @@ private:
   size_t pcap_header_process();
   size_t ethernet_process();
   size_t ipv4_process();
+  size_t arp_process();
   size_t icmp_process();
   size_t udp_process();
   size_t tcp_process();
   size_t null_process();
   bool payload_process(size_t remain_len);
+  std::string print_ip_addr(unsigned char* ip_addr);
+  std::string print_mac_addr(unsigned char* mac_addr);
 };
 
 #endif

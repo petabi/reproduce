@@ -1,3 +1,5 @@
+#include <arpa/inet.h>
+
 #include <cstdio>
 #include <cstring>
 #include <ctime>
@@ -5,6 +7,7 @@
 #include <iomanip>
 #include <stdexcept>
 
+#include "arp.h"
 #include "ethernet.h"
 #include "header2log.h"
 #include "icmp.h"
@@ -13,7 +16,6 @@
 #include "service.h"
 #include "tcp.h"
 #include "udp.h"
-#include "util.h"
 
 Pcap::Pcap(const std::string& filename)
 {
@@ -112,8 +114,8 @@ size_t (Pcap::*Pcap::get_internet_process(uint16_t ether_type))()
     log_stream << "IP  ";
     return &Pcap::ipv4_process;
   case ETHERTYPE_ARP:
-    log_stream << "ARP   ";
-    break;
+    log_stream << "ARP  ";
+    return &Pcap::arp_process;
     /*
       case ETHERTYPE_GRE_ISO:
         log_stream << "GRE_ISO  ";
@@ -389,6 +391,7 @@ size_t Pcap::pcap_header_process()
   sec = (long)pp.ts.tv_sec;
   cap_time = (char*)ctime((const time_t*)&sec);
   cap_time[strlen(cap_time) - 1] = '\0';
+  log_stream << std::dec;
   log_stream << pp.len << "bytes ";
   log_stream << cap_time << " ";
   // log_stream(".%06d ", pp.ts.tv_usec);
@@ -399,27 +402,14 @@ size_t Pcap::pcap_header_process()
 size_t Pcap::ethernet_process()
 {
   struct ether_header eh;
-  size_t i = 0;
   size_t process_len = 0;
 
   if (fread(&eh, sizeof(eh), 1, pcapfile) < 1)
     return -1;
   process_len += sizeof(eh);
 
-  for (i = 0; i < sizeof(eh.ether_dhost); i++) {
-    if (i != 0)
-      log_stream << ":";
-    log_stream << std::setfill('0') << std::setw(2) << std::hex
-               << static_cast<int>(eh.ether_dhost[i]);
-  }
-  log_stream << " ";
-  for (i = 0; i < sizeof(eh.ether_dhost); i++) {
-    if (i != 0)
-      log_stream << ":";
-    log_stream << std::setfill('0') << std::setw(2) << std::hex
-               << static_cast<int>(eh.ether_shost[i]);
-  }
-  log_stream << " ";
+  log_stream << print_mac_addr(&eh.ether_dhost[0]) << " ";
+  log_stream << print_mac_addr(&eh.ether_shost[0]) << " ";
   process_len += std::invoke(get_internet_process(eh.ether_type), this);
   if (process_len == static_cast<size_t>(-1))
     throw std::runtime_error("failed to read internet header");
@@ -429,26 +419,16 @@ size_t Pcap::ethernet_process()
 size_t Pcap::ipv4_process()
 {
   struct ip iph;
-  size_t i = 0, opt = 0;
+  size_t opt = 0;
   size_t process_len = 0;
 
   if (fread(&iph, IP_MINLEN, 1, pcapfile) < 1)
     return -1;
   process_len += IP_MINLEN;
-  for (i = 0; i < sizeof(iph.ip_src); i++) {
-    if (i != 0)
-      log_stream << ".";
-    log_stream << std::dec
-               << static_cast<int>(((unsigned char*)&iph.ip_src)[i]);
-  }
-  log_stream << " ";
-  for (i = 0; i < sizeof(iph.ip_src); i++) {
-    if (i != 0)
-      log_stream << ".";
-    log_stream << std::dec
-               << static_cast<int>(((unsigned char*)&iph.ip_dst)[i]);
-  }
-  log_stream << " ";
+  log_stream << print_ip_addr(static_cast<unsigned char*>(&iph.ip_src[0]))
+             << " ";
+  log_stream << print_ip_addr(static_cast<unsigned char*>(&iph.ip_dst[0]))
+             << " ";
   opt = IP_HL(iph.ip_vhl) * 4 - sizeof(iph);
   if (opt != 0) {
     fseek(pcapfile, opt, SEEK_CUR);
@@ -458,6 +438,86 @@ size_t Pcap::ipv4_process()
   process_len += std::invoke(get_transport_process(iph.ip_p), this);
   if (process_len == static_cast<size_t>(-1))
     throw std::runtime_error("failed to read transport header");
+  return process_len;
+}
+
+size_t Pcap::arp_process()
+{
+  struct arp_pkthdr arph;
+  uint16_t hrd = 0, pro = 0;
+  size_t process_len = 0;
+  unsigned char eth_sha[6]; /* sender Ethernet address */
+  unsigned char ip_spa[4];  /* sender IP address */
+  unsigned char eth_tha[6]; /* target Ethernet address */
+  unsigned char ip_tpa[4];  /* target IP address */
+
+  if (fread(&arph, sizeof(arph), 1, pcapfile) < 1)
+    return -1;
+  process_len += sizeof(arph);
+  hrd = htons(arph.ar_hrd);
+  pro = htons(arph.ar_pro);
+  log_stream << " " << arpop_values.find(hrd)->second;
+  log_stream << " " << ethertype_values.find(pro)->second;
+  if ((pro != ETHERTYPE_IP && pro != ETHERTYPE_TRAIL) || arph.ar_pln != 4 ||
+      arph.ar_hln != 6) {
+    // log_stream << "Unknown Hardware or Protocol address Format ";
+    return process_len;
+  }
+  if (fread(&eth_sha, sizeof(eth_sha), 1, pcapfile) < 1)
+    return -1;
+  process_len += sizeof(eth_sha);
+  if (fread(&ip_spa, sizeof(ip_spa), 1, pcapfile) < 1)
+    return -1;
+  process_len += sizeof(ip_spa);
+  if (fread(&eth_tha, sizeof(eth_tha), 1, pcapfile) < 1)
+    return -1;
+  process_len += sizeof(eth_tha);
+  if (fread(&ip_tpa, sizeof(ip_tpa), 1, pcapfile) < 1)
+    return -1;
+  process_len += sizeof(ip_tpa);
+  switch (htons(arph.ar_op)) {
+  case ARPOP_REQUEST:
+    log_stream << "who-has "
+               << print_ip_addr(static_cast<unsigned char*>(&ip_tpa[0])) << " ";
+    log_stream << " tell "
+               << print_ip_addr(static_cast<unsigned char*>(&ip_spa[0]));
+    break;
+
+  case ARPOP_REPLY:
+
+    log_stream << static_cast<unsigned char*>(&ip_spa[0]) << " is-at "
+               << print_mac_addr(static_cast<unsigned char*>(&eth_sha[0]));
+    break;
+
+  case ARPOP_REVREQUEST:
+    log_stream << "who-is "
+               << print_mac_addr(static_cast<unsigned char*>(&eth_tha[0]))
+               << " tell "
+               << print_mac_addr(static_cast<unsigned char*>(&eth_sha[0]));
+    break;
+
+  case ARPOP_REVREPLY:
+    log_stream << print_mac_addr(static_cast<unsigned char*>(&eth_tha[0]))
+               << " at "
+               << print_ip_addr(static_cast<unsigned char*>(&ip_tpa[0]));
+    break;
+
+  case ARPOP_INVREQUEST:
+    log_stream << "who-is "
+               << print_mac_addr(static_cast<unsigned char*>(&eth_tha[0]))
+               << " tell "
+               << print_mac_addr(static_cast<unsigned char*>(&eth_sha[0]));
+    break;
+
+  case ARPOP_INVREPLY:
+    log_stream << print_mac_addr(static_cast<unsigned char*>(&eth_sha[0]))
+               << " at "
+               << print_ip_addr(static_cast<unsigned char*>(&ip_spa[0]));
+    break;
+  default:
+    break;
+  }
+
   return process_len;
 }
 
@@ -482,11 +542,12 @@ size_t Pcap::tcp_process()
     return -1;
   process_len += TCP_MINLEN;
 
+  log_stream << std::dec;
   log_stream << " src_port_" << ntohs(tcph.th_sport);
   log_stream << " dst_port_" << ntohs(tcph.th_dport);
   log_stream << " seq_num_" << ntohl(tcph.th_seq);
   log_stream << " ack_num_" << ntohl(tcph.th_ack);
-  log_stream << " h_len_" << TCP_HLEN(tcph.th_offx2) * 4;
+  log_stream << " hlen_" << TCP_HLEN(tcph.th_offx2) * 4;
   // log_stream << " cwr_" << (unsigned int)tcph.cwr;
   // log_stream << " ecn_" << (unsigned int)tcph.ece;
   log_stream << (tcph.th_flags & TH_URG ? 'U' : '\0');
@@ -543,4 +604,21 @@ size_t Pcap::icmp_process()
   // log_stream << " seq_" << ntohs(icmph.sequence));
 
   return process_len;
+}
+
+std::string Pcap::print_ip_addr(unsigned char* ip_addr)
+{
+  char str_ip_addr[16];
+  snprintf(str_ip_addr, sizeof(str_ip_addr), "%d.%d.%d.%d", ip_addr[0],
+           ip_addr[1], ip_addr[2], ip_addr[3]);
+  return std::string(str_ip_addr);
+}
+
+std::string Pcap::print_mac_addr(unsigned char* mac_addr)
+{
+  char str_mac_addr[18];
+  snprintf(str_mac_addr, sizeof(str_mac_addr), "%02x:%02x:%02x:%02x:%02x:%02x",
+           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4],
+           mac_addr[5]);
+  return std::string(str_mac_addr);
 }

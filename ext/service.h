@@ -1,7 +1,6 @@
 #ifndef SERVICE_PORT_H
 #define SERVICE_PORT_H
 /* www.iana.org/assignments/service-names-port-numbers (18.07.20)*/
-#include <iostream>
 #include <map>
 
 const uint16_t MAX_DEFINED_PORT_NUMBER = 1024;
