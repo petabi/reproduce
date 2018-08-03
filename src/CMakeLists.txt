@@ -1,6 +1,6 @@
 find_path(LIBRDKAFKA_INCLUDE_DIR librdkafka/rdkafka.h)
 find_library(LIBRDKAFKA_LIB rdkafka)
-add_executable(header2log demo.cpp header2log.cpp rdkafka_producer.cpp)
+add_executable(header2log demo.cpp header2log.cpp rdkafka_producer.cpp options.cpp)
 target_include_directories(header2log PRIVATE ${LIBRDKAFKA_INCLUDE_DIR} PRIVATE ${CMAKE_SOURCE_DIR}/ext)
 target_link_libraries(header2log PRIVATE ${LIBRDKAFKA_LIB})
 #install(TARGETS header2log RUNTIME DESTINATION ${CMAKE_SOURCE_DIR})
