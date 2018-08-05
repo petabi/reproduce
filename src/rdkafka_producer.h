@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include <librdkafka/rdkafka.h>
+#include "librdkafka/rdkafkacpp.h"
 
 class Rdkafka_producer {
 
@@ -19,11 +19,11 @@ public:
   bool produce(const std::string& message);
 
 private:
-  static void dr_msg_cb(rd_kafka_t* rk, const rd_kafka_message_t* rkmessage,
-                        void* opaque);
-  rd_kafka_t* rk;        /* Producer instance handle */
-  rd_kafka_topic_t* rkt; /* Topic object */
-  rd_kafka_conf_t* conf; /* Temporary configuration object */
+  RdKafka::Conf* conf;
+  RdKafka::Conf* tconf;
+  RdKafka::Topic* topic;
+  RdKafka::Producer* producer;
+  int32_t partition = RdKafka::Topic::PARTITION_UA;
   std::string errstr;
 };
 
