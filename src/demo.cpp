@@ -69,21 +69,18 @@ int main(int argc, char** argv)
     Pcap pcap(opt.input);
     Rdkafka_producer rp(broker, topic);
     string message;
-    bool end = false;
 
     // skip by bytes
     // pcap.skip_bytes(1000);
 
-    while (!end) {
+    while (true) {
       message = pcap.get_next_stream();
-      if (!message.empty()) {
-        if (!opt.kafka)
-          rp.produce(message);
-        opt.process_evaluation(message.length());
-        opt.mprint("%s", message.c_str());
-      } else {
-        end = true;
-      }
+      if (message.empty())
+        break;
+      if (!opt.kafka)
+        rp.produce(message);
+      opt.process_evaluation(message.length());
+      opt.mprint("%s", message.c_str());
     }
   } catch (exception const& e) {
     opt.dprint(F, "exception: %s", e.what());
