@@ -96,7 +96,7 @@ void Options::report_evaluation()
           (double)byte / MBYTE, kbps / KBYTE);
   fprintf(stdout, "Sent Packets: %lu(%.2fM) (%.2f Kpps)\n", packet,
           (double)packet / MPACKET, kpps);
-  fprintf(stdout, "Elapsed Time: %.1f Sec.\n", time_diff);
+  fprintf(stdout, "Elapsed Time: %.2f Sec.\n", time_diff);
   fprintf(stdout, "--------------------------------------------------\n");
 }
 
