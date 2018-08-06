@@ -565,6 +565,7 @@ size_t Pcap::tcp_process()
   log_stream << (tcph.th_flags & TH_RST ? 'R' : '\0');
   log_stream << (tcph.th_flags & TH_SYN ? 'S' : '\0');
   log_stream << (tcph.th_flags & TH_FIN ? 'F' : '\0');
+  log_stream << " ";
   log_stream << ntohs(tcph.th_win) << " ";
   log_stream << ntohs(tcph.th_sum) << " ";
   log_stream << tcph.th_urp << " ";
