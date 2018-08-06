@@ -111,10 +111,10 @@ size_t (Pcap::*Pcap::get_internet_process(uint16_t ether_type))()
 {
   switch (htons(ether_type)) {
   case ETHERTYPE_IP:
-    log_stream << "IP  ";
+    log_stream << "IP ";
     return &Pcap::ipv4_process;
   case ETHERTYPE_ARP:
-    log_stream << "ARP  ";
+    log_stream << "ARP ";
     return &Pcap::arp_process;
     /*
       case ETHERTYPE_GRE_ISO:
@@ -392,7 +392,7 @@ size_t Pcap::pcap_header_process()
   cap_time = (char*)ctime((const time_t*)&sec);
   cap_time[strlen(cap_time) - 1] = '\0';
   log_stream << std::dec;
-  log_stream << pp.len << "bytes ";
+  log_stream << pp.len << " ";
   log_stream << cap_time << " ";
   // log_stream(".%06d ", pp.ts.tv_usec);
 
@@ -424,6 +424,15 @@ size_t Pcap::ipv4_process()
 
   if (fread(&iph, IP_MINLEN, 1, pcapfile) < 1)
     return -1;
+  log_stream << IP_V(iph.ip_vhl) << " ";
+  log_stream << IP_HL(iph.ip_vhl) << " ";
+  log_stream << IP_HL(iph.ip_tos) << " ";
+  log_stream << IP_HL(iph.ip_len) << " ";
+  log_stream << IP_HL(iph.ip_id) << " ";
+  log_stream << IP_HL(iph.ip_off) << " ";
+  log_stream << IP_HL(iph.ip_ttl) << " ";
+  log_stream << IP_HL(iph.ip_sum) << " ";
+
   process_len += IP_MINLEN;
   log_stream << print_ip_addr(static_cast<unsigned char*>(&iph.ip_src[0]))
              << " ";
@@ -433,7 +442,7 @@ size_t Pcap::ipv4_process()
   if (opt != 0) {
     fseek(pcapfile, opt, SEEK_CUR);
     process_len += opt;
-    log_stream << "ip_option ";
+    log_stream << "ip_opt ";
   }
   process_len += std::invoke(get_transport_process(iph.ip_p), this);
   if (process_len == static_cast<size_t>(-1))
@@ -456,8 +465,8 @@ size_t Pcap::arp_process()
   process_len += sizeof(arph);
   hrd = htons(arph.ar_hrd);
   pro = htons(arph.ar_pro);
-  log_stream << " " << arpop_values.find(hrd)->second;
-  log_stream << " " << ethertype_values.find(pro)->second;
+  log_stream << arpop_values.find(hrd)->second << " ";
+  log_stream << ethertype_values.find(pro)->second << " ";
   if ((pro != ETHERTYPE_IP && pro != ETHERTYPE_TRAIL) || arph.ar_pln != 4 ||
       arph.ar_hln != 6) {
     // log_stream << "Unknown Hardware or Protocol address Format ";
@@ -479,7 +488,7 @@ size_t Pcap::arp_process()
   case ARPOP_REQUEST:
     log_stream << "who-has "
                << print_ip_addr(static_cast<unsigned char*>(&ip_tpa[0])) << " ";
-    log_stream << " tell "
+    log_stream << "tell "
                << print_ip_addr(static_cast<unsigned char*>(&ip_spa[0]));
     break;
 
@@ -492,26 +501,26 @@ size_t Pcap::arp_process()
   case ARPOP_REVREQUEST:
     log_stream << "who-is "
                << print_mac_addr(static_cast<unsigned char*>(&eth_tha[0]))
-               << " tell "
+               << "tell "
                << print_mac_addr(static_cast<unsigned char*>(&eth_sha[0]));
     break;
 
   case ARPOP_REVREPLY:
     log_stream << print_mac_addr(static_cast<unsigned char*>(&eth_tha[0]))
-               << " at "
+               << "at "
                << print_ip_addr(static_cast<unsigned char*>(&ip_tpa[0]));
     break;
 
   case ARPOP_INVREQUEST:
     log_stream << "who-is "
                << print_mac_addr(static_cast<unsigned char*>(&eth_tha[0]))
-               << " tell "
+               << "tell "
                << print_mac_addr(static_cast<unsigned char*>(&eth_sha[0]));
     break;
 
   case ARPOP_INVREPLY:
     log_stream << print_mac_addr(static_cast<unsigned char*>(&eth_sha[0]))
-               << " at "
+               << "at "
                << print_ip_addr(static_cast<unsigned char*>(&ip_spa[0]));
     break;
   default:
@@ -543,22 +552,22 @@ size_t Pcap::tcp_process()
   process_len += TCP_MINLEN;
 
   log_stream << std::dec;
-  log_stream << " src_port_" << ntohs(tcph.th_sport);
-  log_stream << " dst_port_" << ntohs(tcph.th_dport);
-  log_stream << " seq_num_" << ntohl(tcph.th_seq);
-  log_stream << " ack_num_" << ntohl(tcph.th_ack);
-  log_stream << " hlen_" << TCP_HLEN(tcph.th_offx2) * 4;
-  // log_stream << " cwr_" << (unsigned int)tcph.cwr;
-  // log_stream << " ecn_" << (unsigned int)tcph.ece;
+  log_stream << ntohs(tcph.th_sport) << " ";
+  log_stream << ntohs(tcph.th_dport) << " ";
+  log_stream << ntohl(tcph.th_seq) << " ";
+  log_stream << ntohl(tcph.th_ack) << " ";
+  log_stream << TCP_HLEN(tcph.th_offx2) * 4 << " ";
+  // log_stream << (unsigned int)tcph.cwr << " ";
+  // log_stream << (unsigned int)tcph.ece << " ";
   log_stream << (tcph.th_flags & TH_URG ? 'U' : '\0');
   log_stream << (tcph.th_flags & TH_ACK ? 'A' : '\0');
   log_stream << (tcph.th_flags & TH_PUSH ? 'P' : '\0');
   log_stream << (tcph.th_flags & TH_RST ? 'R' : '\0');
   log_stream << (tcph.th_flags & TH_SYN ? 'S' : '\0');
   log_stream << (tcph.th_flags & TH_FIN ? 'F' : '\0');
-  log_stream << " window_" << ntohs(tcph.th_win);
-  log_stream << " checksum_" << ntohs(tcph.th_sum);
-  log_stream << " urg_ptr_" << tcph.th_urp;
+  log_stream << ntohs(tcph.th_win) << " ";
+  log_stream << ntohs(tcph.th_sum) << " ";
+  log_stream << tcph.th_urp << " ";
 
   uint16_t service = static_cast<uint16_t>(
       std::min(std::min(ntohs(tcph.th_sport), ntohs(tcph.th_dport)),
@@ -577,10 +586,10 @@ size_t Pcap::udp_process()
     return -1;
   process_len += sizeof(udph);
 
-  log_stream << " src_port_" << ntohs(udph.uh_sport);
-  log_stream << " det_port_" << ntohs(udph.uh_dport);
-  log_stream << " length_" << ntohs(udph.uh_ulen);
-  // log_stream << " checksum_" << ntohs(udph.check);
+  log_stream << ntohs(udph.uh_sport) << " ";
+  log_stream << ntohs(udph.uh_dport) << " ";
+  log_stream << ntohs(udph.uh_ulen) << " ";
+  log_stream << ntohs(udph.uh_sum) << " ";
 
   return process_len;
 }
@@ -592,13 +601,14 @@ size_t Pcap::icmp_process()
   if (fread(&icmph, ICMP_MINLEN, 1, pcapfile) < 1)
     return -1;
   process_len += ICMP_MINLEN;
-  log_stream << " type_" << (unsigned int)(icmph.icmp_type);
+  log_stream << (unsigned int)(icmph.icmp_type) << " ";
+  log_stream << (unsigned int)(icmph.icmp_code) << " ";
+  log_stream << icmph.icmp_cksum << " ";
 
   if ((unsigned int)(icmph.icmp_type) == 11)
-    log_stream << " ttl_expired ";
+    log_stream << "ttl_expired ";
   else if ((unsigned int)(icmph.icmp_type) == ICMP_ECHOREPLY)
-    log_stream << " echo_reply ";
-  log_stream << " code_" << (unsigned int)(icmph.icmp_code);
+    log_stream << "echo_reply ";
   // log_stream << " checksum_" << ntohs(icmph.checksum);
   // log_stream << " id_" << ntohs(icmph.id);
   // log_stream << " seq_" << ntohs(icmph.sequence));
