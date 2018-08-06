@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <sys/stat.h>
 
 #include "options.h"
 
@@ -91,7 +92,15 @@ void Options::report_evaluation()
     return;
   }
 
+  struct stat st;
+
   fprintf(stdout, "--------------------------------------------------\n");
+  if (stat(input.c_str(), &st) != -1) {
+    fprintf(stdout, "Input File  : %s (%.2fM)\n", input.c_str(),
+            (double)st.st_size / MBYTE);
+  } else {
+    fprintf(stdout, "Input File  : invalid\n");
+  }
   fprintf(stdout, "Sent Bytes  : %lu(%.2fM) (%.2f MBps)\n", byte,
           (double)byte / MBYTE, kbps / KBYTE);
   fprintf(stdout, "Sent Packets: %lu(%.2fM) (%.2f Kpps)\n", packet,
