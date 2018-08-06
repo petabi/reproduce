@@ -77,13 +77,13 @@ int main(int argc, char** argv)
     while (!end) {
       message = pcap.get_next_stream();
       if (!message.empty()) {
-		if (!opt.kafka)
-			rp.produce(message);
-		opt.byte += message.length();
-		opt.packet++;
+        if (!opt.kafka)
+          rp.produce(message);
+        opt.byte += message.length();
+        opt.packet++;
         opt.set_now();
-		if (opt.debug)
-			opt.mprint("%s", message.c_str());
+        if (opt.debug)
+          opt.mprint("%s", message.c_str());
       } else {
         end = true;
       }
