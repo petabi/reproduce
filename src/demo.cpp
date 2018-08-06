@@ -7,13 +7,14 @@
 
 using namespace std;
 
-const char* program_name = "header2log";
-const char* broker = "10.90.180.54:9092";
-const char* topic = "pcap";
+static const char* program_name = "header2log";
+static const char* broker = "10.90.180.54:9092";
+static const char* topic = "pcap";
 
 void help(void)
 {
   cout << "[USAGE] " << program_name << " OPTIONS" << '\n';
+  cout << "  -c: packet count to send" << '\n';
   cout << "  -d: debug mode (print debug messages)" << '\n';
   cout << "  -e: evaluation mode (report statistics)" << '\n';
   cout << "  -f: tcpdump filter" << '\n';
@@ -28,8 +29,11 @@ int main(int argc, char** argv)
   int o;
   Options opt;
 
-  while ((o = getopt(argc, argv, "defhi:k")) != -1) {
+  while ((o = getopt(argc, argv, "c:defhi:k")) != -1) {
     switch (o) {
+    case 'c':
+      opt.count = strtoul(optarg, NULL, 0);
+      break;
     case 'd':
       opt.debug = true;
       break;
@@ -75,12 +79,17 @@ int main(int argc, char** argv)
 
     while (true) {
       message = pcap.get_next_stream();
-      if (message.empty())
+      if (message.empty()) {
         break;
-      if (!opt.kafka)
+      }
+      if (!opt.kafka) {
         rp.produce(message);
+      }
       opt.process_evaluation(message.length());
       opt.mprint("%s", message.c_str());
+      if (opt.check_count()) {
+        break;
+      }
     }
   } catch (exception const& e) {
     opt.dprint(F, "exception: %s", e.what());
