@@ -8,7 +8,7 @@
 using namespace std;
 
 static const char* program_name = "header2log";
-static const char* default_broker = "10.90.180.54:9092";
+static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
 
 void help(void)
