@@ -14,8 +14,8 @@ const char* topic = "pcap";
 void help(void)
 {
   cout << "[USAGE] " << program_name << " OPTIONS" << '\n';
-  cout << "  -d: debug" << '\n';
-  cout << "  -e: evaluation" << '\n';
+  cout << "  -d: debug mode (print debug messages)" << '\n';
+  cout << "  -e: evaluation mode (report statistics)" << '\n';
   cout << "  -f: tcpdump filter" << '\n';
   cout << "  -h: help" << '\n';
   cout << "  -i: input pcapfile or nic (mandatory)" << '\n';
