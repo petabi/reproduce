@@ -63,7 +63,7 @@ int main(int argc, char** argv)
   }
 
   opt.dprint(F, "start");
-  opt.set_start();
+  opt.start_evaluation();
 
   try {
     Pcap pcap(opt.input);
@@ -79,11 +79,8 @@ int main(int argc, char** argv)
       if (!message.empty()) {
         if (!opt.kafka)
           rp.produce(message);
-        opt.byte += message.length();
-        opt.packet++;
-        opt.set_now();
-        if (opt.debug)
-          opt.mprint("%s", message.c_str());
+        opt.process_evaluation(message.length());
+        opt.mprint("%s", message.c_str());
       } else {
         end = true;
       }
@@ -93,7 +90,7 @@ int main(int argc, char** argv)
   }
 
   opt.dprint(F, "end");
-  opt.report();
+  opt.report_evaluation();
 
   return 0;
 }

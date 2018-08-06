@@ -50,7 +50,7 @@ void Options::mprint(const char* fmt, ...)
   fprintf(stdout, "\n");
 }
 
-void Options::set_start()
+void Options::start_evaluation()
 {
   if (!eval)
     return;
@@ -58,7 +58,7 @@ void Options::set_start()
   time_start = clock();
 }
 
-void Options::set_now()
+void Options::process_evaluation(size_t length)
 {
   if (!eval)
     return;
@@ -66,13 +66,16 @@ void Options::set_now()
   time_now = clock();
   time_diff = (double)(time_now - time_start) / CLOCKS_PER_SEC;
 
+  byte += length;
+  packet++;
+
   if (time_diff) {
     kbps = byte / time_diff;
     kpps = packet / time_diff;
   }
 }
 
-void Options::report()
+void Options::report_evaluation()
 {
   if (!eval)
     return;
