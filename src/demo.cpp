@@ -8,12 +8,14 @@
 using namespace std;
 
 static const char* program_name = "header2log";
-static const char* broker = "10.90.180.54:9092";
-static const char* topic = "pcap";
+static const char* default_broker = "10.90.180.54:9092";
+static const char* default_topic = "pcap";
 
 void help(void)
 {
   cout << "[USAGE] " << program_name << " OPTIONS" << '\n';
+  cout << "  -b: kafka broker"
+       << " (default: " << default_broker << ")" << '\n';
   cout << "  -c: packet count to send" << '\n';
   cout << "  -d: debug mode (print debug messages)" << '\n';
   cout << "  -e: evaluation mode (report statistics)" << '\n';
@@ -22,6 +24,8 @@ void help(void)
   cout << "  -i: input pcapfile or nic (mandatory)" << '\n';
   cout << "  -k: do not send to kafka" << '\n';
   cout << "  -o: output file" << '\n';
+  cout << "  -t: kafka topic"
+       << " (default: " << default_topic << ")" << '\n';
 }
 
 int main(int argc, char** argv)
@@ -29,8 +33,11 @@ int main(int argc, char** argv)
   int o;
   Options opt;
 
-  while ((o = getopt(argc, argv, "c:defhi:k")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:defhi:ko:t:")) != -1) {
     switch (o) {
+    case 'b':
+      opt.broker = optarg;
+      break;
     case 'c':
       opt.count = strtoul(optarg, NULL, 0);
       break;
@@ -52,6 +59,9 @@ int main(int argc, char** argv)
     case 'o':
       opt.output = optarg;
       break;
+    case 't':
+      opt.topic = optarg;
+      break;
     case 'h':
     default:
       help();
@@ -59,19 +69,27 @@ int main(int argc, char** argv)
     }
   }
 
-  opt.show_options();
-
   if (opt.input.size() == 0) {
     help();
     exit(0);
   }
+
+  if (opt.broker.empty()) {
+    opt.broker = default_broker;
+  }
+
+  if (opt.topic.empty()) {
+    opt.topic = default_topic;
+  }
+
+  opt.show_options();
 
   opt.dprint(F, "start");
   opt.start_evaluation();
 
   try {
     Pcap pcap(opt.input);
-    Rdkafka_producer rp(broker, topic);
+    Rdkafka_producer rp(opt.broker, opt.topic);
     string message;
 
     // skip by bytes

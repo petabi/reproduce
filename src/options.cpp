@@ -10,7 +10,8 @@ static const double MPACKET = KPACKET * KPACKET;
 
 Options::Options()
     : debug(false), eval(false), kafka(false), count(0), byte(0), packet(0),
-      kbps(0), kpps(0), time_start(0), time_now(0), time_diff(0)
+      kbps(0), kpps(0), time_start(0), time_now(0), time_diff(0),
+      type(InputType::None)
 {
 }
 
@@ -18,6 +19,7 @@ Options::~Options() {}
 
 void Options::show_options()
 {
+  dprint(F, "broker=%s", broker.c_str());
   dprint(F, "count=%lu", count);
   dprint(F, "debug=%d", debug);
   dprint(F, "evel=%d", eval);
@@ -25,6 +27,7 @@ void Options::show_options()
   dprint(F, "filter=%s", filter.c_str());
   dprint(F, "input=%s", input.c_str());
   dprint(F, "output=%s", output.c_str());
+  dprint(F, "topic=%s", topic.c_str());
 }
 
 void Options::dprint(const char* name, const char* fmt, ...)

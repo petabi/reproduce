@@ -6,6 +6,12 @@
 
 #define F __func__
 
+enum class InputType {
+  None, // no type
+  File, // file name
+  Nic,  // network interface name
+};
+
 class Options {
 public:
   bool debug;         // debug mode (print debug messages)
@@ -15,6 +21,8 @@ public:
   std::string input;  // input pcapfile or nic
   std::string output; // output file
   std::string filter; // tcpdump filter string
+  std::string broker; // kafka broker
+  std::string topic;  // kafka topic
 
   Options();
   ~Options();
@@ -34,6 +42,7 @@ private:
   clock_t time_start; // start time
   clock_t time_now;   // current time
   double time_diff;   // time difference
+  InputType type;     // input type
 };
 
 #endif
