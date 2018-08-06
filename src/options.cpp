@@ -67,13 +67,9 @@ void Options::set_now()
   time_now = clock();
   time_diff = (double)(time_now - time_start) / CLOCKS_PER_SEC;
 
-  // test
-  byte += 5;
-  packet += 1;
-
   if (time_diff) {
-    kbps = byte / time_diff / 1024.0;
-    kpps = packet / time_diff / 1000.0;
+    kbps = byte / time_diff;
+    kpps = packet / time_diff;
   }
 }
 
