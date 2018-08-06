@@ -36,19 +36,18 @@ void Options::dprint(const char* name, const char* fmt, ...)
 
 void Options::mprint(const char* fmt, ...)
 {
-  if (!debug && !eval)
+  if (!debug)
     return;
 
-  if (debug) {
-    if (eval) {
-      fprintf(stdout, "[%lu/%.1f/%lu/%.1f] ", byte, kbps, packet, kpps);
-    }
-    va_list args;
-    va_start(args, fmt);
-    vfprintf(stdout, fmt, args);
-    va_end(args);
-    fprintf(stdout, "\n");
+  if (eval) {
+    fprintf(stdout, "[%lu/%.1f/%lu/%.1f] ", byte, kbps, packet, kpps);
   }
+
+  va_list args;
+  va_start(args, fmt);
+  vfprintf(stdout, fmt, args);
+  va_end(args);
+  fprintf(stdout, "\n");
 }
 
 void Options::set_start()
@@ -66,10 +65,6 @@ void Options::set_now()
 
   time_now = clock();
   time_diff = (double)(time_now - time_start) / CLOCKS_PER_SEC;
-
-  // test
-  byte += 5;
-  packet += 1;
 
   if (time_diff) {
     kbps = byte / time_diff / 1024.0;
