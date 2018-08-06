@@ -2,6 +2,11 @@
 
 #include "options.h"
 
+const double KBYTE = 1024.0;
+const double MBYTE = KBYTE * KBYTE;
+const double KPACKET = 1000.0;
+const double MPACKET = KPACKET * KPACKET;
+
 Options::Options()
     : debug(false), eval(false), kafka(false), byte(0), packet(0), kbps(0),
       kpps(0), time_start(0), time_now(0), time_diff(0)
@@ -70,8 +75,8 @@ void Options::process_evaluation(size_t length)
   packet++;
 
   if (time_diff) {
-    kbps = byte / time_diff;
-    kpps = packet / time_diff;
+    kbps = (double)byte / KBYTE / time_diff;
+    kpps = (double)packet / KPACKET / time_diff;
   }
 }
 
@@ -81,10 +86,10 @@ void Options::report_evaluation()
     return;
 
   fprintf(stdout, "--------------------------------------------------\n");
-  fprintf(stdout, "Sent Bytes  : %lu(%.2fM) (%.1f KBps)\n", byte,
-          (double)byte / (1024 * 1024), kbps);
-  fprintf(stdout, "Sent Packets: %lu(%.2fM) (%.1f Kpps)\n", packet,
-          (double)packet / (1024 * 1024), kpps);
+  fprintf(stdout, "Sent Bytes  : %lu(%.2fM) (%.2f MBps)\n", byte,
+          (double)byte / MBYTE, kbps / KBYTE);
+  fprintf(stdout, "Sent Packets: %lu(%.2fM) (%.2f Kpps)\n", packet,
+          (double)packet / MPACKET, kpps);
   fprintf(stdout, "Elapsed Time: %.1f Sec.\n", time_diff);
   fprintf(stdout, "--------------------------------------------------\n");
 }
