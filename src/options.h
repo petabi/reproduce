@@ -8,13 +8,13 @@
 
 class Options {
 public:
-  bool debug;              // debug mode (print debug messages)
-  bool eval;               // evaluation mode (report statistics)
-  bool kafka;              // do not send to kafka
-  unsigned long int count; // packet count to send
-  std::string input;       // input pcapfile or nic
-  std::string output;      // output file
-  std::string filter;      // tcpdump filter string
+  bool debug;         // debug mode (print debug messages)
+  bool eval;          // evaluation mode (report statistics)
+  bool kafka;         // do not send to kafka
+  size_t count;       // packet count to send
+  std::string input;  // input pcapfile or nic
+  std::string output; // output file
+  std::string filter; // tcpdump filter string
 
   Options();
   ~Options();
@@ -27,13 +27,13 @@ public:
   bool check_count();
 
 private:
-  unsigned long int byte;   // sent bytes
-  unsigned long int packet; // sent packets
-  double kbps;              // kilo byte per second
-  double kpps;              // kilo packet per second
-  clock_t time_start;       // start time
-  clock_t time_now;         // current time
-  double time_diff;         // time difference
+  size_t byte;        // sent bytes
+  size_t packet;      // sent packets
+  double kbps;        // kilo byte per second
+  double kpps;        // kilo packet per second
+  clock_t time_start; // start time
+  clock_t time_now;   // current time
+  double time_diff;   // time difference
 };
 
 #endif
