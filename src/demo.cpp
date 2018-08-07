@@ -24,6 +24,7 @@ void help(void)
   cout << "  -i: input pcapfile or nic (mandatory)" << '\n';
   cout << "  -k: do not send to kafka" << '\n';
   cout << "  -o: output file" << '\n';
+  cout << "  -s: skip count" << '\n';
   cout << "  -t: kafka topic"
        << " (default: " << default_topic << ")" << '\n';
 }
@@ -33,7 +34,7 @@ int main(int argc, char** argv)
   int o;
   Options opt;
 
-  while ((o = getopt(argc, argv, "b:c:defhi:ko:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:defhi:ko:s:t:")) != -1) {
     switch (o) {
     case 'b':
       opt.broker = optarg;
@@ -48,16 +49,23 @@ int main(int argc, char** argv)
       opt.eval = true;
       break;
     case 'f':
-      // not implemented yet
+      // FIXME: not implemented yet
+      opt.filter = optarg;
       break;
     case 'i':
+      // FIXME: not support nic yet
       opt.input = optarg;
       break;
     case 'k':
       opt.kafka = true;
       break;
     case 'o':
+      // FIXME: not implemented yet
       opt.output = optarg;
+      break;
+    case 's':
+      // FIXME: not implemented yet
+      opt.skip = strtoul(optarg, NULL, 0);
       break;
     case 't':
       opt.topic = optarg;
@@ -69,7 +77,7 @@ int main(int argc, char** argv)
     }
   }
 
-  if (opt.input.size() == 0) {
+  if (opt.input.empty()) {
     help();
     exit(0);
   }
@@ -92,8 +100,11 @@ int main(int argc, char** argv)
     Rdkafka_producer rp(opt.broker, opt.topic);
     string message;
 
-    // skip by bytes
-    // pcap.skip_bytes(1000);
+    /* FIXME: skip_bytes() --> skip_packet()
+    if (opt.skip) {
+      pcap.skip_bytes(opt.skip);
+    }
+    */
 
     while (true) {
       message = pcap.get_next_stream();

@@ -18,6 +18,7 @@ public:
   bool eval;          // evaluation mode (report statistics)
   bool kafka;         // do not send to kafka
   size_t count;       // packet count to send
+  size_t skip;        // skip count
   std::string input;  // input pcapfile or nic
   std::string output; // output file
   std::string filter; // tcpdump filter string

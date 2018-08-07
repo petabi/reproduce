@@ -9,8 +9,8 @@ static const double KPACKET = 1000.0;
 static const double MPACKET = KPACKET * KPACKET;
 
 Options::Options()
-    : debug(false), eval(false), kafka(false), count(0), byte(0), packet(0),
-      kbps(0), kpps(0), time_start(0), time_now(0), time_diff(0),
+    : debug(false), eval(false), kafka(false), count(0), skip(0), byte(0),
+      packet(0), kbps(0), kpps(0), time_start(0), time_now(0), time_diff(0),
       type(InputType::None)
 {
 }
@@ -27,6 +27,7 @@ void Options::show_options()
   dprint(F, "filter=%s", filter.c_str());
   dprint(F, "input=%s", input.c_str());
   dprint(F, "output=%s", output.c_str());
+  dprint(F, "skip=%lu", skip);
   dprint(F, "topic=%s", topic.c_str());
 }
 
