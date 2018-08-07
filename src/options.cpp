@@ -17,7 +17,7 @@ Options::Options()
 
 Options::~Options() {}
 
-void Options::show_options()
+void Options::show_options() noexcept
 {
   dprint(F, "broker=%s", broker.c_str());
   dprint(F, "count=%lu", count);
@@ -31,7 +31,7 @@ void Options::show_options()
   dprint(F, "topic=%s", topic.c_str());
 }
 
-void Options::dprint(const char* name, const char* fmt, ...)
+void Options::dprint(const char* name, const char* fmt, ...) noexcept
 {
   if (!debug) {
     return;
@@ -46,7 +46,7 @@ void Options::dprint(const char* name, const char* fmt, ...)
   fprintf(stdout, "\n");
 }
 
-void Options::mprint(const char* fmt, ...)
+void Options::mprint(const char* fmt, ...) noexcept
 {
   if (!debug) {
     return;
@@ -63,7 +63,7 @@ void Options::mprint(const char* fmt, ...)
   fprintf(stdout, "\n");
 }
 
-void Options::start_evaluation()
+void Options::start_evaluation() noexcept
 {
   if (!eval) {
     return;
@@ -72,7 +72,7 @@ void Options::start_evaluation()
   time_start = clock();
 }
 
-void Options::process_evaluation(size_t length)
+void Options::process_evaluation(size_t length) noexcept
 {
   byte += length;
   packet++;
@@ -90,7 +90,7 @@ void Options::process_evaluation(size_t length)
   }
 }
 
-void Options::report_evaluation()
+void Options::report_evaluation() noexcept
 {
   if (!eval) {
     return;
@@ -113,7 +113,7 @@ void Options::report_evaluation()
   fprintf(stdout, "--------------------------------------------------\n");
 }
 
-bool Options::check_count()
+bool Options::check_count() noexcept
 {
   if (count == 0 || packet < count) {
     return false;

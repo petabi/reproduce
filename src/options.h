@@ -18,7 +18,7 @@ public:
   bool eval;          // evaluation mode (report statistics)
   bool kafka;         // do not send to kafka
   size_t count;       // packet count to send
-  size_t skip;        // skip count
+  size_t skip;        // skip packet count
   std::string input;  // input pcapfile or nic
   std::string output; // output file
   std::string filter; // tcpdump filter string
@@ -26,14 +26,18 @@ public:
   std::string topic;  // kafka topic
 
   Options();
+  Options(const Options&) = delete;
+  Options& operator=(const Options&) = delete;
+  Options(Options&&) = delete;
+  Options& operator=(Options&&) = delete;
   ~Options();
-  void show_options();
-  void dprint(const char* name, const char* fmt, ...);
-  void mprint(const char* fmt, ...);
-  void start_evaluation();
-  void process_evaluation(size_t length);
-  void report_evaluation();
-  bool check_count();
+  void show_options() noexcept;
+  void dprint(const char* name, const char* fmt, ...) noexcept;
+  void mprint(const char* fmt, ...) noexcept;
+  void start_evaluation() noexcept;
+  void process_evaluation(size_t length) noexcept;
+  void report_evaluation() noexcept;
+  bool check_count() noexcept;
 
 private:
   size_t byte;        // sent bytes
