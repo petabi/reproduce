@@ -61,8 +61,16 @@ Rdkafka_producer::Rdkafka_producer(const string& brokers, const string& _topic)
   string errstr;
 
   // Set configuration properties
-  conf->set("metadata.broker.list", brokers, errstr);
-  conf->set("event_cb", &rd_event_cb, errstr);
+  if (conf->set("metadata.broker.list", brokers, errstr) !=
+      RdKafka::Conf::CONF_OK) {
+    throw runtime_error("Failed to set config: metadata.broker.list");
+  }
+  if (conf->set("event_cb", &rd_event_cb, errstr) != RdKafka::Conf::CONF_OK) {
+    throw runtime_error("Failed to set config: event_cb");
+  }
+  if (conf->set("dr_cb", &rd_dr_cb, errstr) != RdKafka::Conf::CONF_OK) {
+    throw runtime_error("Failed to set config: dr_cb");
+  }
 
 #if 0
   // FIXME: when debug option is enabled, enable this code
@@ -89,14 +97,13 @@ Rdkafka_producer::Rdkafka_producer(const string& brokers, const string& _topic)
   }
 #endif
 
-  // Set delivery report callback
-  conf->set("dr_cb", &rd_dr_cb, errstr);
+  // Create producet handle
   producer.reset(RdKafka::Producer::create(conf.get(), errstr));
   if (!producer) {
     throw runtime_error("Failed to create producer: " + errstr);
   }
 
-  // Create topic handle.
+  // Create topic handle
   topic.reset(
       RdKafka::Topic::create(producer.get(), _topic, tconf.get(), errstr));
   if (!topic) {
