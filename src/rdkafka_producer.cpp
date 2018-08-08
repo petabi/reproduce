@@ -49,8 +49,8 @@ Rdkafka_producer::Rdkafka_producer(const string& brokers, const string& _topic)
   }
 
   // Create configuration objects
-  conf = RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL);
-  tconf = RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC);
+  conf.reset(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
+  tconf.reset(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
 
   string errstr;
 
@@ -85,13 +85,14 @@ Rdkafka_producer::Rdkafka_producer(const string& brokers, const string& _topic)
 
   // Set delivery report callback
   conf->set("dr_cb", &rd_dr_cb, errstr);
-  producer = RdKafka::Producer::create(conf, errstr);
+  producer.reset(RdKafka::Producer::create(conf.get(), errstr));
   if (!producer) {
     throw runtime_error("Failed to create producer: " + errstr);
   }
 
   // Create topic handle.
-  topic = RdKafka::Topic::create(producer, _topic, tconf, errstr);
+  topic.reset(
+      RdKafka::Topic::create(producer.get(), _topic, tconf.get(), errstr));
   if (!topic) {
     throw runtime_error("Failed to create topic: " + errstr);
   }
@@ -101,7 +102,7 @@ bool Rdkafka_producer::produce(const string& message)
 {
   // Produce message
   RdKafka::ErrorCode resp = producer->produce(
-      topic, RdKafka::Topic::PARTITION_UA,
+      topic.get(), RdKafka::Topic::PARTITION_UA,
       RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
       const_cast<char*>(message.c_str()), message.size(), nullptr, nullptr);
   if (resp != RdKafka::ERR_NO_ERROR) {
@@ -120,14 +121,6 @@ bool Rdkafka_producer::produce(const string& message)
   return true;
 }
 
-Rdkafka_producer::~Rdkafka_producer()
-{
-  RdKafka::wait_destroyed(1000);
-
-  delete topic;
-  delete producer;
-  delete conf;
-  delete tconf;
-}
+Rdkafka_producer::~Rdkafka_producer() { RdKafka::wait_destroyed(1000); }
 
 // vim: et:ts=2:sw=2

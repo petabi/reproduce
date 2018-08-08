@@ -1,6 +1,7 @@
 #ifndef RDKAFKA_PRODUCER_H
 #define RDKAFKA_PRODUCER_H
 
+#include <memory>
 #include <string>
 
 #include "librdkafka/rdkafkacpp.h"
@@ -27,10 +28,10 @@ public:
   bool produce(const std::string& message);
 
 private:
-  RdKafka::Conf* conf;
-  RdKafka::Conf* tconf;
-  RdKafka::Topic* topic;
-  RdKafka::Producer* producer;
+  std::unique_ptr<RdKafka::Conf> conf;
+  std::unique_ptr<RdKafka::Conf> tconf;
+  std::unique_ptr<RdKafka::Topic> topic;
+  std::unique_ptr<RdKafka::Producer> producer;
   RdEventCb rd_event_cb;
   RdDeliveryReportCb rd_dr_cb;
 };
