@@ -59,6 +59,7 @@ Rdkafka_producer::Rdkafka_producer(const string& brokers, const string& _topic)
   conf->set("event_cb", &rd_event_cb, errstr);
 
 #if 0
+  // FIXME: when debug option is enabled, enable this code
   // show kafka producer config
   int pass;
   for (pass = 0; pass < 2; pass++) {
@@ -111,7 +112,6 @@ bool Rdkafka_producer::produce(const string& message)
   }
   producer->poll(0);
 
-  //
   while (producer->outq_len() > 0) {
     cerr << "Waiting for " << producer->outq_len() << "\n";
     producer->poll(1000);
