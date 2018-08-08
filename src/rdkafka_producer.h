@@ -8,12 +8,12 @@
 
 class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
 public:
-  void dr_cb(RdKafka::Message& message);
+  void dr_cb(RdKafka::Message& message) override;
 };
 
 class RdEventCb : public RdKafka::EventCb {
 public:
-  void event_cb(RdKafka::Event& event);
+  void event_cb(RdKafka::Event& event) override;
 };
 
 class Rdkafka_producer {
