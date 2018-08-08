@@ -5,16 +5,24 @@
 
 #include "librdkafka/rdkafkacpp.h"
 
-class Rdkafka_producer {
+class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
+public:
+  void dr_cb(RdKafka::Message& message);
+};
 
+class RdEventCb : public RdKafka::EventCb {
+public:
+  void event_cb(RdKafka::Event& event);
+};
+
+class Rdkafka_producer {
 public:
   Rdkafka_producer() = delete;
-
   Rdkafka_producer(const std::string& brokers, const std::string& topic);
   Rdkafka_producer(const Rdkafka_producer&) = delete;
   Rdkafka_producer& operator=(const Rdkafka_producer&) = delete;
-  Rdkafka_producer(Rdkafka_producer&&) noexcept;
-  Rdkafka_producer& operator=(const Rdkafka_producer&&) = delete;
+  Rdkafka_producer(Rdkafka_producer&&) = delete;
+  Rdkafka_producer& operator=(Rdkafka_producer&&) = delete;
   ~Rdkafka_producer();
   bool produce(const std::string& message);
 
@@ -23,8 +31,10 @@ private:
   RdKafka::Conf* tconf;
   RdKafka::Topic* topic;
   RdKafka::Producer* producer;
-  int32_t partition = RdKafka::Topic::PARTITION_UA;
-  std::string errstr;
+  RdEventCb rd_event_cb;
+  RdDeliveryReportCb rd_dr_cb;
 };
 
 #endif
+
+// vim: et:ts=2:sw=2
