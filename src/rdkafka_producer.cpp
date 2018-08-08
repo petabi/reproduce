@@ -45,12 +45,18 @@ void RdEventCb::event_cb(RdKafka::Event& event)
 Rdkafka_producer::Rdkafka_producer(const string& brokers, const string& _topic)
 {
   if (brokers.empty() || _topic.empty()) {
-    throw runtime_error("Invalid Constructor Parameter!");
+    throw runtime_error("Invalid constructor parameter");
   }
 
   // Create configuration objects
   conf.reset(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
+  if (!conf) {
+    throw runtime_error("Failed to create global configuration object");
+  }
   tconf.reset(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+  if (!tconf) {
+    throw runtime_error("Failed to create topic configuration object");
+  }
 
   string errstr;
 
