@@ -22,6 +22,8 @@ public:
   Rdkafka_producer(const std::string& brokers, const std::string& topic);
   Rdkafka_producer(const Rdkafka_producer&) = delete;
   Rdkafka_producer& operator=(const Rdkafka_producer&) = delete;
+  Rdkafka_producer(Rdkafka_producer&&) = default;
+  Rdkafka_producer& operator=(Rdkafka_producer&&) = default;
   ~Rdkafka_producer();
   bool produce(const std::string& message);
 
