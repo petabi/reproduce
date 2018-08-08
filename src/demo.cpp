@@ -11,7 +11,7 @@ static const char* program_name = "header2log";
 static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
 
-void help(void)
+void help()
 {
   cout << "[USAGE] " << program_name << " OPTIONS" << '\n';
   cout << "  -b: kafka broker"
