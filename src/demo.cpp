@@ -40,7 +40,7 @@ int main(int argc, char** argv)
       opt.broker = optarg;
       break;
     case 'c':
-      opt.count = strtoul(optarg, NULL, 0);
+      opt.count = strtoul(optarg, nullptr, 0);
       break;
     case 'd':
       opt.debug = true;
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
       break;
     case 's':
       // FIXME: not implemented yet
-      opt.skip = strtoul(optarg, NULL, 0);
+      opt.skip = strtoul(optarg, nullptr, 0);
       break;
     case 't':
       opt.topic = optarg;
