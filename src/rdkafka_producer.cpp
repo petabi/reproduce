@@ -103,7 +103,7 @@ bool Rdkafka_producer::produce(const string& message)
   RdKafka::ErrorCode resp = producer->produce(
       topic, RdKafka::Topic::PARTITION_UA,
       RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
-      const_cast<char*>(message.c_str()), message.size(), NULL, NULL);
+      const_cast<char*>(message.c_str()), message.size(), nullptr, nullptr);
   if (resp != RdKafka::ERR_NO_ERROR) {
     cerr << "% Produce failed: " << RdKafka::err2str(resp) << "\n";
   } else {
