@@ -105,11 +105,11 @@ void Options::report_evaluation() noexcept
   } else {
     fprintf(stdout, "Input File  : invalid\n");
   }
-  fprintf(stdout, "Sent Bytes  : %lu(%.2fM) (%.2f MBps)\n", byte,
-          (double)byte / MBYTE, kbps / KBYTE);
-  fprintf(stdout, "Sent Packets: %lu(%.2fM) (%.2f Kpps)\n", packet,
-          (double)packet / MPACKET, kpps);
-  fprintf(stdout, "Elapsed Time: %.2f Sec.\n", time_diff);
+  fprintf(stdout, "Sent Bytes  : %lu(%.2fM)\n", byte, (double)byte / MBYTE);
+  fprintf(stdout, "Sent Packets: %lu(%.2fM)\n", packet,
+          (double)packet / MPACKET);
+  fprintf(stdout, "Elapsed Time: %.2fs\n", time_diff);
+  fprintf(stdout, "Performance : %.2fMBps/%.2fKpps\n", kbps / KBYTE, kpps);
   fprintf(stdout, "--------------------------------------------------\n");
 }
 
