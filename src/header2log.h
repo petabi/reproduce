@@ -51,20 +51,21 @@ private:
   FILE* pcapfile;
   std::ostringstream log_stream;
   unsigned int linktype;
-  size_t (Pcap::*get_datalink_process())();
-  size_t (Pcap::*get_internet_process(uint16_t ether_type))();
-  size_t (Pcap::*get_transport_process(uint8_t ip_p))();
+  size_t (Pcap::*get_datalink_process())(unsigned char* offset);
+  size_t (Pcap::*get_internet_process(uint16_t ether_type))(
+      unsigned char* offset);
+  size_t (Pcap::*get_transport_process(uint8_t ip_p))(unsigned char* offset);
   size_t pcap_header_process();
-  size_t ethernet_process();
-  size_t ipv4_process();
-  size_t arp_process();
-  size_t icmp_process();
-  size_t udp_process();
-  size_t tcp_process();
-  size_t null_process();
+  size_t ethernet_process(unsigned char* offset);
+  size_t ipv4_process(unsigned char* offset);
+  size_t arp_process(unsigned char* offset);
+  size_t icmp_process(unsigned char* offset);
+  size_t udp_process(unsigned char* offset);
+  size_t tcp_process(unsigned char* offset);
+  size_t null_process(unsigned char* offset);
   bool payload_process(size_t remain_len);
-  std::string print_ip_addr(unsigned char* ip_addr);
-  std::string print_mac_addr(unsigned char* mac_addr);
+  std::string print_ip_addr(const unsigned char* ip_addr);
+  std::string print_mac_addr(const unsigned char* mac_addr);
 };
 
 #endif
