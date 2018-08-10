@@ -14,11 +14,13 @@ enum class InputType {
 
 class Options {
 public:
-  bool debug;         // debug mode (print debug messages)
-  bool eval;          // evaluation mode (report statistics)
-  bool kafka;         // do not send to kafka
-  size_t count;       // packet count to send
-  size_t skip;        // skip packet count
+  bool mode_debug;    // debug mode (print debug messages)
+  bool mode_eval;     // evaluation mode (report statistics)
+  bool mode_kafka;    // do not send data to kafka (parse packet only)
+  bool mode_parse;    // do not parse packet (send hardcoded sample data)
+  size_t count_send;  // send packet count
+  size_t count_skip;  // skip packet count
+  size_t count_queue; // queue packet count (how many packet send once)
   std::string input;  // input pcapfile or nic
   std::string output; // output file
   std::string filter; // tcpdump filter string
@@ -26,28 +28,29 @@ public:
   std::string topic;  // kafka topic
 
   Options();
-  Options(const Options&) = delete;
-  Options& operator=(const Options&) = delete;
+  Options(const Options&) = default;
+  Options& operator=(const Options&) = default;
   Options(Options&&) = delete;
   Options& operator=(Options&&) = delete;
   ~Options();
   void show_options() noexcept;
   void dprint(const char* name, const char* fmt, ...) noexcept;
+  void eprint(const char* name, const char* fmt, ...) noexcept;
   void mprint(const char* fmt, ...) noexcept;
+  bool check_count() noexcept;
   void start_evaluation() noexcept;
   void process_evaluation(size_t length) noexcept;
   void report_evaluation() noexcept;
-  bool check_count() noexcept;
 
 private:
-  size_t byte;        // sent bytes
-  size_t packet;      // sent packets
-  double kbps;        // kilo byte per second
-  double kpps;        // kilo packet per second
-  clock_t time_start; // start time
-  clock_t time_now;   // current time
-  double time_diff;   // time difference
-  InputType type;     // input type
+  size_t sent_byte;     // sent bytes
+  size_t sent_packet;   // sent packets
+  double perf_kbps;     // kilo byte per second
+  double perf_kpps;     // kilo packet per second
+  clock_t time_start;   // start time
+  clock_t time_now;     // current time
+  double time_diff;     // time difference
+  InputType input_type; // input type
 };
 
 #endif

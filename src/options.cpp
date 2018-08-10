@@ -9,9 +9,10 @@ static const double KPACKET = 1000.0;
 static const double MPACKET = KPACKET * KPACKET;
 
 Options::Options()
-    : debug(false), eval(false), kafka(false), count(0), skip(0), byte(0),
-      packet(0), kbps(0), kpps(0), time_start(0), time_now(0), time_diff(0),
-      type(InputType::None)
+    : mode_debug(false), mode_eval(false), mode_kafka(false), mode_parse(false),
+      count_send(0), count_skip(0), count_queue(0), sent_byte(0),
+      sent_packet(0), perf_kbps(0), perf_kpps(0), time_start(0), time_now(0),
+      time_diff(0), input_type(InputType::None)
 {
 }
 
@@ -19,21 +20,24 @@ Options::~Options() {}
 
 void Options::show_options() noexcept
 {
-  dprint(F, "broker=%s", broker.c_str());
-  dprint(F, "count=%lu", count);
-  dprint(F, "debug=%d", debug);
-  dprint(F, "evel=%d", eval);
-  dprint(F, "kafka=%d", kafka);
-  dprint(F, "filter=%s", filter.c_str());
+  dprint(F, "mode_debug=%d", mode_debug);
+  dprint(F, "mode_evel=%d", mode_eval);
+  dprint(F, "mode_kafka=%d", mode_kafka);
+  dprint(F, "mode_parse=%d", mode_parse);
+  dprint(F, "count_send=%lu", count_send);
+  dprint(F, "count_skip=%lu", count_skip);
+  dprint(F, "count_queue=%u", count_queue);
   dprint(F, "input=%s", input.c_str());
+  dprint(F, "input_type=%d", input_type);
   dprint(F, "output=%s", output.c_str());
-  dprint(F, "skip=%lu", skip);
+  dprint(F, "filter=%s", filter.c_str());
+  dprint(F, "broker=%s", broker.c_str());
   dprint(F, "topic=%s", topic.c_str());
 }
 
 void Options::dprint(const char* name, const char* fmt, ...) noexcept
 {
-  if (!debug) {
+  if (!mode_debug) {
     return;
   }
 
@@ -46,14 +50,26 @@ void Options::dprint(const char* name, const char* fmt, ...) noexcept
   fprintf(stdout, "\n");
 }
 
+void Options::eprint(const char* name, const char* fmt, ...) noexcept
+{
+  va_list args;
+
+  fprintf(stdout, "[ERROR] %s: ", name);
+  va_start(args, fmt);
+  vfprintf(stdout, fmt, args);
+  va_end(args);
+  fprintf(stdout, "\n");
+}
+
 void Options::mprint(const char* fmt, ...) noexcept
 {
-  if (!debug) {
+  if (!mode_debug) {
     return;
   }
 
-  if (eval) {
-    fprintf(stdout, "[%lu/%.1f/%lu/%.1f] ", byte, kbps, packet, kpps);
+  if (mode_eval) {
+    fprintf(stdout, "[%lu/%.1f/%lu/%.1f] ", sent_byte, perf_kbps, sent_packet,
+            perf_kpps);
   }
 
   va_list args;
@@ -63,9 +79,18 @@ void Options::mprint(const char* fmt, ...) noexcept
   fprintf(stdout, "\n");
 }
 
+bool Options::check_count() noexcept
+{
+  if (count_send == 0 || sent_packet < count_send) {
+    return false;
+  }
+
+  return true;
+}
+
 void Options::start_evaluation() noexcept
 {
-  if (!eval) {
+  if (!mode_eval) {
     return;
   }
 
@@ -74,10 +99,10 @@ void Options::start_evaluation() noexcept
 
 void Options::process_evaluation(size_t length) noexcept
 {
-  byte += length;
-  packet++;
+  sent_byte += length;
+  sent_packet++;
 
-  if (!eval) {
+  if (!mode_eval) {
     return;
   }
 
@@ -85,14 +110,14 @@ void Options::process_evaluation(size_t length) noexcept
   time_diff = (double)(time_now - time_start) / CLOCKS_PER_SEC;
 
   if (time_diff) {
-    kbps = (double)byte / KBYTE / time_diff;
-    kpps = (double)packet / KPACKET / time_diff;
+    perf_kbps = (double)sent_byte / KBYTE / time_diff;
+    perf_kpps = (double)sent_packet / KPACKET / time_diff;
   }
 }
 
 void Options::report_evaluation() noexcept
 {
-  if (!eval) {
+  if (!mode_eval) {
     return;
   }
 
@@ -105,21 +130,14 @@ void Options::report_evaluation() noexcept
   } else {
     fprintf(stdout, "Input File  : invalid\n");
   }
-  fprintf(stdout, "Sent Bytes  : %lu(%.2fM) (%.2f MBps)\n", byte,
-          (double)byte / MBYTE, kbps / KBYTE);
-  fprintf(stdout, "Sent Packets: %lu(%.2fM) (%.2f Kpps)\n", packet,
-          (double)packet / MPACKET, kpps);
-  fprintf(stdout, "Elapsed Time: %.2f Sec.\n", time_diff);
+  fprintf(stdout, "Sent Bytes  : %lu(%.2fM)\n", sent_byte,
+          (double)sent_byte / MBYTE);
+  fprintf(stdout, "Sent Packets: %lu(%.2fM)\n", sent_packet,
+          (double)sent_packet / MPACKET);
+  fprintf(stdout, "Elapsed Time: %.2fs\n", time_diff);
+  fprintf(stdout, "Performance : %.2fMBps/%.2fKpps\n", perf_kbps / KBYTE,
+          perf_kpps);
   fprintf(stdout, "--------------------------------------------------\n");
-}
-
-bool Options::check_count() noexcept
-{
-  if (count == 0 || packet < count) {
-    return false;
-  }
-
-  return true;
 }
 
 // vim: et:ts=2:sw=2
