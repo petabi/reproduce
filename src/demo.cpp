@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 #include <unistd.h>
 
@@ -121,7 +122,7 @@ int main(int argc, char** argv)
     // FIXME: we need Pcap() default constructor (without input)
     Pcap pcap(opt.input);
     Rdkafka_producer rp(opt);
-    string message;
+    char message[1024];
 
     /* FIXME: skip_bytes() --> skip_packets()
     if (opt.skip) {
@@ -130,21 +131,21 @@ int main(int argc, char** argv)
     */
 
     if (opt.mode_parse) {
-      message = sample_data;
+      strcpy(message, sample_data);
     }
-
+    size_t stream_length = 0;
     while (true) {
       if (!opt.mode_parse) {
-        message = pcap.get_next_stream();
+        stream_length = pcap.get_next_stream(message);
       }
-      if (message.empty()) {
+      if (stream_length == 0) {
         break;
       }
       if (!opt.mode_kafka) {
-        rp.produce(message);
+        rp.produce(string(message));
       }
-      opt.process_evaluation(message.length());
-      opt.mprint("%s", message.c_str());
+      opt.process_evaluation(stream_length);
+      opt.mprint("%s", message);
       if (opt.check_count()) {
         break;
       }

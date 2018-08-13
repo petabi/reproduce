@@ -45,12 +45,13 @@ public:
   Pcap& operator=(const Pcap&&) = delete;
   ~Pcap();
   bool skip_bytes(size_t size);
-  std::string get_next_stream();
+  size_t get_next_stream(char* message);
 
 private:
   FILE* pcapfile;
-  std::ostringstream log_stream;
   unsigned int linktype;
+  char* ptr;
+  int stream_length = 0;
   size_t (Pcap::*get_datalink_process())(unsigned char* offset);
   size_t (Pcap::*get_internet_process(uint16_t ether_type))(
       unsigned char* offset);
@@ -66,6 +67,7 @@ private:
   bool payload_process(size_t remain_len);
   std::string print_ip_addr(const unsigned char* ip_addr);
   std::string print_mac_addr(const unsigned char* mac_addr);
+  void add_token_to_stream(const char* fmt, ...);
 };
 
 #endif
