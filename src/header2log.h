@@ -45,29 +45,29 @@ public:
   Pcap& operator=(const Pcap&&) = delete;
   ~Pcap();
   bool skip_bytes(size_t size);
-  size_t get_next_stream(char* message);
+  size_t get_next_stream(char* message, size_t size);
 
 private:
   FILE* pcapfile;
   unsigned int linktype;
+  char packet_buf[512];
   char* ptr;
   int stream_length = 0;
-  size_t (Pcap::*get_datalink_process())(unsigned char* offset);
-  size_t (Pcap::*get_internet_process(uint16_t ether_type))(
-      unsigned char* offset);
-  size_t (Pcap::*get_transport_process(uint8_t ip_p))(unsigned char* offset);
+  size_t (Pcap::*get_datalink_process())(char* offset);
+  size_t (Pcap::*get_internet_process(uint16_t ether_type))(char* offset);
+  size_t (Pcap::*get_transport_process(uint8_t ip_p))(char* offset);
   size_t pcap_header_process();
-  size_t ethernet_process(unsigned char* offset);
-  size_t ipv4_process(unsigned char* offset);
-  size_t arp_process(unsigned char* offset);
-  size_t icmp_process(unsigned char* offset);
-  size_t udp_process(unsigned char* offset);
-  size_t tcp_process(unsigned char* offset);
-  size_t null_process(unsigned char* offset);
+  size_t ethernet_process(char* offset);
+  size_t ipv4_process(char* offset);
+  size_t arp_process(char* offset);
+  size_t icmp_process(char* offset);
+  size_t udp_process(char* offset);
+  size_t tcp_process(char* offset);
+  size_t null_process(char* offset);
   bool payload_process(size_t remain_len);
-  std::string print_ip_addr(const unsigned char* ip_addr);
-  std::string print_mac_addr(const unsigned char* mac_addr);
   void add_token_to_stream(const char* fmt, ...);
 };
 
 #endif
+
+// vim: et:ts=2:sw=2

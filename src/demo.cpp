@@ -9,6 +9,8 @@
 
 using namespace std;
 
+#define MESSAGE_SIZE 1024
+
 static const char* program_name = "header2log";
 static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
@@ -74,7 +76,7 @@ int main(int argc, char** argv)
     case 'o':
       opt.output = optarg;
       output_file.open(opt.output, ios::out);
-	  if (!output_file.is_open())
+      if (!output_file.is_open())
         opt.dprint(F, "exception: %s", "failed access output file");
       opt.mode_write_output = true;
       break;
@@ -127,7 +129,8 @@ int main(int argc, char** argv)
     // FIXME: we need Pcap() default constructor (without input)
     Pcap pcap(opt.input);
     Rdkafka_producer rp(opt);
-    char message[1024];
+    char message[MESSAGE_SIZE];
+    size_t length = 0;
 
     /* FIXME: skip_bytes() --> skip_packets()
     if (opt.skip) {
@@ -138,23 +141,22 @@ int main(int argc, char** argv)
     if (opt.mode_parse) {
       strcpy(message, sample_data);
     }
-    size_t stream_length = 0;
-	int i =0;
+
     while (true) {
-		i++;
       if (!opt.mode_parse) {
-        stream_length = pcap.get_next_stream(message);
+        length = pcap.get_next_stream(message, MESSAGE_SIZE);
       }
-      if (stream_length == 0) {
+      if (length == 0) {
         break;
       }
       if (!opt.mode_kafka) {
         rp.produce(string(message));
       }
-      opt.process_evaluation(stream_length);
+      opt.process_evaluation(length);
       opt.mprint("%s", message);
-      if (opt.mode_write_output)
+      if (opt.mode_write_output) {
         opt.fprint(output_file, message);
+      }
       if (opt.check_count()) {
         break;
       }
