@@ -24,7 +24,6 @@ Pcap::Pcap(const std::string& filename)
   pcapfile = fopen(filename.c_str(), "r");
   if (pcapfile == nullptr)
     throw std::runtime_error("could not open [" + filename + "]");
-
   struct pcap_file_header pfh;
   if (fread(&pfh, sizeof(pfh), 1, pcapfile) < 1)
     throw std::runtime_error(filename + " is not an appropriate pcap file");
@@ -68,10 +67,8 @@ size_t Pcap::get_next_stream(char* message)
 {
   size_t process_len = 0;
   size_t packet_len = 0;
-
   ptr = message;
   stream_length = 0;
-
   packet_len = pcap_header_process();
   if (packet_len == static_cast<size_t>(-1))
     return 0;
@@ -79,17 +76,14 @@ size_t Pcap::get_next_stream(char* message)
   if (fread(packet.get(), packet_len, 1, pcapfile) < 1) {
     return 0;
   }
-
   process_len = std::invoke(get_datalink_process(), this, packet.get());
   if (process_len == static_cast<size_t>(-1))
     throw std::runtime_error("failed to read packet header");
   // TODO : Add payload process
-
   /*
     packet_len -= process_len;
       if (!payload_process(packet_len))
         throw std::runtime_error("failed to read packet payload");
-
   */
   packet.release();
   return stream_length;
@@ -159,18 +153,15 @@ size_t Pcap::pcap_header_process()
 {
   // Pcap File Header
   struct pcap_pkthdr pp;
-  char* cap_time = nullptr;
   long sec;
   if (fread(&pp, sizeof(pp), 1, pcapfile) < 1)
     return -1;
   sec = (long)pp.ts.tv_sec;
-
-  cap_time = (char*)ctime((const time_t*)&sec);
-  cap_time[strlen(cap_time) - 1] = '\0';
-
-  add_token_to_stream("%d %s ", pp.len, cap_time);
-  // add_token_to_stream( "%d %d ", pp.len, pp.ts.tv_sec);
-
+  // TODO: Fix to enhance performance
+  // char* cap_time = nullptr;
+  // cap_time = (char*)ctime((const time_t*)&sec);
+  // cap_time[strlen(cap_time) - 1] = '\0';
+  add_token_to_stream("%d ", sec);
   return (size_t)pp.caplen;
 }
 
@@ -178,15 +169,12 @@ size_t Pcap::ethernet_process(unsigned char* offset)
 {
   struct ether_header* eh = reinterpret_cast<ether_header*>(offset);
   size_t process_len = 0;
-
   offset += sizeof(struct ether_header);
   process_len += sizeof(struct ether_header);
-
   add_token_to_stream("%02x:%02x:%02x:%02x:%02x:%02x ", (eh->ether_dhost)[0],
                       (eh->ether_dhost)[1], (eh->ether_dhost)[2],
                       (eh->ether_dhost)[3], (eh->ether_dhost)[4],
                       (eh->ether_dhost)[5]);
-
   add_token_to_stream("%02x:%02x:%02x:%02x:%02x:%02x ", (eh->ether_shost)[0],
                       (eh->ether_shost)[1], (eh->ether_shost)[2],
                       (eh->ether_shost)[3], (eh->ether_shost)[4],
@@ -203,17 +191,14 @@ size_t Pcap::ipv4_process(unsigned char* offset)
   struct ip* iph = reinterpret_cast<ip*>(offset);
   size_t opt = 0;
   size_t process_len = 0;
-
   offset += sizeof(IP_MINLEN);
   process_len += IP_MINLEN;
-
   add_token_to_stream("%d %d %d %d %d %d %d %d %d.%d.%d.%d %d.%d.%d.%d ",
                       IP_V(iph->ip_vhl), IP_HL(iph->ip_vhl), iph->ip_tos,
                       iph->ip_len, iph->ip_id, iph->ip_off, iph->ip_ttl,
                       iph->ip_sum, iph->ip_src[0], iph->ip_src[1],
                       iph->ip_src[2], iph->ip_src[3], iph->ip_dst[0],
                       iph->ip_dst[1], iph->ip_dst[2], iph->ip_dst[3]);
-
   opt = IP_HL(iph->ip_vhl) * 4 - sizeof(IP_MINLEN);
   if (opt != 0) {
     offset += opt;
@@ -231,10 +216,8 @@ size_t Pcap::arp_process(unsigned char* offset)
   struct arp_pkthdr* arph = reinterpret_cast<arp_pkthdr*>(offset);
   uint16_t hrd = 0, pro = 0;
   size_t process_len = 0;
-
   offset += sizeof(arph);
   process_len += sizeof(arph);
-
   hrd = htons(arph->ar_hrd);
   pro = htons(arph->ar_pro);
   add_token_to_stream("%s %s ", arpop_values.find(hrd)->second,
@@ -243,7 +226,6 @@ size_t Pcap::arp_process(unsigned char* offset)
       arph->ar_hln != 6) {
     return process_len;
   }
-
   unsigned char* eth_sha = offset;
   offset += arph->ar_hln;
   process_len += arph->ar_hln;
@@ -262,14 +244,12 @@ size_t Pcap::arp_process(unsigned char* offset)
                         ip_tpa[1], ip_tpa[2], ip_tpa[3], ip_spa[0], ip_spa[1],
                         ip_spa[2], ip_spa[3]);
     break;
-
   case ARPOP_REPLY:
     add_token_to_stream("%d.%d.%d.%d is-at %02x:%02x:%02x:%02x:%02x:%02x ",
                         ip_spa[0], ip_spa[1], ip_spa[2], ip_spa[3], eth_sha[0],
                         eth_sha[1], eth_sha[2], eth_sha[3], eth_sha[4],
                         eth_sha[5]);
     break;
-
   case ARPOP_REVREQUEST:
     add_token_to_stream("who-is %02x:%02x:%02x:%02x:%02x:%02x tell "
                         "%02x:%02x:%02x:%02x:%02x:%02x ",
@@ -277,14 +257,12 @@ size_t Pcap::arp_process(unsigned char* offset)
                         eth_tha[4], eth_tha[5], eth_tha[0], eth_sha[1],
                         eth_sha[2], eth_sha[3], eth_sha[4], eth_sha[5]);
     break;
-
   case ARPOP_REVREPLY:
     add_token_to_stream("%02x:%02x:%02x:%02x:%02x:%02x at %d.%d.%d.%d ",
                         eth_tha[0], eth_tha[1], eth_tha[2], eth_tha[3],
                         eth_tha[4], eth_tha[5], ip_tpa[0], ip_tpa[1], ip_tpa[2],
                         ip_tpa[3]);
     break;
-
   case ARPOP_INVREQUEST:
     add_token_to_stream("who-is %02x:%02x:%02x:%02x:%02x:%02x tell "
                         "%02x:%02x:%02x:%02x:%02x:%02x ",
@@ -292,7 +270,6 @@ size_t Pcap::arp_process(unsigned char* offset)
                         eth_tha[4], eth_tha[5], eth_tha[0], eth_sha[1],
                         eth_sha[2], eth_sha[3], eth_sha[4], eth_sha[5]);
     break;
-
   case ARPOP_INVREPLY:
     add_token_to_stream("%02x:%02x:%02x:%02x:%02x:%02x at %d.%d.%d.%d ",
                         eth_sha[0], eth_sha[1], eth_sha[2], eth_sha[3],
@@ -302,7 +279,6 @@ size_t Pcap::arp_process(unsigned char* offset)
   default:
     break;
   }
-
   return process_len;
 }
 
@@ -310,7 +286,6 @@ bool Pcap::payload_process(size_t remain_len)
 {
   if (remain_len == 0)
     return true;
-
   return true;
 }
 
@@ -320,21 +295,25 @@ size_t Pcap::tcp_process(unsigned char* offset)
 {
   struct tcphdr* tcph = reinterpret_cast<tcphdr*>(offset);
   size_t process_len = 0;
-
   offset += TCP_MINLEN;
   process_len += TCP_MINLEN;
-
-  add_token_to_stream(
-      "%d %d %d %d %d %c %c %c %c %c %c %d %d %d ", ntohs(tcph->th_sport),
-      ntohs(tcph->th_dport), ntohl(tcph->th_seq), ntohl(tcph->th_ack),
-      TCP_HLEN(tcph->th_offx2) * 4, (tcph->th_flags & TH_URG ? 'U' : '\0'),
-      (tcph->th_flags & TH_ACK ? 'A' : '\0'),
-      (tcph->th_flags & TH_PUSH ? 'P' : '\0'),
-      (tcph->th_flags & TH_RST ? 'R' : '\0'),
-      (tcph->th_flags & TH_SYN ? 'S' : '\0'),
-      (tcph->th_flags & TH_FIN ? 'F' : '\0'), ntohs(tcph->th_win),
-      ntohs(tcph->th_sum), tcph->th_urp);
-
+  add_token_to_stream("%d %d %u %u %d ", ntohs(tcph->th_sport),
+                      ntohs(tcph->th_dport), ntohl(tcph->th_seq),
+                      ntohl(tcph->th_ack), TCP_HLEN(tcph->th_offx2) * 4);
+  if (tcph->th_flags & TH_URG)
+    add_token_to_stream("%c", 'U');
+  if (tcph->th_flags & TH_ACK)
+    add_token_to_stream("%c", 'A');
+  if (tcph->th_flags & TH_PUSH)
+    add_token_to_stream("%c", 'P');
+  if (tcph->th_flags & TH_RST)
+    add_token_to_stream("%c", 'R');
+  if (tcph->th_flags & TH_SYN)
+    add_token_to_stream("%c", 'S');
+  if (tcph->th_flags & TH_FIN)
+    add_token_to_stream("%c", 'F');
+  add_token_to_stream(" %d %d %d ", ntohs(tcph->th_win), ntohs(tcph->th_sum),
+                      tcph->th_urp);
   /* TODO:Fix performance problem
     uint16_t service = static_cast<uint16_t>(
         std::min(std::min(ntohs(tcph->th_sport), ntohs(tcph->th_dport)),
@@ -342,7 +321,6 @@ size_t Pcap::tcp_process(unsigned char* offset)
     if (service < MAX_DEFINED_PORT_NUMBER)
       add_token_to_stream("%s ", TCP_PORT_SERV_DICT.find(service)->second);
   */
-
   return process_len;
 }
 
@@ -350,14 +328,11 @@ size_t Pcap::udp_process(unsigned char* offset)
 {
   struct udphdr* udph = reinterpret_cast<udphdr*>(offset);
   size_t process_len = 0;
-
   offset += sizeof(struct udphdr);
   process_len += sizeof(struct udphdr);
-
   add_token_to_stream("%d %d %d %d ", ntohs(udph->uh_sport),
                       ntohs(udph->uh_dport), ntohs(udph->uh_ulen),
                       ntohs(udph->uh_sum));
-
   return process_len;
 }
 
@@ -365,46 +340,23 @@ size_t Pcap::icmp_process(unsigned char* offset)
 {
   struct icmp* icmph = reinterpret_cast<icmp*>(offset);
   size_t process_len = 0;
-
   offset += ICMP_MINLEN;
   process_len += ICMP_MINLEN;
-
   add_token_to_stream("%d %d %d ", icmph->icmp_type, icmph->icmp_code,
                       icmph->icmp_cksum);
-
   if ((unsigned int)(icmph->icmp_type) == 11)
     add_token_to_stream("%s ", "ttl_expired ");
   else if ((unsigned int)(icmph->icmp_type) == ICMP_ECHOREPLY)
     add_token_to_stream("%s ", " echo_reply");
-
   return process_len;
-}
-
-std::string Pcap::print_ip_addr(const unsigned char* ip_addr)
-{
-  char str_ip_addr[16];
-  snprintf(str_ip_addr, sizeof(str_ip_addr), "%d.%d.%d.%d", ip_addr[0],
-           ip_addr[1], ip_addr[2], ip_addr[3]);
-  return std::string(str_ip_addr);
-}
-
-std::string Pcap::print_mac_addr(const unsigned char* mac_addr)
-{
-  char str_mac_addr[18];
-  snprintf(str_mac_addr, sizeof(str_mac_addr), "%02x:%02x:%02x:%02x:%02x:%02x",
-           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4],
-           mac_addr[5]);
-  return std::string(str_mac_addr);
 }
 
 void Pcap::add_token_to_stream(const char* fmt, ...)
 {
-
   va_list args;
   va_start(args, fmt);
   int len = vsprintf(ptr, fmt, args);
   va_end(args);
-
   ptr += len;
   stream_length += len;
 }
