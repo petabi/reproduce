@@ -1,6 +1,7 @@
 #include <cstring>
 #include <iostream>
 #include <unistd.h>
+#include <fstream>
 
 #include "header2log.h"
 #include "options.h"
@@ -43,6 +44,7 @@ int main(int argc, char** argv)
 {
   int o;
   Options opt;
+  std::ofstream output_file;
 
   while ((o = getopt(argc, argv, "b:c:defhi:ko:pq:s:t:")) != -1) {
     switch (o) {
@@ -70,8 +72,11 @@ int main(int argc, char** argv)
       opt.mode_kafka = true;
       break;
     case 'o':
-      // FIXME: not implemented yet
       opt.output = optarg;
+      output_file.open(opt.output, ios::out);
+	  if (!output_file.is_open())
+        opt.dprint(F, "exception: %s", "failed access output file");
+      opt.mode_write_output = true;
       break;
     case 'p':
       opt.mode_parse = true;
@@ -134,7 +139,9 @@ int main(int argc, char** argv)
       strcpy(message, sample_data);
     }
     size_t stream_length = 0;
+	int i =0;
     while (true) {
+		i++;
       if (!opt.mode_parse) {
         stream_length = pcap.get_next_stream(message);
       }
@@ -146,6 +153,8 @@ int main(int argc, char** argv)
       }
       opt.process_evaluation(stream_length);
       opt.mprint("%s", message);
+      if (opt.mode_write_output)
+        opt.fprint(output_file, message);
       if (opt.check_count()) {
         break;
       }

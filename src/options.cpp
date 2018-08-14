@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <sys/stat.h>
+#include <fstream>
 
 #include "options.h"
 
@@ -79,6 +80,13 @@ void Options::mprint(const char* fmt, ...) noexcept
   fprintf(stdout, "\n");
 }
 
+void Options::fprint(std::ofstream& stream, const char* message) noexcept
+{
+  if(!stream.is_open())
+    return;
+  stream << message << '\n';
+}
+
 bool Options::check_count() noexcept
 {
   if (count_send == 0 || sent_packet < count_send) {
@@ -139,5 +147,4 @@ void Options::report_evaluation() noexcept
           perf_kpps);
   fprintf(stdout, "--------------------------------------------------\n");
 }
-
 // vim: et:ts=2:sw=2
