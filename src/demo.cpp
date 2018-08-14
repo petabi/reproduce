@@ -1,7 +1,7 @@
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <unistd.h>
-#include <fstream>
 
 #include "header2log.h"
 #include "options.h"

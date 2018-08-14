@@ -1,6 +1,6 @@
+#include <fstream>
 #include <stdarg.h>
 #include <sys/stat.h>
-#include <fstream>
 
 #include "options.h"
 
@@ -82,7 +82,7 @@ void Options::mprint(const char* fmt, ...) noexcept
 
 void Options::fprint(std::ofstream& stream, const char* message) noexcept
 {
-  if(!stream.is_open())
+  if (!stream.is_open())
     return;
   stream << message << '\n';
 }

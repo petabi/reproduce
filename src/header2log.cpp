@@ -129,8 +129,7 @@ size_t (Pcap::*Pcap::get_datalink_process())(char* offset)
   return &Pcap::null_process;
 }
 
-size_t (Pcap::*Pcap::get_internet_process(uint16_t ether_type))(
-    char* offset)
+size_t (Pcap::*Pcap::get_internet_process(uint16_t ether_type))(char* offset)
 {
   switch (htons(ether_type)) {
   case ETHERTYPE_IP:
@@ -187,17 +186,16 @@ size_t Pcap::ethernet_process(char* offset)
   offset += sizeof(struct ether_header);
   process_len += sizeof(struct ether_header);
 
-  add_token_to_stream("Ethernet2 %02x:%02x:%02x:%02x:%02x:%02x ", (eh->ether_dhost)[0],
-                      (eh->ether_dhost)[1], (eh->ether_dhost)[2],
-                      (eh->ether_dhost)[3], (eh->ether_dhost)[4],
-                      (eh->ether_dhost)[5]);
+  add_token_to_stream("Ethernet2 %02x:%02x:%02x:%02x:%02x:%02x ",
+                      (eh->ether_dhost)[0], (eh->ether_dhost)[1],
+                      (eh->ether_dhost)[2], (eh->ether_dhost)[3],
+                      (eh->ether_dhost)[4], (eh->ether_dhost)[5]);
   add_token_to_stream("%02x:%02x:%02x:%02x:%02x:%02x ", (eh->ether_shost)[0],
                       (eh->ether_shost)[1], (eh->ether_shost)[2],
                       (eh->ether_shost)[3], (eh->ether_shost)[4],
                       (eh->ether_shost)[5]);
 
-  process_len +=
-      invoke(get_internet_process(eh->ether_type), this, offset);
+  process_len += invoke(get_internet_process(eh->ether_type), this, offset);
   if (process_len == static_cast<size_t>(-1)) {
     throw runtime_error("failed to read internet header");
   }
@@ -329,16 +327,14 @@ size_t Pcap::tcp_process(char* offset)
   offset += TCP_MINLEN;
   process_len += TCP_MINLEN;
 
-  add_token_to_stream("TCP %d %d %u %u %d %s%s%s%s%s%s %d %d %d ",
-      ntohs(tcph->th_sport), ntohs(tcph->th_dport), ntohl(tcph->th_seq),
-      ntohl(tcph->th_ack), TCP_HLEN(tcph->th_offx2) * 4,
-      tcph->th_flags & TH_URG?"U":"",
-      tcph->th_flags & TH_ACK?"A":"",
-      tcph->th_flags & TH_PUSH?"P":"",
-      tcph->th_flags & TH_RST?"R":"",
-      tcph->th_flags & TH_SYN?"S":"",
-      tcph->th_flags & TH_FIN?"F":"",
-      ntohs(tcph->th_win), ntohs(tcph->th_sum), tcph->th_urp);
+  add_token_to_stream(
+      "TCP %d %d %u %u %d %s%s%s%s%s%s %d %d %d ", ntohs(tcph->th_sport),
+      ntohs(tcph->th_dport), ntohl(tcph->th_seq), ntohl(tcph->th_ack),
+      TCP_HLEN(tcph->th_offx2) * 4, tcph->th_flags & TH_URG ? "U" : "",
+      tcph->th_flags & TH_ACK ? "A" : "", tcph->th_flags & TH_PUSH ? "P" : "",
+      tcph->th_flags & TH_RST ? "R" : "", tcph->th_flags & TH_SYN ? "S" : "",
+      tcph->th_flags & TH_FIN ? "F" : "", ntohs(tcph->th_win),
+      ntohs(tcph->th_sum), tcph->th_urp);
 
 #if 0
   // TODO: Fix performance problem
