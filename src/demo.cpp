@@ -16,9 +16,7 @@ static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
 static const size_t default_count_queue = 1000;
 static const char* sample_data =
-    "Thu Jul 19 06:13:51 2018 Ethernet2 40:61:86:82:e9:26 a4:7b:2c:1f:eb:61 IP "
-    "4 5 0 5 9 0 8 15 183.111.246.132 59.7.91.240 TCP 443 22866 3705800231 "
-    "115518086 20";
+"1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 86734452 2522990538 20 A 16425 7168 0";
 static const size_t sample_count = 1000000;
 
 void help()
@@ -140,14 +138,16 @@ int main(int argc, char** argv)
 
     if (opt.mode_parse) {
       strcpy(message, sample_data);
+      length = strlen(message);
+      opt.dprint(F, "message=%s (%d)", message, length);
     }
 
     while (true) {
       if (!opt.mode_parse) {
         length = pcap.get_next_stream(message, MESSAGE_SIZE);
-      }
-      if (length == 0) {
-        break;
+        if (length == 0) {
+          break;
+        }
       }
       if (!opt.mode_kafka) {
         rp.produce(string(message));
