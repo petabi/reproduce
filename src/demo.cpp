@@ -126,7 +126,7 @@ int main(int argc, char** argv)
   try {
     // FIXME: we need Pcap() default constructor (without input)
     Pcap pcap(opt.input);
-    Rdkafka_producer rp(opt);
+    RdkafkaProducer rp(opt);
     char message[MESSAGE_SIZE];
     size_t length = 0;
 

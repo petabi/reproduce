@@ -41,7 +41,7 @@ void RdEventCb::event_cb(RdKafka::Event& event)
   }
 }
 
-Rdkafka_producer::Rdkafka_producer(const Options& _opt)
+RdkafkaProducer::RdkafkaProducer(const Options& _opt)
     : opt(_opt), queue_count(0)
 {
   if (opt.broker.empty() || opt.topic.empty()) {
@@ -120,7 +120,7 @@ Rdkafka_producer::Rdkafka_producer(const Options& _opt)
   }
 }
 
-void Rdkafka_producer::wait_queue(const int count) noexcept
+void RdkafkaProducer::wait_queue(const int count) noexcept
 {
   while (producer->outq_len() > count) {
     opt.dprint(F, "waiting for %d", producer->outq_len());
@@ -130,7 +130,7 @@ void Rdkafka_producer::wait_queue(const int count) noexcept
   }
 }
 
-bool Rdkafka_producer::produce_core(const string& message) noexcept
+bool RdkafkaProducer::produce_core(const string& message) noexcept
 {
   // Produce message
   RdKafka::ErrorCode resp = producer->produce(
@@ -150,7 +150,7 @@ bool Rdkafka_producer::produce_core(const string& message) noexcept
   return true;
 }
 
-bool Rdkafka_producer::produce(const string& message) noexcept
+bool RdkafkaProducer::produce(const string& message) noexcept
 {
   queue_count++;
   queue_data += message;
@@ -169,7 +169,7 @@ bool Rdkafka_producer::produce(const string& message) noexcept
   return true;
 }
 
-Rdkafka_producer::~Rdkafka_producer()
+RdkafkaProducer::~RdkafkaProducer()
 {
   opt.dprint(F, "last queued data: %u", queue_data.size());
 
