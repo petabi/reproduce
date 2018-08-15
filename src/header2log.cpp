@@ -137,7 +137,7 @@ size_t (Pcap::*Pcap::get_internet_process(uint16_t ether_type))(char* offset)
   case ETHERTYPE_ARP:
     return &Pcap::arp_process;
   default:
-    add_token_to_stream("%s%d ", "UKNOWN_INTERNET_", htons(ether_type));
+    add_token_to_stream("Unknown_L3(%d) ", htons(ether_type));
     break;
   }
 
@@ -186,14 +186,12 @@ size_t Pcap::ethernet_process(char* offset)
   offset += sizeof(struct ether_header);
   process_len += sizeof(struct ether_header);
 
-  add_token_to_stream("Ethernet2 %02x:%02x:%02x:%02x:%02x:%02x ",
-                      (eh->ether_dhost)[0], (eh->ether_dhost)[1],
-                      (eh->ether_dhost)[2], (eh->ether_dhost)[3],
-                      (eh->ether_dhost)[4], (eh->ether_dhost)[5]);
-  add_token_to_stream("%02x:%02x:%02x:%02x:%02x:%02x ", (eh->ether_shost)[0],
-                      (eh->ether_shost)[1], (eh->ether_shost)[2],
-                      (eh->ether_shost)[3], (eh->ether_shost)[4],
-                      (eh->ether_shost)[5]);
+  add_token_to_stream(
+      "Ethernet2 %02x:%02x:%02x:%02x:%02x:%02x %02x:%02x:%02x:%02x:%02x:%02x ",
+      (eh->ether_dhost)[0], (eh->ether_dhost)[1], (eh->ether_dhost)[2],
+      (eh->ether_dhost)[3], (eh->ether_dhost)[4], (eh->ether_dhost)[5],
+      (eh->ether_shost)[0], (eh->ether_shost)[1], (eh->ether_shost)[2],
+      (eh->ether_shost)[3], (eh->ether_shost)[4], (eh->ether_shost)[5]);
 
   process_len += invoke(get_internet_process(eh->ether_type), this, offset);
   if (process_len == static_cast<size_t>(-1)) {
@@ -369,13 +367,12 @@ size_t Pcap::icmp_process(char* offset)
   offset += ICMP_MINLEN;
   process_len += ICMP_MINLEN;
 
-  add_token_to_stream("ICMP %d %d %d ", icmph->icmp_type, icmph->icmp_code,
-                      icmph->icmp_cksum);
-
   if ((unsigned int)(icmph->icmp_type) == 11) {
-    add_token_to_stream("%s ", "ttl_expired ");
+    add_token_to_stream("ICMP %d %d %d %s ", icmph->icmp_type, icmph->icmp_code,
+                        icmph->icmp_cksum, "ttl_expired");
   } else if ((unsigned int)(icmph->icmp_type) == ICMP_ECHOREPLY) {
-    add_token_to_stream("%s ", " echo_reply");
+    add_token_to_stream("ICMP %d %d %d %s ", icmph->icmp_type, icmph->icmp_code,
+                        icmph->icmp_cksum, "echo_reply");
   }
 
   return process_len;
