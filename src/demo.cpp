@@ -77,7 +77,6 @@ int main(int argc, char** argv)
       conf.count_queue = strtoul(optarg, nullptr, 0);
       break;
     case 's':
-      // FIXME: not implemented yet
       conf.count_skip = strtoul(optarg, nullptr, 0);
       break;
     case 't':
@@ -103,11 +102,11 @@ int main(int argc, char** argv)
     char message[MESSAGE_SIZE];
     size_t length = 0;
 
-    /* FIXME: skip_bytes() --> skip_packets()
-    if (opt.skip) {
-      pcap.skip_bytes(opt.skip);
+    if (conf.count_skip) {
+      if (!pcap.skip_packets(conf.count_skip)) {
+        opt.dprint(F, "failed to skip(%d)", conf.count_skip);
+      }
     }
-    */
 
     if (conf.mode_parse) {
       strcpy(message, sample_data);

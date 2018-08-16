@@ -56,17 +56,19 @@ Pcap::~Pcap()
   }
 }
 
-bool Pcap::skip_bytes(size_t size)
+bool Pcap::skip_packets(size_t count_skip)
 {
-  size_t packet_len = 0;
-  while (packet_len < size) {
-    packet_len = pcap_header_process();
-    if (packet_len == static_cast<size_t>(-1)) {
+  if (count_skip < 0)
+    return false;
+
+  struct pcap_pkthdr pp;
+  size_t count = 0;
+  while (count < count_skip) {
+    if (fread(&pp, 1, sizeof(pp), pcapfile) != sizeof(pp)) {
       return false;
     }
-    if (!payload_process(packet_len)) {
-      return false;
-    }
+    fseek(pcapfile, pp.caplen, SEEK_CUR);
+    count++;
   }
 
   return true;

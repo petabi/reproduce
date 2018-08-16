@@ -44,7 +44,7 @@ public:
   Pcap(Pcap&& other) noexcept;
   Pcap& operator=(const Pcap&&) = delete;
   ~Pcap();
-  bool skip_bytes(size_t size);
+  bool skip_packets(size_t size);
   size_t get_next_stream(char* message, size_t size);
 
 private:
