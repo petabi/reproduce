@@ -41,7 +41,7 @@ void RdEventCb::event_cb(RdKafka::Event& event)
 RdkafkaProducer::RdkafkaProducer(const Options& _opt)
     : opt(_opt), queue_count(0)
 {
-  if (opt.broker.empty() || opt.topic.empty()) {
+  if (opt.conf.broker.empty() || opt.conf.topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
   }
 
@@ -61,7 +61,7 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt)
   string errstr;
 
   // Set configuration properties
-  if (conf->set("metadata.broker.list", opt.broker, errstr) !=
+  if (conf->set("metadata.broker.list", opt.conf.broker, errstr) !=
       RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: metadata.broker.list");
   }
@@ -99,7 +99,7 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt)
 #endif
 
   // show kafka producer config
-  if (opt.mode_debug) {
+  if (opt.conf.mode_debug) {
     int pass;
     for (pass = 0; pass < 2; pass++) {
       list<string>* dump;
@@ -126,8 +126,8 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt)
   }
 
   // Create topic handle
-  topic.reset(
-      RdKafka::Topic::create(producer.get(), opt.topic, tconf.get(), errstr));
+  topic.reset(RdKafka::Topic::create(producer.get(), opt.conf.topic,
+                                     tconf.get(), errstr));
   if (!topic) {
     throw runtime_error("Failed to create topic: " + errstr);
   }
@@ -168,7 +168,7 @@ bool RdkafkaProducer::produce(const string& message) noexcept
   queue_count++;
   queue_data += message;
 
-  if (queue_count < opt.count_queue) {
+  if (queue_count < opt.conf.count_queue) {
     return true;
   }
 

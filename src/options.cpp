@@ -1,4 +1,3 @@
-#include <fstream>
 #include <stdarg.h>
 #include <sys/stat.h>
 
@@ -9,36 +8,101 @@ static const double MBYTE = KBYTE * KBYTE;
 static const double KPACKET = 1000.0;
 static const double MPACKET = KPACKET * KPACKET;
 
-Options::Options()
-    : mode_debug(false), mode_eval(false), mode_kafka(false), mode_parse(false),
-      count_send(0), count_skip(0), count_queue(0), sent_byte(0),
-      sent_packet(0), perf_kbps(0), perf_kpps(0), time_start(0), time_now(0),
-      time_diff(0), input_type(InputType::None)
+// default config
+static const char* default_broker = "localhost:9092";
+static const char* default_topic = "pcap";
+static const size_t default_count_queue = 1000;
+static const size_t sample_count = 1000000;
+
+Options::Options(const Config& _conf)
+    : conf(_conf), sent_byte(0), sent_packet(0), perf_kbps(0), perf_kpps(0),
+      time_start(0), time_now(0), time_diff(0), input_type(InputType::None)
 {
+  // input is madatory when mode_parse is not set
+  if (conf.input.empty() && !conf.mode_parse) {
+    throw std::runtime_error("");
+  }
+
+  // set default value
+  if (conf.broker.empty()) {
+    conf.broker = default_broker;
+  }
+  if (conf.topic.empty()) {
+    conf.topic = default_topic;
+  }
+  if (conf.mode_parse && conf.count_send == 0) {
+    conf.count_send = sample_count;
+  }
+  if (conf.count_queue == 0) {
+    conf.count_queue = default_count_queue;
+  }
+
+  if (!conf.output.empty()) {
+    if (!open_output_file()) {
+      throw std::runtime_error(std::string("Failed to open output file: ") +
+                               conf.output.c_str());
+    }
+  }
 }
 
-Options::~Options() {}
+Options::Options(const Options& other)
+{
+  conf = other.conf;
+  sent_byte = other.sent_byte;
+  sent_packet = other.sent_packet;
+  perf_kbps = other.perf_kbps;
+  perf_kpps = other.perf_kpps;
+  time_start = other.time_start;
+  time_now = other.time_now;
+  time_diff = other.time_diff;
+  input_type = other.input_type;
+  (*this).open_output_file();
+}
+
+Options& Options::operator=(const Options& other)
+{
+  if (this != &other) {
+    conf = other.conf;
+    sent_byte = other.sent_byte;
+    sent_packet = other.sent_packet;
+    perf_kbps = other.perf_kbps;
+    perf_kpps = other.perf_kpps;
+    time_start = other.time_start;
+    time_now = other.time_now;
+    time_diff = other.time_diff;
+    input_type = other.input_type;
+    (*this).open_output_file();
+  }
+  return *this;
+}
+
+Options::~Options()
+{
+  if (output_file.is_open()) {
+    output_file.close();
+  }
+}
 
 void Options::show_options() noexcept
 {
-  dprint(F, "mode_debug=%d", mode_debug);
-  dprint(F, "mode_evel=%d", mode_eval);
-  dprint(F, "mode_kafka=%d", mode_kafka);
-  dprint(F, "mode_parse=%d", mode_parse);
-  dprint(F, "count_send=%lu", count_send);
-  dprint(F, "count_skip=%lu", count_skip);
-  dprint(F, "count_queue=%u", count_queue);
-  dprint(F, "input=%s", input.c_str());
+  dprint(F, "mode_debug=%d", conf.mode_debug);
+  dprint(F, "mode_evel=%d", conf.mode_eval);
+  dprint(F, "mode_kafka=%d", conf.mode_kafka);
+  dprint(F, "mode_parse=%d", conf.mode_parse);
+  dprint(F, "count_send=%lu", conf.count_send);
+  dprint(F, "count_skip=%lu", conf.count_skip);
+  dprint(F, "count_queue=%u", conf.count_queue);
+  dprint(F, "input=%s", conf.input.c_str());
   dprint(F, "input_type=%d", input_type);
-  dprint(F, "output=%s", output.c_str());
-  dprint(F, "filter=%s", filter.c_str());
-  dprint(F, "broker=%s", broker.c_str());
-  dprint(F, "topic=%s", topic.c_str());
+  dprint(F, "output=%s", conf.output.c_str());
+  dprint(F, "filter=%s", conf.filter.c_str());
+  dprint(F, "broker=%s", conf.broker.c_str());
+  dprint(F, "topic=%s", conf.topic.c_str());
 }
 
 void Options::dprint(const char* name, const char* fmt, ...) noexcept
 {
-  if (!mode_debug) {
+  if (!conf.mode_debug) {
     return;
   }
 
@@ -64,11 +128,11 @@ void Options::eprint(const char* name, const char* fmt, ...) noexcept
 
 void Options::mprint(const char* fmt, ...) noexcept
 {
-  if (!mode_debug) {
+  if (!conf.mode_debug) {
     return;
   }
 
-  if (mode_eval) {
+  if (conf.mode_eval) {
     fprintf(stdout, "[%lu/%.1f/%lu/%.1f] ", sent_byte, perf_kbps, sent_packet,
             perf_kpps);
   }
@@ -80,16 +144,18 @@ void Options::mprint(const char* fmt, ...) noexcept
   fprintf(stdout, "\n");
 }
 
-void Options::fprint(std::ofstream& stream, const char* message) noexcept
+void Options::fprint(const char* message) noexcept
 {
-  if (!stream.is_open())
+  if (conf.output.empty()) {
     return;
-  stream << message << '\n';
+  }
+
+  output_file << message << '\n';
 }
 
 bool Options::check_count() noexcept
 {
-  if (count_send == 0 || sent_packet < count_send) {
+  if (conf.count_send == 0 || sent_packet < conf.count_send) {
     return false;
   }
 
@@ -98,7 +164,7 @@ bool Options::check_count() noexcept
 
 void Options::start_evaluation() noexcept
 {
-  if (!mode_eval) {
+  if (!conf.mode_eval) {
     return;
   }
 
@@ -110,7 +176,7 @@ void Options::process_evaluation(size_t length) noexcept
   sent_byte += length;
   sent_packet++;
 
-  if (!mode_eval) {
+  if (!conf.mode_eval) {
     return;
   }
 
@@ -125,15 +191,15 @@ void Options::process_evaluation(size_t length) noexcept
 
 void Options::report_evaluation() noexcept
 {
-  if (!mode_eval) {
+  if (!conf.mode_eval) {
     return;
   }
 
   struct stat st;
 
   fprintf(stdout, "--------------------------------------------------\n");
-  if (stat(input.c_str(), &st) != -1) {
-    fprintf(stdout, "Input File  : %s (%.2fM)\n", input.c_str(),
+  if (stat(conf.input.c_str(), &st) != -1) {
+    fprintf(stdout, "Input File  : %s (%.2fM)\n", conf.input.c_str(),
             (double)st.st_size / MBYTE);
   } else {
     fprintf(stdout, "Input File  : invalid\n");
@@ -147,4 +213,15 @@ void Options::report_evaluation() noexcept
           perf_kpps);
   fprintf(stdout, "--------------------------------------------------\n");
 }
+
+bool Options::open_output_file() noexcept
+{
+  output_file.open(conf.output, std::ios::out);
+  if (!output_file.is_open()) {
+    dprint(F, "Failed to write %s file", conf.output.c_str());
+    return false;
+  }
+  return true;
+}
+
 // vim: et:ts=2:sw=2

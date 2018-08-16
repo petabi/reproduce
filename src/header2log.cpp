@@ -29,7 +29,7 @@ Pcap::Pcap(const string& filename)
   }
 
   struct pcap_file_header pfh;
-  if (fread(&pfh, sizeof(pfh), 1, pcapfile) < 1) {
+  if (fread(&pfh, 1, sizeof(pfh), pcapfile) != sizeof(pfh)) {
     throw runtime_error(filename + " is not an appropriate pcap file");
   }
   if (pfh.magic != 0xa1b2c3d4) {
@@ -88,7 +88,7 @@ size_t Pcap::get_next_stream(char* message, size_t size)
   }
 #endif
 
-  if (fread(packet_buf, packet_len, 1, pcapfile) < 1) {
+  if (fread(packet_buf, 1, packet_len, pcapfile) != packet_len) {
     return 0;
   }
 
@@ -167,7 +167,7 @@ size_t (Pcap::*Pcap::get_transport_process(uint8_t ip_p))(char* offset)
 size_t Pcap::pcap_header_process()
 {
   struct pcap_pkthdr pp;
-  if (fread(&pp, sizeof(pp), 1, pcapfile) < 1) {
+  if (fread(&pp, 1, sizeof(pp), pcapfile) != sizeof(pp)) {
     return -1;
   }
 
