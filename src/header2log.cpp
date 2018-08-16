@@ -25,15 +25,15 @@ Pcap::Pcap(const string& filename)
 {
   pcapfile = fopen(filename.c_str(), "r");
   if (pcapfile == nullptr) {
-    throw runtime_error("could not open [" + filename + "]");
+    throw runtime_error("Failed to open input file: " + filename);
   }
 
   struct pcap_file_header pfh;
   if (fread(&pfh, 1, sizeof(pfh), pcapfile) != sizeof(pfh)) {
-    throw runtime_error(filename + " is not an appropriate pcap file");
+    throw runtime_error("Invalid input pcap file: " + filename);
   }
   if (pfh.magic != 0xa1b2c3d4) {
-    throw runtime_error(filename + " is not an appropriate pcap file");
+    throw runtime_error("Invalid input pcap file: " + filename);
   }
 
   linktype = pfh.linktype;
@@ -84,7 +84,7 @@ size_t Pcap::get_next_stream(char* message, size_t size)
 #if 0
   // we assume packet_len < size
   if (packet_len >= size) {
-    throw runtime_error("message buffer too small");
+    throw runtime_error("Message buffer too small");
   }
 #endif
 
@@ -94,14 +94,14 @@ size_t Pcap::get_next_stream(char* message, size_t size)
 
   size_t process_len = invoke(get_datalink_process(), this, packet_buf);
   if (process_len == static_cast<size_t>(-1)) {
-    throw runtime_error("failed to read packet header");
+    throw runtime_error("Failed to read packet header");
   }
 
 #if 0
   // TODO: Add payload process
   packet_len -= process_len;
   if (!payload_process(packet_len)) {
-    throw runtime_error("failed to read packet payload");
+    throw runtime_error("Failed to read packet payload");
   }
 #endif
 
@@ -199,7 +199,7 @@ size_t Pcap::ethernet_process(char* offset)
 
   process_len += invoke(get_internet_process(eh->ether_type), this, offset);
   if (process_len == static_cast<size_t>(-1)) {
-    throw runtime_error("failed to read internet header");
+    throw runtime_error("Failed to read internet header");
   }
 
   return process_len;
@@ -229,7 +229,7 @@ size_t Pcap::ipv4_process(char* offset)
 
   process_len += invoke(get_transport_process(iph->ip_p), this, offset);
   if (process_len == static_cast<size_t>(-1)) {
-    throw runtime_error("failed to read transport header");
+    throw runtime_error("Failed to read transport header");
   }
 
   return process_len;
