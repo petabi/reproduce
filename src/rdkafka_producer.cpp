@@ -73,7 +73,7 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt)
   }
 
   // Set configuration properties: optional features
-  if (conf->set("message.max.bytes", "1000000000", errstr) !=
+  if (conf->set("message.max.bytes", "100000000", errstr) !=
       RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: message.max.bytes");
   }
