@@ -22,7 +22,7 @@ Options::Options(const Config& _conf)
 {
   // input is madatory when mode_parse is not set
   if (conf.input.empty() && !conf.mode_parse) {
-    throw runtime_error("Must specify input");
+    throw runtime_error("Must specify input (See help)");
   }
 
   // set default value
