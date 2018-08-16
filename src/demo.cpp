@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     opt.report_evaluation();
     opt.dprint(F, "end");
   } catch (exception const& e) {
-    cerr << "exception: " << e.what() << '\n';
+    cerr << "Exception: " << e.what() << '\n';
   }
 
   return 0;

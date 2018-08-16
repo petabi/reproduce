@@ -3,6 +3,8 @@
 
 #include "options.h"
 
+using namespace std;
+
 static const double KBYTE = 1024.0;
 static const double MBYTE = KBYTE * KBYTE;
 static const double KPACKET = 1000.0;
@@ -11,7 +13,7 @@ static const double MPACKET = KPACKET * KPACKET;
 // default config
 static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
-static const size_t default_count_queue = 1000;
+static const size_t default_count_queue = 10000;
 static const size_t sample_count = 1000000;
 
 Options::Options(const Config& _conf)
@@ -20,7 +22,7 @@ Options::Options(const Config& _conf)
 {
   // input is madatory when mode_parse is not set
   if (conf.input.empty() && !conf.mode_parse) {
-    throw std::runtime_error("");
+    throw runtime_error("Must specify input (See help)");
   }
 
   // set default value
@@ -39,8 +41,7 @@ Options::Options(const Config& _conf)
 
   if (!conf.output.empty()) {
     if (!open_output_file()) {
-      throw std::runtime_error(std::string("Failed to open output file: ") +
-                               conf.output.c_str());
+      throw runtime_error("Failed to open output file: " + conf.output);
     }
   }
 }
@@ -216,7 +217,7 @@ void Options::report_evaluation() noexcept
 
 bool Options::open_output_file() noexcept
 {
-  output_file.open(conf.output, std::ios::out);
+  output_file.open(conf.output, ios::out);
   if (!output_file.is_open()) {
     dprint(F, "Failed to write %s file", conf.output.c_str());
     return false;
