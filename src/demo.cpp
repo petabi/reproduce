@@ -14,7 +14,7 @@ using namespace std;
 static const char* program_name = "header2log";
 static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
-static const size_t default_count_queue = 1000;
+static const size_t default_count_queue = 10000;
 static const char* sample_data =
     "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "
     "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "

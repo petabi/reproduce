@@ -81,9 +81,12 @@ size_t Pcap::get_next_stream(char* message, size_t size)
   if (packet_len == static_cast<size_t>(-1)) {
     return 0;
   }
+#if 0
+  // we assume packet_len < size
   if (packet_len >= size) {
     throw runtime_error("message buffer too small");
   }
+#endif
 
   if (fread(packet_buf, packet_len, 1, pcapfile) < 1) {
     return 0;
@@ -173,8 +176,9 @@ size_t Pcap::pcap_header_process()
   char* cap_time = nullptr;
   cap_time = (char*)ctime((const time_t*)&sec);
   cap_time[strlen(cap_time) - 1] = '\0';
-#endif
+#else
   add_token_to_stream("%d ", pp.ts.tv_sec);
+#endif
 
   return (size_t)pp.caplen;
 }

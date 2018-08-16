@@ -24,18 +24,15 @@ void RdEventCb::event_cb(RdKafka::Event& event)
       // FIXME: what do we do?
     }
     break;
-
   case RdKafka::Event::EVENT_STATS:
     opt.dprint(F, "STAT: %s", event.str().c_str());
     break;
-
   case RdKafka::Event::EVENT_LOG:
     opt.dprint(F, "LOG-%i-%s: %s", event.severity(), event.fac().c_str(),
                event.str().c_str());
     break;
-
   default:
-    opt.dprint(F, "EVENT: %s: %s", RdKafka::err2str(event.err()).c_str(),
+    opt.eprint(F, "EVENT: %s: %s", RdKafka::err2str(event.err()).c_str(),
                event.str().c_str());
     break;
   }
@@ -76,6 +73,16 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt)
   }
 
   // Set configuration properties: optional features
+  if (conf->set("message.max.bytes", "1000000000", errstr) !=
+      RdKafka::Conf::CONF_OK) {
+    throw runtime_error("Failed to set config: message.max.bytes");
+  }
+#if 0
+  if (conf->set("message.copy.max.bytes", "1000000000", errstr) !=
+      RdKafka::Conf::CONF_OK) {
+    throw runtime_error("Failed to set config: message.copy.max.bytes");
+  }
+#endif
   if (conf->set("queue.buffering.max.messages", "10000000", errstr) !=
       RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: queue.buffering.max.messages");
@@ -84,6 +91,12 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt)
       RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: queue.buffering.max.kbytes");
   }
+#if 0
+  if (conf->set("compression.codec", "lz4", errstr) !=
+      RdKafka::Conf::CONF_OK) {
+    throw runtime_error("Failed to set config: compression.codec");
+  }
+#endif
 
   // show kafka producer config
   if (opt.mode_debug) {
