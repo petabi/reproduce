@@ -62,19 +62,20 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt) : opt(_opt)
   // Set configuration properties
   if (conf->set("metadata.broker.list", opt.conf.broker, errstr) !=
       RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: metadata.broker.list");
+    throw runtime_error("Failed to set config: metadata.broker.list: " +
+                        errstr);
   }
   if (conf->set("event_cb", &rd_event_cb, errstr) != RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: event_cb");
+    throw runtime_error("Failed to set config: event_cb: " + errstr);
   }
   if (conf->set("dr_cb", &rd_dr_cb, errstr) != RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: dr_cb");
+    throw runtime_error("Failed to set config: dr_cb: " + errstr);
   }
 
   // Set configuration properties: optional features
   if (conf->set("message.max.bytes", "100000000", errstr) !=
       RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: message.max.bytes");
+    throw runtime_error("Failed to set config: message.max.bytes: " + errstr);
   }
 #if 0
   if (conf->set("message.copy.max.bytes", "1000000000", errstr) !=
@@ -84,16 +85,19 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt) : opt(_opt)
 #endif
   if (conf->set("queue.buffering.max.messages", "10000000", errstr) !=
       RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: queue.buffering.max.messages");
+    throw runtime_error("Failed to set config: queue.buffering.max.messages: " +
+                        errstr);
   }
   if (conf->set("queue.buffering.max.kbytes", "2097151", errstr) !=
       RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: queue.buffering.max.kbytes");
+    throw runtime_error("Failed to set config: queue.buffering.max.kbytes: " +
+                        errstr);
   }
 #if 0
+  // it will reduce performance
   if (conf->set("compression.codec", "lz4", errstr) !=
       RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: compression.codec");
+    throw runtime_error("Failed to set config: compression.codec: " + errstr);
   }
 #endif
 
