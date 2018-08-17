@@ -40,7 +40,7 @@ void help()
 int main(int argc, char** argv)
 {
   int o;
-  Config conf;
+  Config conf = {false, false, false, false, 0, 0, 0, "", "", "", "", ""};
 
   while ((o = getopt(argc, argv, "b:c:defhi:ko:pq:s:t:")) != -1) {
     switch (o) {
@@ -96,33 +96,36 @@ int main(int argc, char** argv)
     opt.dprint(F, "start");
     opt.start_evaluation();
 
-    // FIXME: we need Pcap() default constructor (without input)
-    Pcap pcap(conf.input);
-    RdkafkaProducer rp(opt);
+    unique_ptr<Pcap> pp = nullptr;
+    unique_ptr<RdkafkaProducer> rpp = nullptr;
     char message[MESSAGE_SIZE];
     size_t length = 0;
-
-    if (conf.count_skip) {
-      if (!pcap.skip_packets(conf.count_skip)) {
-        opt.dprint(F, "failed to skip(%d)", conf.count_skip);
-      }
-    }
 
     if (conf.mode_parse) {
       strcpy(message, sample_data);
       length = strlen(message);
       opt.dprint(F, "message=%s (%d)", message, length);
+    } else {
+      pp = make_unique<Pcap>(conf.input);
+      if (conf.count_skip) {
+        if (!pp->skip_packets(conf.count_skip)) {
+          opt.dprint(F, "failed to skip(%d)", conf.count_skip);
+        }
+      }
+    }
+    if (!conf.mode_kafka) {
+      rpp = make_unique<RdkafkaProducer>(opt);
     }
 
     while (true) {
       if (!conf.mode_parse) {
-        length = pcap.get_next_stream(message, MESSAGE_SIZE);
+        length = pp->get_next_stream(message, MESSAGE_SIZE);
         if (length == 0) {
           break;
         }
       }
       if (!conf.mode_kafka) {
-        rp.produce(string(message));
+        rpp->produce(string(message));
       }
       opt.process_evaluation(length);
       opt.mprint("%s", message);
