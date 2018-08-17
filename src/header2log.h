@@ -9,6 +9,9 @@
 
 #include "rdkafka_producer.h"
 
+constexpr int PACKET_END = 0;
+constexpr int PACKET_FAIL = -1;
+
 using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
 using u_short = unsigned short;
@@ -45,7 +48,7 @@ public:
   Pcap& operator=(const Pcap&&) = delete;
   ~Pcap();
   bool skip_packets(size_t size);
-  size_t get_next_stream(char* message, size_t size);
+  int get_next_stream(char* message, size_t size);
 
 private:
   FILE* pcapfile;
@@ -53,17 +56,17 @@ private:
   char packet_buf[512];
   char* ptr;
   int stream_length = 0;
-  size_t (Pcap::*get_datalink_process())(char* offset);
-  size_t (Pcap::*get_internet_process(uint16_t ether_type))(char* offset);
-  size_t (Pcap::*get_transport_process(uint8_t ip_p))(char* offset);
+  bool (Pcap::*get_datalink_process())(char* offset);
+  bool (Pcap::*get_internet_process(uint16_t ether_type))(char* offset);
+  bool (Pcap::*get_transport_process(uint8_t ip_p))(char* offset);
   size_t pcap_header_process();
-  size_t ethernet_process(char* offset);
-  size_t ipv4_process(char* offset);
-  size_t arp_process(char* offset);
-  size_t icmp_process(char* offset);
-  size_t udp_process(char* offset);
-  size_t tcp_process(char* offset);
-  size_t null_process(char* offset);
+  bool ethernet_process(char* offset);
+  bool ipv4_process(char* offset);
+  bool arp_process(char* offset);
+  bool icmp_process(char* offset);
+  bool udp_process(char* offset);
+  bool tcp_process(char* offset);
+  bool null_process(char* offset);
   bool payload_process(size_t remain_len);
   void add_token_to_stream(const char* fmt, ...);
 };
