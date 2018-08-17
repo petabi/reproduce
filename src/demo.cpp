@@ -8,8 +8,7 @@
 
 using namespace std;
 
-#define MESSAGE_SIZE 1024
-
+static constexpr size_t MESSAGE_SIZE = 1024;
 static const char* program_name = "header2log";
 static const char* sample_data =
     "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "

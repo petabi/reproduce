@@ -5,16 +5,16 @@
 
 using namespace std;
 
-static const double KBYTE = 1024.0;
-static const double MBYTE = KBYTE * KBYTE;
-static const double KPACKET = 1000.0;
-static const double MPACKET = KPACKET * KPACKET;
+static constexpr double KBYTE = 1024.0;
+static constexpr double MBYTE = KBYTE * KBYTE;
+static constexpr double KPACKET = 1000.0;
+static constexpr double MPACKET = KPACKET * KPACKET;
 
 // default config
 static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
-static const size_t default_count_queue = 10000;
-static const size_t sample_count = 1000000;
+static constexpr size_t default_count_queue = 10000;
+static constexpr size_t sample_count = 1000000;
 
 Options::Options(const Config& _conf)
     : conf(_conf), sent_byte(0), sent_packet(0), fail_packet(0), perf_kbps(0),

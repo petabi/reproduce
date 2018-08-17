@@ -27,8 +27,8 @@ struct Config {
   std::string broker; // kafka broker
   std::string topic;  // kafka topic
   Config()
-      : mode_debug(0), mode_eval(0), mode_kafka(0), mode_parse(0),
-        count_send(0), count_skip(0), count_queue(0)
+      : mode_debug(false), mode_eval(false), mode_kafka(false),
+        mode_parse(fasle), count_send(0), count_skip(0), count_queue(0)
   {
   }
 };
