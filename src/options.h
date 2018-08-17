@@ -28,7 +28,7 @@ struct Config {
   std::string topic;  // kafka topic
   Config()
       : mode_debug(false), mode_eval(false), mode_kafka(false),
-        mode_parse(fasle), count_send(0), count_skip(0), count_queue(0)
+        mode_parse(false), count_send(0), count_skip(0), count_queue(0)
   {
   }
 };
