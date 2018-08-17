@@ -17,8 +17,10 @@ static const size_t default_count_queue = 10000;
 static const size_t sample_count = 1000000;
 
 Options::Options(const Config& _conf)
-    : conf(_conf), sent_byte(0), sent_packet(0), perf_kbps(0), perf_kpps(0),
-      time_start(0), time_now(0), time_diff(0), input_type(InputType::None)
+    : conf(_conf), sent_byte(0), sent_packet(0), fail_packet(0), perf_kbps(0),
+      perf_kpps(0), time_start(0), time_now(0), time_diff(0),
+      input_type(InputType::None)
+
 {
   // input is madatory when mode_parse is not set
   if (conf.input.empty() && !conf.mode_parse) {
@@ -212,6 +214,8 @@ void Options::report_evaluation() noexcept
           (double)sent_byte / MBYTE);
   fprintf(stdout, "Sent Packets: %lu(%.2fM)\n", sent_packet,
           (double)sent_packet / MPACKET);
+  fprintf(stdout, "Fail Packets: %lu(%.2fM)\n", fail_packet,
+          (double)fail_packet / MPACKET);
   fprintf(stdout, "Elapsed Time: %.2fs\n", time_diff);
   fprintf(stdout, "Performance : %.2fMBps/%.2fKpps\n", perf_kbps / KBYTE,
           perf_kpps);

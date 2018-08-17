@@ -26,6 +26,11 @@ struct Config {
   std::string filter; // tcpdump filter string
   std::string broker; // kafka broker
   std::string topic;  // kafka topic
+  Config()
+      : mode_debug(0), mode_eval(0), mode_kafka(0), mode_parse(0),
+        count_send(0), count_skip(0), count_queue(0)
+  {
+  }
 };
 
 class Options {
@@ -52,6 +57,7 @@ public:
 private:
   size_t sent_byte;          // sent bytes
   size_t sent_packet;        // sent packets
+  size_t fail_packet;        // failed packet count
   double perf_kbps;          // kilo byte per second
   double perf_kpps;          // kilo packet per second
   clock_t time_start;        // start time
