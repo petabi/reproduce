@@ -196,7 +196,7 @@ bool Pcap::ethernet_process(char* offset)
 
   bool success = invoke(get_internet_process(eh->ether_type), this, offset);
   if (!success) {
-    throw runtime_error("Failed to read internet header");
+    return false;
   }
 
   return true;
@@ -223,7 +223,7 @@ bool Pcap::ipv4_process(char* offset)
 
   bool success = invoke(get_transport_process(iph->ip_p), this, offset);
   if (!success) {
-    throw runtime_error("Failed to read transport header");
+    return false;
   }
 
   return true;
