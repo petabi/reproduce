@@ -58,8 +58,9 @@ Pcap::~Pcap()
 
 bool Pcap::skip_packets(size_t count_skip)
 {
-  if (count_skip < 0)
+  if (count_skip < 0) {
     return false;
+  }
 
   struct pcap_pkthdr pp;
   size_t count = 0;
@@ -81,22 +82,23 @@ int Pcap::get_next_stream(char* message, size_t size)
 
   size_t packet_len = pcap_header_process();
   if (packet_len == static_cast<size_t>(-1)) {
-    return PACKET_END;
+    return RESULT_NO_MORE;
   }
+
 #if 0
-  // we assume packet_len < size
-  if (packet_len >= size) {
-    throw runtime_error("Message buffer too small");
+  // we assume packet_len < PACKET_BUF_SIZE
+  if (packet_len >= PACKET_BUF_SIZE) {
+    throw runtime_error("Packet buffer too small");
   }
 #endif
 
   if (fread(packet_buf, 1, packet_len, pcapfile) != packet_len) {
-    return PACKET_END;
+    return RESULT_NO_MORE;
   }
 
   bool success = invoke(get_datalink_process(), this, packet_buf);
   if (!success)
-    return PACKET_FAIL;
+    return RESULT_FAIL;
 
   // TODO: Add payload process
 

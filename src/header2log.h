@@ -9,12 +9,13 @@
 
 #include "rdkafka_producer.h"
 
-constexpr int PACKET_END = 0;
-constexpr int PACKET_FAIL = -1;
+constexpr int PACKET_BUF_SIZE = 2048;
 
 using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
 using u_short = unsigned short;
+
+enum { RESULT_FAIL = -1, RESULT_NO_MORE = 0 };
 
 struct pcap_file_header {
   bpf_u_int32 magic;
@@ -38,7 +39,6 @@ struct pcap_pkthdr {
 };
 
 class Pcap {
-
 public:
   Pcap() = delete;
   Pcap(const std::string& filename);
@@ -53,7 +53,7 @@ public:
 private:
   FILE* pcapfile;
   unsigned int linktype;
-  char packet_buf[512];
+  char packet_buf[PACKET_BUF_SIZE];
   char* ptr;
   int stream_length = 0;
   bool (Pcap::*get_datalink_process())(char* offset);

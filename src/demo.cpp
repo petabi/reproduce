@@ -40,7 +40,7 @@ void help()
 int main(int argc, char** argv)
 {
   int o;
-  Config conf = {false, false, false, false, 0, 0, 0, "", "", "", "", ""};
+  Config conf;
 
   while ((o = getopt(argc, argv, "b:c:defhi:ko:pq:s:t:")) != -1) {
     switch (o) {
