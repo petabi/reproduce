@@ -98,7 +98,7 @@ int main(int argc, char** argv)
     unique_ptr<Pcap> pp = nullptr;
     unique_ptr<RdkafkaProducer> rpp = nullptr;
     char message[MESSAGE_SIZE];
-    size_t length = 0;
+    int length = 0;
 
     if (conf.mode_parse) {
       strcpy(message, sample_data);
@@ -121,6 +121,9 @@ int main(int argc, char** argv)
         length = pp->get_next_stream(message, MESSAGE_SIZE);
         if (length == 0) {
           break;
+        } else if (length < 0) {
+          opt.increase_fail();
+          continue;
         }
       }
       if (!conf.mode_kafka) {

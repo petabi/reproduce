@@ -53,6 +53,7 @@ public:
   void process_evaluation(size_t length) noexcept;
   void report_evaluation() noexcept;
   bool open_output_file() noexcept;
+  void increase_fail() noexcept;
 
 private:
   size_t sent_byte;          // sent bytes

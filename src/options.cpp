@@ -233,4 +233,6 @@ bool Options::open_output_file() noexcept
   return true;
 }
 
+void Options::increase_fail() noexcept { fail_packet++; }
+
 // vim: et:ts=2:sw=2
