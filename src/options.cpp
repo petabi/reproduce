@@ -57,7 +57,8 @@ Options::Options(const Options& other)
   time_now = other.time_now;
   time_diff = other.time_diff;
   input_type = other.input_type;
-  (*this).open_output_file();
+  // do not use output when it is copied
+  // (*this).open_output_file();
 }
 
 Options& Options::operator=(const Options& other)
@@ -72,8 +73,10 @@ Options& Options::operator=(const Options& other)
     time_now = other.time_now;
     time_diff = other.time_diff;
     input_type = other.input_type;
-    (*this).open_output_file();
+    // do not use output when it is assigned
+    // (*this).open_output_file();
   }
+
   return *this;
 }
 
@@ -222,6 +225,7 @@ bool Options::open_output_file() noexcept
     dprint(F, "Failed to write %s file", conf.output.c_str());
     return false;
   }
+
   return true;
 }
 
