@@ -97,8 +97,9 @@ int Pcap::get_next_stream(char* message, size_t size)
   }
 
   bool success = invoke(get_datalink_process(), this, packet_buf);
-  if (!success)
+  if (!success) {
     return RESULT_FAIL;
+  }
 
   // TODO: Add payload process
 

@@ -119,9 +119,10 @@ int main(int argc, char** argv)
     while (true) {
       if (!conf.mode_parse) {
         length = pp->get_next_stream(message, MESSAGE_SIZE);
-        if (length == 0) {
+        if (length > 0) {
+        } else if (length == RESULT_NO_MORE) {
           break;
-        } else if (length < 0) {
+        } else if (length == RESULT_FAIL) {
           opt.increase_fail();
           continue;
         }
