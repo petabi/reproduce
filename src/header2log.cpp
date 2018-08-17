@@ -58,8 +58,9 @@ Pcap::~Pcap()
 
 bool Pcap::skip_packets(size_t count_skip)
 {
-  if (count_skip < 0)
+  if (count_skip < 0) {
     return false;
+  }
 
   struct pcap_pkthdr pp;
   size_t count = 0;
@@ -83,10 +84,11 @@ size_t Pcap::get_next_stream(char* message, size_t size)
   if (packet_len == static_cast<size_t>(-1)) {
     return 0;
   }
+
 #if 0
-  // we assume packet_len < size
-  if (packet_len >= size) {
-    throw runtime_error("Message buffer too small");
+  // we assume packet_len < PACKET_BUF_SIZE
+  if (packet_len >= PACKET_BUF_SIZE) {
+    throw runtime_error("Packet buffer too small");
   }
 #endif
 

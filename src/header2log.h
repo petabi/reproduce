@@ -9,6 +9,8 @@
 
 #include "rdkafka_producer.h"
 
+#define PACKET_BUF_SIZE 2048
+
 using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
 using u_short = unsigned short;
@@ -35,7 +37,6 @@ struct pcap_pkthdr {
 };
 
 class Pcap {
-
 public:
   Pcap() = delete;
   Pcap(const std::string& filename);
@@ -50,7 +51,7 @@ public:
 private:
   FILE* pcapfile;
   unsigned int linktype;
-  char packet_buf[512];
+  char packet_buf[PACKET_BUF_SIZE];
   char* ptr;
   int stream_length = 0;
   size_t (Pcap::*get_datalink_process())(char* offset);
