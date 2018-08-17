@@ -40,7 +40,6 @@ private:
   RdDeliveryReportCb rd_dr_cb;
   RdEventCb rd_event_cb;
   std::string queue_data;
-  size_t queue_count;
   bool produce_core(const std::string& message) noexcept;
 };
 

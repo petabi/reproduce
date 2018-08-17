@@ -73,7 +73,7 @@ int main(int argc, char** argv)
       conf.mode_parse = true;
       break;
     case 'q':
-      conf.count_queue = strtoul(optarg, nullptr, 0);
+      conf.queue_size = strtoul(optarg, nullptr, 0);
       break;
     case 's':
       conf.count_skip = strtoul(optarg, nullptr, 0);

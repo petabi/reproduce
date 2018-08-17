@@ -13,7 +13,7 @@ static constexpr double MPACKET = KPACKET * KPACKET;
 // default config
 static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
-static constexpr size_t default_count_queue = 10000;
+static constexpr size_t default_queue_size = 2000000;
 static constexpr size_t sample_count = 1000000;
 
 Options::Options(const Config& _conf)
@@ -37,8 +37,8 @@ Options::Options(const Config& _conf)
   if (conf.mode_parse && conf.count_send == 0) {
     conf.count_send = sample_count;
   }
-  if (conf.count_queue == 0) {
-    conf.count_queue = default_count_queue;
+  if (conf.queue_size == 0) {
+    conf.queue_size = default_queue_size;
   }
 
   if (!conf.output.empty()) {
@@ -97,7 +97,7 @@ void Options::show_options() noexcept
   dprint(F, "mode_parse=%d", conf.mode_parse);
   dprint(F, "count_send=%lu", conf.count_send);
   dprint(F, "count_skip=%lu", conf.count_skip);
-  dprint(F, "count_queue=%u", conf.count_queue);
+  dprint(F, "queue_size=%u", conf.queue_size);
   dprint(F, "input=%s", conf.input.c_str());
   dprint(F, "input_type=%d", input_type);
   dprint(F, "output=%s", conf.output.c_str());

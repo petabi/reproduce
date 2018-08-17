@@ -38,8 +38,7 @@ void RdEventCb::event_cb(RdKafka::Event& event)
   }
 }
 
-RdkafkaProducer::RdkafkaProducer(const Options& _opt)
-    : opt(_opt), queue_count(0)
+RdkafkaProducer::RdkafkaProducer(const Options& _opt) : opt(_opt)
 {
   if (opt.conf.broker.empty() || opt.conf.topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
@@ -165,19 +164,13 @@ bool RdkafkaProducer::produce_core(const string& message) noexcept
 
 bool RdkafkaProducer::produce(const string& message) noexcept
 {
-  queue_count++;
-  queue_data += message;
+  if (queue_data.length() + message.length() >= opt.conf.queue_size) {
+    produce_core(queue_data);
+    queue_data.clear();
 
-  if (queue_count < opt.conf.count_queue) {
-    return true;
+    wait_queue(9999999);
   }
-
-  produce_core(queue_data);
-
-  queue_count = 0;
-  queue_data.clear();
-
-  wait_queue(9999999);
+  queue_data += message + '\n';
 
   return true;
 }

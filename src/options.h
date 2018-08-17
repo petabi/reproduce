@@ -20,7 +20,7 @@ struct Config {
   bool mode_parse;    // do not parse packet (send hardcoded sample data)
   size_t count_send;  // send packet count
   size_t count_skip;  // skip packet count
-  size_t count_queue; // queue packet count (how many packet send once)
+  size_t queue_size;  // queue size (how many bytes send once)
   std::string input;  // input pcapfile or nic
   std::string output; // output file
   std::string filter; // tcpdump filter string
@@ -28,7 +28,7 @@ struct Config {
   std::string topic;  // kafka topic
   Config()
       : mode_debug(false), mode_eval(false), mode_kafka(false),
-        mode_parse(false), count_send(0), count_skip(0), count_queue(0)
+        mode_parse(false), count_send(0), count_skip(0), queue_size(0)
   {
   }
 };
