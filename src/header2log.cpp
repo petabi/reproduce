@@ -58,12 +58,9 @@ Pcap::~Pcap()
 
 bool Pcap::skip_packets(size_t count_skip)
 {
-  if (count_skip < 0) {
-    return false;
-  }
-
   struct pcap_pkthdr pp;
   size_t count = 0;
+
   while (count < count_skip) {
     if (fread(&pp, 1, sizeof(pp), pcapfile) != sizeof(pp)) {
       return false;
