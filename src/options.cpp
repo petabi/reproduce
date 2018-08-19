@@ -41,6 +41,7 @@ Options::Options(const Config& _conf)
     conf.queue_size = default_queue_size;
   }
 
+  // open output file
   if (!conf.output.empty()) {
     if (!open_output_file()) {
       throw runtime_error("Failed to open output file: " + conf.output);

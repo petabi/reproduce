@@ -120,11 +120,14 @@ int main(int argc, char** argv)
       if (!conf.mode_parse) {
         length = pp->get_next_stream(message, MESSAGE_SIZE);
         if (length > 0) {
-        } else if (length == RESULT_NO_MORE) {
-          break;
+          // do nothing
         } else if (length == RESULT_FAIL) {
           opt.increase_fail();
           continue;
+        } else if (length == RESULT_NO_MORE) {
+          break;
+        } else {
+          // can't get here
         }
       }
       if (!conf.mode_kafka) {
