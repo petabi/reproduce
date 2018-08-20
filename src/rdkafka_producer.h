@@ -41,6 +41,8 @@ private:
   RdEventCb rd_event_cb;
   std::string queue_data;
   bool produce_core(const std::string& message) noexcept;
+  void set_kafka_conf();
+  void show_kafka_conf();
 };
 
 #endif

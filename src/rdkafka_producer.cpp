@@ -4,13 +4,47 @@
 
 using namespace std;
 
+enum class KafkaConfType {
+  GLOBAL = 1,
+  TOPIC,
+};
+
+struct KafkaConf {
+  KafkaConfType type;
+  string key;
+  string value;
+  string min;
+  string max;
+  string base;
+  string desc;
+};
+
+static const KafkaConf kafka_conf[] = {
+    {KafkaConfType::GLOBAL, "delivery.report.only.error", "true", "false",
+     "true", "false", ""},
+
+    // FIXME: we need test
+    {KafkaConfType::GLOBAL, "message.max.bytes", "1000000", "1000",
+     "1000000000", "1000000", ""},
+    {KafkaConfType::GLOBAL, "queue.buffering.max.messages", "100000", "1",
+     "10000000", "100000", ""},
+    {KafkaConfType::GLOBAL, "queue.buffering.max.kbytes", "1048576", "1",
+     "2097151", "1048576", ""},
+
+#if 0
+    // it will reduce performance
+    {KafkaConfType::TOPIC, "compression.codec", "l24", "none", "none", "none",
+     "none/gzip/snappy/lz4"},
+#endif
+};
+
 void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
 {
-  opt.dprint(F, "message delivery(%lu bytes): %s", message.len(),
+  opt.eprint(F, "message delivery(%lu bytes): %s", message.len(),
              message.errstr().c_str());
 
   if (message.key()) {
-    opt.dprint(F, "key: %s", (*(message.key())).c_str());
+    opt.eprint(F, "key: %s", (*(message.key())).c_str());
   }
 }
 
@@ -57,6 +91,27 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt) : opt(_opt)
     throw runtime_error("Failed to create topic configuration object");
   }
 
+  set_kafka_conf();
+  show_kafka_conf();
+
+  string errstr;
+
+  // Create producer handle
+  producer.reset(RdKafka::Producer::create(conf.get(), errstr));
+  if (!producer) {
+    throw runtime_error("Failed to create producer: " + errstr);
+  }
+
+  // Create topic handle
+  topic.reset(RdKafka::Topic::create(producer.get(), opt.conf.topic,
+                                     tconf.get(), errstr));
+  if (!topic) {
+    throw runtime_error("Failed to create topic: " + errstr);
+  }
+}
+
+void RdkafkaProducer::set_kafka_conf()
+{
   string errstr;
 
   // Set configuration properties
@@ -73,34 +128,34 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt) : opt(_opt)
   }
 
   // Set configuration properties: optional features
-  if (conf->set("message.max.bytes", "100000000", errstr) !=
-      RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: message.max.bytes: " + errstr);
+  for (size_t i = 0; i < sizeof(kafka_conf) / sizeof(KafkaConf); i++) {
+    opt.dprint(F, "kafka_conf: %s: %s (%s ~ %s, %s)", kafka_conf[i].key.c_str(),
+               kafka_conf[i].value.c_str(), kafka_conf[i].min.c_str(),
+               kafka_conf[i].max.c_str(), kafka_conf[i].base.c_str());
+    switch (kafka_conf[i].type) {
+    case KafkaConfType::GLOBAL:
+      if (conf->set(kafka_conf[i].key, kafka_conf[i].value, errstr) !=
+          RdKafka::Conf::CONF_OK) {
+        throw runtime_error("Failed to set global config: " +
+                            kafka_conf[i].key + ": " + errstr);
+      }
+      break;
+    case KafkaConfType::TOPIC:
+      if (tconf->set(kafka_conf[i].key, kafka_conf[i].value, errstr) !=
+          RdKafka::Conf::CONF_OK) {
+        throw runtime_error("Failed to set topic config: " + kafka_conf[i].key +
+                            ": " + errstr);
+      }
+      break;
+    default:
+      opt.eprint(F, "unknown kafka config type: %d", kafka_conf[i].type);
+      break;
+    }
   }
-#if 0
-  if (conf->set("message.copy.max.bytes", "1000000000", errstr) !=
-      RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: message.copy.max.bytes");
-  }
-#endif
-  if (conf->set("queue.buffering.max.messages", "10000000", errstr) !=
-      RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: queue.buffering.max.messages: " +
-                        errstr);
-  }
-  if (conf->set("queue.buffering.max.kbytes", "2097151", errstr) !=
-      RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: queue.buffering.max.kbytes: " +
-                        errstr);
-  }
-#if 0
-  // it will reduce performance
-  if (conf->set("compression.codec", "lz4", errstr) !=
-      RdKafka::Conf::CONF_OK) {
-    throw runtime_error("Failed to set config: compression.codec: " + errstr);
-  }
-#endif
+}
 
+void RdkafkaProducer::show_kafka_conf()
+{
   // show kafka producer config
   if (opt.conf.mode_debug) {
     int pass;
@@ -120,19 +175,6 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt) : opt(_opt)
         opt.dprint(F, "%s=%s", key.c_str(), value.c_str());
       }
     }
-  }
-
-  // Create producet handle
-  producer.reset(RdKafka::Producer::create(conf.get(), errstr));
-  if (!producer) {
-    throw runtime_error("Failed to create producer: " + errstr);
-  }
-
-  // Create topic handle
-  topic.reset(RdKafka::Topic::create(producer.get(), opt.conf.topic,
-                                     tconf.get(), errstr));
-  if (!topic) {
-    throw runtime_error("Failed to create topic: " + errstr);
   }
 }
 
@@ -169,7 +211,9 @@ bool RdkafkaProducer::produce_core(const string& message) noexcept
 bool RdkafkaProducer::produce(const string& message) noexcept
 {
   if (queue_data.length() + message.length() >= opt.conf.queue_size) {
-    produce_core(queue_data);
+    if (!produce_core(queue_data)) {
+      // FIXME: error handling
+    }
     queue_data.clear();
 
     wait_queue(9999999);
