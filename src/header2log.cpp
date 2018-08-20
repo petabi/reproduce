@@ -29,7 +29,8 @@ Pcap::Pcap(const string& filename)
   }
 
   struct pcap_file_header pfh;
-  if (fread(&pfh, 1, sizeof(pfh), pcapfile) != sizeof(pfh)) {
+  size_t pfh_len = sizeof(pfh);
+  if (fread(&pfh, 1, pfh_len, pcapfile) != pfh_len) {
     throw runtime_error("Invalid input pcap file: " + filename);
   }
   if (pfh.magic != 0xa1b2c3d4) {
@@ -60,9 +61,10 @@ bool Pcap::skip_packets(size_t count_skip)
 {
   struct pcap_pkthdr pp;
   size_t count = 0;
+  size_t pp_len = sizeof(pp);
 
   while (count < count_skip) {
-    if (fread(&pp, 1, sizeof(pp), pcapfile) != sizeof(pp)) {
+    if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
       return false;
     }
     fseek(pcapfile, pp.caplen, SEEK_CUR);
@@ -162,7 +164,8 @@ bool (Pcap::*Pcap::get_transport_process(uint8_t ip_p))(char* offset)
 size_t Pcap::pcap_header_process()
 {
   struct pcap_pkthdr pp;
-  if (fread(&pp, 1, sizeof(pp), pcapfile) != sizeof(pp)) {
+  size_t pp_len = sizeof(pp);
+  if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
     return -1;
   }
 
