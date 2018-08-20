@@ -1,12 +1,12 @@
 #include <arpa/inet.h>
 
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <functional>
 #include <iomanip>
 #include <memory>
-#include <stdarg.h>
 #include <stdexcept>
 
 #include "arp.h"
