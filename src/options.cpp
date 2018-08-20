@@ -11,8 +11,8 @@ static constexpr double KPACKET = 1000.0;
 static constexpr double MPACKET = KPACKET * KPACKET;
 
 // default config
-static const char* default_broker = "localhost:9092";
-static const char* default_topic = "pcap";
+const char* default_broker = "localhost:9092";
+const char* default_topic = "pcap";
 static constexpr size_t default_queue_size = 2000000;
 static constexpr size_t sample_count = 1000000;
 

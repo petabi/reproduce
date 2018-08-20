@@ -14,12 +14,14 @@ static const char* sample_data =
     "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "
     "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "
     "86734452 2522990538 20 A 16425 7168 0";
+extern const char* default_broker;
+extern const char* default_topic;
 
 void help()
 {
   cout << "[USAGE] " << program_name << " OPTIONS\n";
   cout << "  -b: kafka broker"
-       << " (default: localhost:9092)\n";
+       << " (default: " << default_broker << ")\n";
   cout << "  -c: send packet count\n";
   cout << "  -d: debug mode (print debug messages)\n";
   cout << "  -e: evaluation mode (report statistics)\n";
@@ -33,7 +35,7 @@ void help()
   cout << "  -q: queue packet count (how many packet send once)\n";
   cout << "  -s: skip packet count\n";
   cout << "  -t: kafka topic"
-       << " (default: pcap)\n";
+       << " (default: " << default_topic << ")\n";
 }
 
 int main(int argc, char** argv)
