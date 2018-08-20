@@ -14,6 +14,7 @@ static const char* sample_data =
     "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "
     "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "
     "86734452 2522990538 20 A 16425 7168 0";
+
 extern const char* default_broker;
 extern const char* default_topic;
 
@@ -27,12 +28,12 @@ void help()
   cout << "  -e: evaluation mode (report statistics)\n";
   cout << "  -f: tcpdump filter\n";
   cout << "  -h: help\n";
-  cout << "  -i: input pcapfile or nic\n";
+  cout << "  -i: input file(pcap/log) or nic\n";
   cout << "  -k: do not send data to kafka\n";
   cout << "  -o: output file\n";
   cout << "  -p: do not parse packet"
        << " (send hardcoded sample data. with -c option)\n";
-  cout << "  -q: queue packet count (how many packet send once)\n";
+  cout << "  -q: queue byte (how many bytes send once)\n";
   cout << "  -s: skip packet count\n";
   cout << "  -t: kafka topic"
        << " (default: " << default_topic << ")\n";
@@ -62,7 +63,7 @@ int main(int argc, char** argv)
       conf.filter = optarg;
       break;
     case 'i':
-      // FIXME: not support nic yet
+      // FIXME: not support log file and nic yet
       conf.input = optarg;
       break;
     case 'k':
