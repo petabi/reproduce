@@ -183,7 +183,7 @@ size_t Pcap::pcap_header_process()
 
 bool Pcap::ethernet_process(char* offset)
 {
-  struct ether_header* eh = reinterpret_cast<ether_header*>(offset);
+  auto eh = reinterpret_cast<ether_header*>(offset);
 
   offset += sizeof(struct ether_header);
 
@@ -204,7 +204,7 @@ bool Pcap::ethernet_process(char* offset)
 
 bool Pcap::ipv4_process(char* offset)
 {
-  struct ip* iph = reinterpret_cast<ip*>(offset);
+  auto iph = reinterpret_cast<ip*>(offset);
   size_t opt = 0;
   offset += sizeof(IP_MINLEN);
 
@@ -231,7 +231,7 @@ bool Pcap::ipv4_process(char* offset)
 
 bool Pcap::arp_process(char* offset)
 {
-  struct arp_pkthdr* arph = reinterpret_cast<arp_pkthdr*>(offset);
+  auto arph = reinterpret_cast<arp_pkthdr*>(offset);
   uint16_t hrd = 0, pro = 0;
   offset += sizeof(arph);
   hrd = htons(arph->ar_hrd);
@@ -304,7 +304,7 @@ bool Pcap::null_process(char* offset) { return true; }
 
 bool Pcap::tcp_process(char* offset)
 {
-  struct tcphdr* tcph = reinterpret_cast<tcphdr*>(offset);
+  auto tcph = reinterpret_cast<tcphdr*>(offset);
   offset += TCP_MINLEN;
 
   add_token_to_stream(
@@ -330,7 +330,7 @@ bool Pcap::tcp_process(char* offset)
 
 bool Pcap::udp_process(char* offset)
 {
-  struct udphdr* udph = reinterpret_cast<udphdr*>(offset);
+  auto udph = reinterpret_cast<udphdr*>(offset);
   offset += sizeof(struct udphdr);
 
   add_token_to_stream("UDP %d %d %d %d ", ntohs(udph->uh_sport),
@@ -342,7 +342,7 @@ bool Pcap::udp_process(char* offset)
 
 bool Pcap::icmp_process(char* offset)
 {
-  struct icmp* icmph = reinterpret_cast<icmp*>(offset);
+  auto icmph = reinterpret_cast<icmp*>(offset);
   offset += ICMP_MINLEN;
 
   if ((unsigned int)(icmph->icmp_type) == 11) {
