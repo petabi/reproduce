@@ -21,15 +21,16 @@ struct KafkaConf {
 
 static const KafkaConf kafka_conf[] = {
     {KafkaConfType::GLOBAL, "delivery.report.only.error", "true", "false",
-     "true", "false", ""},
+     "true", "false", "Only provide delivery reports for failed messages"},
 
     // FIXME: we need test
     {KafkaConfType::GLOBAL, "message.max.bytes", "1000000", "1000",
-     "1000000000", "1000000", ""},
+     "1000000000", "1000000", "Maximum Kafka protocol request message size"},
     {KafkaConfType::GLOBAL, "queue.buffering.max.messages", "100000", "1",
-     "10000000", "100000", ""},
+     "10000000", "100000", "Only provide delivery reports for failed messages"},
     {KafkaConfType::GLOBAL, "queue.buffering.max.kbytes", "1048576", "1",
-     "2097151", "1048576", ""},
+     "2097151", "1048576",
+     "Maximum total message size sum allowed on the producer queue"},
 
 #if 0
     // it will reduce performance
