@@ -253,7 +253,6 @@ bool Pcap::arp_process(char* offset)
   char* eth_tha = offset;
   offset += arph->ar_hln;
   char* ip_tpa = offset;
-  offset += arph->ar_pln;
 
   switch (htons(arph->ar_op)) {
   case ARPOP_REQUEST:
