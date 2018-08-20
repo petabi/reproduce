@@ -1,4 +1,4 @@
-#Header2log
+# Header2log
 =============================================
 
 ##Ⅰ. Overview
@@ -9,7 +9,7 @@ Packet translation is up to the transport layer, and the protocols currently sup
 ##Ⅱ. Usage
 ----------------------------------------------------
 ### Program Usage  
->header2log [OPTIONS]
+> header2log [OPTIONS]
 ### OPTIONS
 * b: kafka broker (default: localhost:9092)
 * c: send packet count
@@ -21,7 +21,7 @@ Packet translation is up to the transport layer, and the protocols currently sup
 * k: do not send data to kafka
 * o: output file
 * p: do not parse packet (send hardcoded sample data. with -c option)
-* q: queue packet count (how many packet send once)
+* q: queue packet bytes (how many bytes send once)
 * s: skip packet count
 * t: kafka topic (default: pcap)
 ### Examples
@@ -34,7 +34,7 @@ Packet translation is up to the transport layer, and the protocols currently sup
 -----------------------------------------------------
 ###Test environment
 * CPU : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
-* Memory : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
+* Memory : 62GB
 
 ###Result
 | Contents | Speed |
