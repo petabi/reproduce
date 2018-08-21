@@ -5,6 +5,7 @@
 #include <string>
 
 #include "librdkafka/rdkafkacpp.h"
+
 #include "options.h"
 
 class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
