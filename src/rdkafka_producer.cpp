@@ -155,7 +155,7 @@ void RdkafkaProducer::set_kafka_conf()
   }
 }
 
-void RdkafkaProducer::show_kafka_conf()
+void RdkafkaProducer::show_kafka_conf() const
 {
   // show kafka producer config
   if (opt.conf.mode_debug) {

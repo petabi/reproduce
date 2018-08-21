@@ -44,15 +44,15 @@ public:
   Options(Options&&) = delete;
   Options& operator=(Options&&) = delete;
   ~Options();
-  void show_options() noexcept;
-  void dprint(const char* name, const char* fmt, ...) noexcept;
-  void eprint(const char* name, const char* fmt, ...) noexcept;
-  void mprint(const char* fmt, ...) noexcept;
+  void show_options() const noexcept;
+  void dprint(const char* name, const char* fmt, ...) const noexcept;
+  void eprint(const char* name, const char* fmt, ...) const noexcept;
+  void mprint(const char* fmt, ...) const noexcept;
   void fprint(const char* message) noexcept;
-  bool check_count() noexcept;
+  bool check_count() const noexcept;
   void start_evaluation() noexcept;
   void process_evaluation(size_t length) noexcept;
-  void report_evaluation() noexcept;
+  void report_evaluation() const noexcept;
   bool open_output_file() noexcept;
   void increase_fail() noexcept;
 

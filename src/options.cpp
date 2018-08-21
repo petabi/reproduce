@@ -89,7 +89,7 @@ Options::~Options()
   }
 }
 
-void Options::show_options() noexcept
+void Options::show_options() const noexcept
 {
   dprint(F, "mode_debug=%d", conf.mode_debug);
   dprint(F, "mode_evel=%d", conf.mode_eval);
@@ -106,7 +106,7 @@ void Options::show_options() noexcept
   dprint(F, "topic=%s", conf.topic.c_str());
 }
 
-void Options::dprint(const char* name, const char* fmt, ...) noexcept
+void Options::dprint(const char* name, const char* fmt, ...) const noexcept
 {
   if (!conf.mode_debug) {
     return;
@@ -121,7 +121,7 @@ void Options::dprint(const char* name, const char* fmt, ...) noexcept
   fprintf(stdout, "\n");
 }
 
-void Options::eprint(const char* name, const char* fmt, ...) noexcept
+void Options::eprint(const char* name, const char* fmt, ...) const noexcept
 {
   va_list args;
 
@@ -132,7 +132,7 @@ void Options::eprint(const char* name, const char* fmt, ...) noexcept
   fprintf(stdout, "\n");
 }
 
-void Options::mprint(const char* fmt, ...) noexcept
+void Options::mprint(const char* fmt, ...) const noexcept
 {
   if (!conf.mode_debug) {
     return;
@@ -159,7 +159,7 @@ void Options::fprint(const char* message) noexcept
   output_file << message << '\n';
 }
 
-bool Options::check_count() noexcept
+bool Options::check_count() const noexcept
 {
   if (conf.count_send == 0 || sent_packet < conf.count_send) {
     return false;
@@ -195,7 +195,7 @@ void Options::process_evaluation(size_t length) noexcept
   }
 }
 
-void Options::report_evaluation() noexcept
+void Options::report_evaluation() const noexcept
 {
   if (!conf.mode_eval) {
     return;
