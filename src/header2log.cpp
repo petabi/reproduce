@@ -304,7 +304,11 @@ bool Pcap::null_process(char* offset) { return true; }
 bool Pcap::tcp_process(char* offset)
 {
   auto tcph = reinterpret_cast<tcphdr*>(offset);
+
+#if 0
+  // FIXME: option processing
   offset += TCP_MINLEN;
+#endif
 
   add_token_to_stream(
       "TCP %d %d %u %u %d %s%s%s%s%s%s %d %d %d ", ntohs(tcph->th_sport),
