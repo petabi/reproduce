@@ -16,11 +16,10 @@ const char* default_topic = "pcap";
 static constexpr size_t default_queue_size = 900000;
 static constexpr size_t sample_count = 1000000;
 
-Options::Options(const Config& _conf)
-    : conf(_conf), sent_byte(0), sent_packet(0), fail_packet(0), perf_kbps(0),
-      perf_kpps(0), time_start(0), time_now(0), time_diff(0),
+Options::Options(Config _conf)
+    : conf(move(_conf)), sent_byte(0), sent_packet(0), fail_packet(0),
+      perf_kbps(0), perf_kpps(0), time_start(0), time_now(0), time_diff(0),
       input_type(InputType::NONE)
-
 {
   // input is madatory when mode_parse is not set
   if (conf.input.empty() && !conf.mode_parse) {

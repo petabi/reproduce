@@ -38,7 +38,7 @@ class Options {
 public:
   Config conf;
   Options() = default;
-  Options(const Config&);
+  Options(Config);
   Options(const Options&);
   Options& operator=(const Options&);
   Options(Options&&) = delete;
