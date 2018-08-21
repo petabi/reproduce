@@ -9,9 +9,13 @@
 
 #include "rdkafka_producer.h"
 
+constexpr int PACKET_BUF_SIZE = 2048;
+
 using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
 using u_short = unsigned short;
+
+enum { RESULT_FAIL = -1, RESULT_NO_MORE = 0 };
 
 struct pcap_file_header {
   bpf_u_int32 magic;
@@ -35,7 +39,6 @@ struct pcap_pkthdr {
 };
 
 class Pcap {
-
 public:
   Pcap() = delete;
   Pcap(const std::string& filename);
@@ -44,27 +47,30 @@ public:
   Pcap(Pcap&& other) noexcept;
   Pcap& operator=(const Pcap&&) = delete;
   ~Pcap();
-  bool skip_bytes(size_t size);
-  std::string get_next_stream();
+  bool skip_packets(size_t size);
+  int get_next_stream(char* message, size_t size);
 
 private:
   FILE* pcapfile;
-  std::ostringstream log_stream;
   unsigned int linktype;
-  size_t (Pcap::*get_datalink_process())();
-  size_t (Pcap::*get_internet_process(uint16_t ether_type))();
-  size_t (Pcap::*get_transport_process(uint8_t ip_p))();
+  char packet_buf[PACKET_BUF_SIZE];
+  char* ptr;
+  int stream_length = 0;
+  bool (Pcap::*get_datalink_process())(char* offset);
+  bool (Pcap::*get_internet_process(uint16_t ether_type))(char* offset);
+  bool (Pcap::*get_transport_process(uint8_t ip_p))(char* offset);
   size_t pcap_header_process();
-  size_t ethernet_process();
-  size_t ipv4_process();
-  size_t arp_process();
-  size_t icmp_process();
-  size_t udp_process();
-  size_t tcp_process();
-  size_t null_process();
+  bool ethernet_process(char* offset);
+  bool ipv4_process(char* offset);
+  bool arp_process(char* offset);
+  bool icmp_process(char* offset);
+  bool udp_process(char* offset);
+  bool tcp_process(char* offset);
+  bool null_process(char* offset);
   bool payload_process(size_t remain_len);
-  std::string print_ip_addr(unsigned char* ip_addr);
-  std::string print_mac_addr(unsigned char* mac_addr);
+  void add_token_to_stream(const char* fmt, ...);
 };
 
 #endif
+
+// vim: et:ts=2:sw=2

@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 #include <unistd.h>
 
@@ -7,68 +8,81 @@
 
 using namespace std;
 
+static constexpr size_t MESSAGE_SIZE = 1024;
 static const char* program_name = "header2log";
-static const char* default_broker = "localhost:9092";
-static const char* default_topic = "pcap";
+static const char* sample_data =
+    "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "
+    "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "
+    "86734452 2522990538 20 A 16425 7168 0";
+
+extern const char* default_broker;
+extern const char* default_topic;
 
 void help()
 {
-  cout << "[USAGE] " << program_name << " OPTIONS" << '\n';
+  cout << "[USAGE] " << program_name << " OPTIONS\n";
   cout << "  -b: kafka broker"
-       << " (default: " << default_broker << ")" << '\n';
-  cout << "  -c: packet count to send" << '\n';
-  cout << "  -d: debug mode (print debug messages)" << '\n';
-  cout << "  -e: evaluation mode (report statistics)" << '\n';
-  cout << "  -f: tcpdump filter" << '\n';
-  cout << "  -h: help" << '\n';
-  cout << "  -i: input pcapfile or nic (mandatory)" << '\n';
-  cout << "  -k: do not send to kafka" << '\n';
-  cout << "  -o: output file" << '\n';
-  cout << "  -s: skip count" << '\n';
+       << " (default: " << default_broker << ")\n";
+  cout << "  -c: send packet count\n";
+  cout << "  -d: debug mode (print debug messages)\n";
+  cout << "  -e: evaluation mode (report statistics)\n";
+  cout << "  -f: tcpdump filter\n";
+  cout << "  -h: help\n";
+  cout << "  -i: input file(pcap/log) or nic\n";
+  cout << "  -k: do not send data to kafka\n";
+  cout << "  -o: output file\n";
+  cout << "  -p: do not parse packet"
+       << " (send hardcoded sample data. with -c option)\n";
+  cout << "  -q: queue byte (how many bytes send once)\n";
+  cout << "  -s: skip packet count\n";
   cout << "  -t: kafka topic"
-       << " (default: " << default_topic << ")" << '\n';
+       << " (default: " << default_topic << ")\n";
 }
 
 int main(int argc, char** argv)
 {
   int o;
-  Options opt;
+  Config conf;
 
-  while ((o = getopt(argc, argv, "b:c:defhi:ko:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:defhi:ko:pq:s:t:")) != -1) {
     switch (o) {
     case 'b':
-      opt.broker = optarg;
+      conf.broker = optarg;
       break;
     case 'c':
-      opt.count = strtoul(optarg, nullptr, 0);
+      conf.count_send = strtoul(optarg, nullptr, 0);
       break;
     case 'd':
-      opt.debug = true;
+      conf.mode_debug = true;
       break;
     case 'e':
-      opt.eval = true;
+      conf.mode_eval = true;
       break;
     case 'f':
       // FIXME: not implemented yet
-      opt.filter = optarg;
+      conf.filter = optarg;
       break;
     case 'i':
-      // FIXME: not support nic yet
-      opt.input = optarg;
+      // FIXME: not support log file and nic yet
+      conf.input = optarg;
       break;
     case 'k':
-      opt.kafka = true;
+      conf.mode_kafka = true;
       break;
     case 'o':
-      // FIXME: not implemented yet
-      opt.output = optarg;
+      conf.output = optarg;
+      break;
+    case 'p':
+      conf.mode_parse = true;
+      break;
+    case 'q':
+      conf.queue_size = strtoul(optarg, nullptr, 0);
       break;
     case 's':
-      // FIXME: not implemented yet
-      opt.skip = strtoul(optarg, nullptr, 0);
+      conf.count_skip = strtoul(optarg, nullptr, 0);
       break;
     case 't':
-      opt.topic = optarg;
+      conf.topic = optarg;
       break;
     case 'h':
     default:
@@ -77,55 +91,63 @@ int main(int argc, char** argv)
     }
   }
 
-  if (opt.input.empty()) {
-    help();
-    exit(0);
-  }
-
-  if (opt.broker.empty()) {
-    opt.broker = default_broker;
-  }
-
-  if (opt.topic.empty()) {
-    opt.topic = default_topic;
-  }
-
-  opt.show_options();
-
-  opt.dprint(F, "start");
-  opt.start_evaluation();
-
   try {
-    Pcap pcap(opt.input);
-    Rdkafka_producer rp(opt.broker, opt.topic);
-    string message;
+    Options opt(conf);
 
-    /* FIXME: skip_bytes() --> skip_packet()
-    if (opt.skip) {
-      pcap.skip_bytes(opt.skip);
+    opt.show_options();
+    opt.dprint(F, "start");
+    opt.start_evaluation();
+
+    unique_ptr<Pcap> pp = nullptr;
+    unique_ptr<RdkafkaProducer> rpp = nullptr;
+    char message[MESSAGE_SIZE];
+    int length = 0;
+
+    if (conf.mode_parse) {
+      strcpy(message, sample_data);
+      length = strlen(message);
+      opt.dprint(F, "message=%s (%d)", message, length);
+    } else {
+      pp = make_unique<Pcap>(conf.input);
+      if (conf.count_skip) {
+        if (!pp->skip_packets(conf.count_skip)) {
+          opt.dprint(F, "failed to skip(%d)", conf.count_skip);
+        }
+      }
     }
-    */
+    if (!conf.mode_kafka) {
+      rpp = make_unique<RdkafkaProducer>(opt);
+    }
 
     while (true) {
-      message = pcap.get_next_stream();
-      if (message.empty()) {
-        break;
+      if (!conf.mode_parse) {
+        length = pp->get_next_stream(message, MESSAGE_SIZE);
+        if (length > 0) {
+          // do nothing
+        } else if (length == RESULT_FAIL) {
+          opt.increase_fail();
+          continue;
+        } else if (length == RESULT_NO_MORE) {
+          break;
+        } else {
+          // can't get here
+        }
       }
-      if (!opt.kafka) {
-        rp.produce(message);
+      if (!conf.mode_kafka) {
+        rpp->produce(string(message));
       }
-      opt.process_evaluation(message.length());
-      opt.mprint("%s", message.c_str());
+      opt.process_evaluation(length);
+      opt.mprint("%s", message);
+      opt.fprint(message);
       if (opt.check_count()) {
         break;
       }
     }
+    opt.report_evaluation();
+    opt.dprint(F, "end");
   } catch (exception const& e) {
-    opt.dprint(F, "exception: %s", e.what());
+    cerr << "Exception: " << e.what() << '\n';
   }
-
-  opt.dprint(F, "end");
-  opt.report_evaluation();
 
   return 0;
 }
