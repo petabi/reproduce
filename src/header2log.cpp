@@ -306,7 +306,7 @@ bool Pcap::tcp_process(char* offset)
   auto tcph = reinterpret_cast<tcphdr*>(offset);
 
 #if 0
-  // FIXME: option processing
+  // FIXME: option & payload processing
   offset += TCP_MINLEN;
 #endif
 
@@ -334,7 +334,11 @@ bool Pcap::tcp_process(char* offset)
 bool Pcap::udp_process(char* offset)
 {
   auto udph = reinterpret_cast<udphdr*>(offset);
+
+#if 0
+  // FIXME: payload processing
   offset += sizeof(struct udphdr);
+#endif
 
   add_token_to_stream("UDP %d %d %d %d ", ntohs(udph->uh_sport),
                       ntohs(udph->uh_dport), ntohs(udph->uh_ulen),
@@ -346,7 +350,11 @@ bool Pcap::udp_process(char* offset)
 bool Pcap::icmp_process(char* offset)
 {
   auto icmph = reinterpret_cast<icmp*>(offset);
+
+#if 0
+  // FIXME: more header processing
   offset += ICMP_MINLEN;
+#endif
 
   if ((unsigned int)(icmph->icmp_type) == 11) {
     add_token_to_stream("ICMP %d %d %d %s ", icmph->icmp_type, icmph->icmp_code,
