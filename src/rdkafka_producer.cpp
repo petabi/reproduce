@@ -10,13 +10,13 @@ enum class KafkaConfType {
 };
 
 struct KafkaConf {
-  KafkaConfType type;
-  string key;
-  string value;
-  string min;
-  string max;
-  string base;
-  string desc;
+  const KafkaConfType type;
+  const char* key;
+  const char* value;
+  const char* min;
+  const char* max;
+  const char* base;
+  const char* desc;
 };
 
 static const KafkaConf kafka_conf[] = {
@@ -131,22 +131,22 @@ void RdkafkaProducer::set_kafka_conf()
 
   // Set configuration properties: optional features
   for (size_t i = 0; i < sizeof(kafka_conf) / sizeof(KafkaConf); i++) {
-    opt.dprint(F, "kafka_conf: %s: %s (%s ~ %s, %s)", kafka_conf[i].key.c_str(),
-               kafka_conf[i].value.c_str(), kafka_conf[i].min.c_str(),
-               kafka_conf[i].max.c_str(), kafka_conf[i].base.c_str());
+    opt.dprint(F, "kafka_conf: %s: %s (%s~%s, %s)", kafka_conf[i].key,
+               kafka_conf[i].value, kafka_conf[i].min, kafka_conf[i].max,
+               kafka_conf[i].base);
     switch (kafka_conf[i].type) {
     case KafkaConfType::GLOBAL:
       if (conf->set(kafka_conf[i].key, kafka_conf[i].value, errstr) !=
           RdKafka::Conf::CONF_OK) {
         throw runtime_error("Failed to set global config: " +
-                            kafka_conf[i].key + ": " + errstr);
+                            string(kafka_conf[i].key) + ": " + errstr);
       }
       break;
     case KafkaConfType::TOPIC:
       if (tconf->set(kafka_conf[i].key, kafka_conf[i].value, errstr) !=
           RdKafka::Conf::CONF_OK) {
-        throw runtime_error("Failed to set topic config: " + kafka_conf[i].key +
-                            ": " + errstr);
+        throw runtime_error("Failed to set topic config: " +
+                            string(kafka_conf[i].key) + ": " + errstr);
       }
       break;
     default:
