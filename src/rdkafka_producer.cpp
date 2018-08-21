@@ -27,7 +27,8 @@ static const KafkaConf kafka_conf[] = {
     {KafkaConfType::GLOBAL, "message.max.bytes", "1000000", "1000",
      "1000000000", "1000000", "Maximum Kafka protocol request message size"},
     {KafkaConfType::GLOBAL, "queue.buffering.max.messages", "100000", "1",
-     "10000000", "100000", "Only provide delivery reports for failed messages"},
+     "10000000", "100000",
+     "Maximum total message size sum allowed on the producer queue"},
     {KafkaConfType::GLOBAL, "queue.buffering.max.kbytes", "1048576", "1",
      "2097151", "1048576",
      "Maximum total message size sum allowed on the producer queue"},
@@ -217,7 +218,7 @@ bool RdkafkaProducer::produce(const string& message) noexcept
     }
     queue_data.clear();
 
-    wait_queue(9999999);
+    wait_queue(99999);
   }
   queue_data += message + '\n';
 
