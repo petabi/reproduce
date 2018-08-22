@@ -177,10 +177,12 @@ void Options::start_evaluation() noexcept
   time_start = clock();
 }
 
-void Options::process_evaluation(size_t length) noexcept
+void Options::process_evaluation(int length) noexcept
 {
-  sent_byte += length;
-  sent_packet++;
+  if (length > 0) {
+    sent_byte += length;
+    sent_packet++;
+  }
 
   if (!conf.mode_eval) {
     return;

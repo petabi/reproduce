@@ -161,26 +161,28 @@ int main(int argc, char** argv)
     }
 
     while (true) {
+      opt.process_evaluation(length);
+      if (opt.check_count()) {
+        break;
+      }
       if (!conf.mode_parse) {
         length = cp->get_next_stream(message, MESSAGE_SIZE);
         if (length > 0) {
-          if (!conf.mode_kafka) {
-            rpp->produce(string(message));
-          }
+          // do nothing
         } else if (length == RESULT_FAIL) {
           opt.increase_fail();
+          continue;
         } else if (length == RESULT_NO_MORE) {
           break;
         } else {
           // can't get here
         }
       }
-      opt.process_evaluation(length);
+      if (!conf.mode_kafka) {
+        rpp->produce(string(message));
+      }
       opt.mprint("%s", message);
       opt.fprint(message);
-      if (opt.check_count()) {
-        break;
-      }
     }
     opt.report_evaluation();
     opt.dprint(F, "end");

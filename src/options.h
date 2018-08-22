@@ -52,7 +52,7 @@ public:
   void fprint(const char* message) noexcept;
   bool check_count() const noexcept;
   void start_evaluation() noexcept;
-  void process_evaluation(size_t length) noexcept;
+  void process_evaluation(int length) noexcept;
   void report_evaluation() const noexcept;
   bool open_output_file() noexcept;
   void increase_fail() noexcept;
