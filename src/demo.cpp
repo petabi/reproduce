@@ -164,18 +164,16 @@ int main(int argc, char** argv)
       if (!conf.mode_parse) {
         length = cp->get_next_stream(message, MESSAGE_SIZE);
         if (length > 0) {
-          // do nothing
+          if (!conf.mode_kafka) {
+            rpp->produce(string(message));
+          }
         } else if (length == RESULT_FAIL) {
           opt.increase_fail();
-          continue;
         } else if (length == RESULT_NO_MORE) {
           break;
         } else {
           // can't get here
         }
-      }
-      if (!conf.mode_kafka) {
-        rpp->produce(string(message));
       }
       opt.process_evaluation(length);
       opt.mprint("%s", message);
