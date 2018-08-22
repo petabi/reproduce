@@ -56,6 +56,7 @@ public:
   void report_evaluation() const noexcept;
   bool open_output_file() noexcept;
   void increase_fail() noexcept;
+  InputType check_input_type() noexcept;
 
 private:
   size_t sent_byte;          // sent bytes
@@ -66,7 +67,6 @@ private:
   clock_t time_start;        // start time
   clock_t time_now;          // current time
   double time_diff;          // time difference
-  InputType input_type;      // input type
   std::ofstream output_file; // output file
 };
 

@@ -40,37 +40,6 @@ void help()
        << " (default: " << default_topic << ")\n";
 }
 
-enum inputType { PCAP, PCAPNG, UNKNOWN, ERROR };
-inputType check_input_type(const string& filepath)
-{
-  const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
-  const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
-  const unsigned char mn_pcap_little_nano[4] = {0x4d, 0x3c, 0xb2, 0xa1};
-  const unsigned char mn_pcap_big_nano[4] = {0xa1, 0xb2, 0x3c, 0x4d};
-  const unsigned char mn_pcapng_little[4] = {0x4D, 0x3C, 0x2B, 0x1A};
-  const unsigned char mn_pcapng_big[4] = {0x1A, 0x2B, 0x3C, 0x4D};
-
-  ifstream input(filepath, ios::binary);
-  if (!input.is_open()) {
-    return inputType::ERROR;
-  }
-
-  input.seekg(0, ios::beg);
-  unsigned char magic[4] = {0};
-  input.read((char*)magic, sizeof(magic));
-
-  if (memcmp(magic, mn_pcap_little_micro, sizeof(magic)) == 0 ||
-      memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
-      memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
-      memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
-    return inputType::PCAP;
-  } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
-             memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
-    return inputType::PCAPNG;
-  }
-  return inputType::UNKNOWN;
-}
-
 int main(int argc, char** argv)
 {
   int o;
@@ -140,11 +109,11 @@ int main(int argc, char** argv)
       length = strlen(message);
       opt.dprint(F, "message=%s (%d)", message, length);
     } else {
-      inputType input_type = check_input_type(conf.input);
-      if (input_type == inputType::PCAP) {
+      InputType input_type = opt.check_input_type();
+      if (input_type == InputType::PCAP) {
         cp = make_unique<Pcap>(conf.input);
         opt.dprint(F, "input type=Pcap", message, length);
-      } else if (input_type == inputType::UNKNOWN) {
+      } else if (input_type == InputType::LOG) {
         cp = make_unique<LogConv>(conf.input);
         opt.dprint(F, "input type=Log", message, length);
       } else {

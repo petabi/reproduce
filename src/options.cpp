@@ -1,3 +1,4 @@
+#include <cstring>
 #include <stdarg.h>
 #include <sys/stat.h>
 
@@ -18,8 +19,7 @@ static constexpr size_t sample_count = 1000000;
 
 Options::Options(Config _conf)
     : conf(move(_conf)), sent_byte(0), sent_packet(0), fail_packet(0),
-      perf_kbps(0), perf_kpps(0), time_start(0), time_now(0), time_diff(0),
-      input_type(InputType::NONE)
+      perf_kbps(0), perf_kpps(0), time_start(0), time_now(0), time_diff(0)
 {
   // input is madatory when mode_parse is not set
   if (conf.input.empty() && !conf.mode_parse) {
@@ -58,7 +58,6 @@ Options::Options(const Options& other)
   time_start = other.time_start;
   time_now = other.time_now;
   time_diff = other.time_diff;
-  input_type = other.input_type;
   // do not use output when it is copied
   // (*this).open_output_file();
 }
@@ -74,7 +73,6 @@ Options& Options::operator=(const Options& other)
     time_start = other.time_start;
     time_now = other.time_now;
     time_diff = other.time_diff;
-    input_type = other.input_type;
     // do not use output when it is assigned
     // (*this).open_output_file();
   }
@@ -99,7 +97,6 @@ void Options::show_options() const noexcept
   dprint(F, "count_skip=%lu", conf.count_skip);
   dprint(F, "queue_size=%u", conf.queue_size);
   dprint(F, "input=%s", conf.input.c_str());
-  dprint(F, "input_type=%d", input_type);
   dprint(F, "output=%s", conf.output.c_str());
   dprint(F, "filter=%s", conf.filter.c_str());
   dprint(F, "broker=%s", conf.broker.c_str());
@@ -181,8 +178,8 @@ void Options::process_evaluation(int length) noexcept
 {
   if (length > 0) {
     sent_byte += length;
-    sent_packet++;
   }
+  sent_packet++;
 
   if (!conf.mode_eval) {
     return;
@@ -237,4 +234,36 @@ bool Options::open_output_file() noexcept
 
 void Options::increase_fail() noexcept { fail_packet++; }
 
+InputType Options::check_input_type() noexcept
+{
+  const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
+  const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
+  const unsigned char mn_pcap_little_nano[4] = {0x4d, 0x3c, 0xb2, 0xa1};
+  const unsigned char mn_pcap_big_nano[4] = {0xa1, 0xb2, 0x3c, 0x4d};
+  const unsigned char mn_pcapng_little[4] = {0x4D, 0x3C, 0x2B, 0x1A};
+  const unsigned char mn_pcapng_big[4] = {0x1A, 0x2B, 0x3C, 0x4D};
+
+  // TODO:Check whether input is a network interface
+  // return NIC;
+
+  ifstream ifs(conf.input, ios::binary);
+  if (!ifs.is_open()) {
+    return InputType::NONE;
+  }
+
+  ifs.seekg(0, ios::beg);
+  unsigned char magic[4] = {0};
+  ifs.read((char*)magic, sizeof(magic));
+
+  if (memcmp(magic, mn_pcap_little_micro, sizeof(magic)) == 0 ||
+      memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
+      memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
+      memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
+    return InputType::PCAP;
+  } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
+             memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
+    return InputType::PCAPNG;
+  }
+  return InputType::LOG;
+}
 // vim: et:ts=2:sw=2
