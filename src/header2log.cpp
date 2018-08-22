@@ -57,7 +57,7 @@ Pcap::~Pcap()
   }
 }
 
-bool Pcap::skip_packets(size_t count_skip)
+bool Pcap::skip(size_t count_skip)
 {
   struct pcap_pkthdr pp;
   size_t count = 0;

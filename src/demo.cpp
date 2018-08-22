@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "header2log.h"
+#include "logConv.h"
 #include "options.h"
 #include "rdkafka_producer.h"
 
@@ -37,6 +38,37 @@ void help()
   cout << "  -s: skip packet count\n";
   cout << "  -t: kafka topic"
        << " (default: " << default_topic << ")\n";
+}
+
+enum inputType { PCAP, PCAPNG, UNKNOWN, ERROR };
+inputType check_input_type(const string& filepath)
+{
+  const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
+  const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
+  const unsigned char mn_pcap_little_nano[4] = {0x4d, 0x3c, 0xb2, 0xa1};
+  const unsigned char mn_pcap_big_nano[4] = {0xa1, 0xb2, 0x3c, 0x4d};
+  const unsigned char mn_pcapng_little[4] = {0x4D, 0x3C, 0x2B, 0x1A};
+  const unsigned char mn_pcapng_big[4] = {0x1A, 0x2B, 0x3C, 0x4D};
+
+  ifstream input(filepath, ios::binary);
+  if (!input.is_open()) {
+    return inputType::ERROR;
+  }
+
+  input.seekg(0, ios::beg);
+  unsigned char magic[4] = {0};
+  input.read((char*)magic, sizeof(magic));
+
+  if (memcmp(magic, mn_pcap_little_micro, sizeof(magic)) == 0 ||
+      memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
+      memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
+      memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
+    return inputType::PCAP;
+  } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
+             memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
+    return inputType::PCAPNG;
+  }
+  return inputType::UNKNOWN;
 }
 
 int main(int argc, char** argv)
@@ -98,7 +130,7 @@ int main(int argc, char** argv)
     opt.dprint(F, "start");
     opt.start_evaluation();
 
-    unique_ptr<Pcap> pp = nullptr;
+    unique_ptr<Conv> cp = nullptr;
     unique_ptr<RdkafkaProducer> rpp = nullptr;
     char message[MESSAGE_SIZE];
     int length = 0;
@@ -108,11 +140,20 @@ int main(int argc, char** argv)
       length = strlen(message);
       opt.dprint(F, "message=%s (%d)", message, length);
     } else {
-      pp = make_unique<Pcap>(conf.input);
-      if (conf.count_skip) {
-        if (!pp->skip_packets(conf.count_skip)) {
-          opt.dprint(F, "failed to skip(%d)", conf.count_skip);
-        }
+      inputType input_type = check_input_type(conf.input);
+      if (input_type == inputType::PCAP) {
+        cp = make_unique<Pcap>(conf.input);
+        opt.dprint(F, "input type=Pcap", message, length);
+      } else if (input_type == inputType::UNKNOWN) {
+        cp = make_unique<LogConv>(conf.input);
+        opt.dprint(F, "input type=Log", message, length);
+      } else {
+        throw runtime_error("Specify the appropriate input (See help)");
+      }
+    }
+    if (conf.count_skip) {
+      if (!cp->skip(conf.count_skip)) {
+        opt.dprint(F, "failed to skip(%d)", conf.count_skip);
       }
     }
     if (!conf.mode_kafka) {
@@ -121,7 +162,7 @@ int main(int argc, char** argv)
 
     while (true) {
       if (!conf.mode_parse) {
-        length = pp->get_next_stream(message, MESSAGE_SIZE);
+        length = cp->get_next_stream(message, MESSAGE_SIZE);
         if (length > 0) {
           // do nothing
         } else if (length == RESULT_FAIL) {

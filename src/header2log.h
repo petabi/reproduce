@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 
+#include "conv.h"
 #include "rdkafka_producer.h"
 
 constexpr int PACKET_BUF_SIZE = 2048;
@@ -14,8 +15,6 @@ constexpr int PACKET_BUF_SIZE = 2048;
 using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
 using u_short = unsigned short;
-
-enum { RESULT_FAIL = -1, RESULT_NO_MORE = 0 };
 
 struct pcap_file_header {
   bpf_u_int32 magic;
@@ -38,7 +37,7 @@ struct pcap_pkthdr {
   bpf_u_int32 len;        /* length this packet (off wire) */
 };
 
-class Pcap {
+class Pcap : public Conv {
 public:
   Pcap() = delete;
   Pcap(const std::string& filename);
@@ -47,15 +46,14 @@ public:
   Pcap(Pcap&& other) noexcept;
   Pcap& operator=(const Pcap&&) = delete;
   ~Pcap();
-  bool skip_packets(size_t size);
-  int get_next_stream(char* message, size_t size);
+  virtual bool skip(size_t size);
+  virtual int get_next_stream(char* message, size_t size);
 
 private:
   FILE* pcapfile;
   unsigned int linktype;
   char packet_buf[PACKET_BUF_SIZE];
   char* ptr;
-  int stream_length = 0;
   bool (Pcap::*get_datalink_process())(char* offset);
   bool (Pcap::*get_internet_process(uint16_t ether_type))(char* offset);
   bool (Pcap::*get_transport_process(uint8_t ip_p))(char* offset);
