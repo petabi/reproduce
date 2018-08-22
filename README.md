@@ -1,28 +1,34 @@
 # Header2log
-=============================================
 
-##Ⅰ. Overview
-----------------------------------------------------
-### Introduction  
+## Overview
+
+### Introduction
+
   Header2log is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
 Packet translation is up to the transport layer, and the protocols currently supported are Ethernet, IP, ARP, TCP, UDP, and ICMP.
 
 ## Ⅱ. Function Specification
-----------------------------------------------------
+
 ### Data entry
+
 Specify a single pcap file or network interface to be converted through the program's options.
 
 ### Conversion
+
 header2log Converts the incoming packet to a stream format with space as delimiter, as in the following Conversion Format. The conversion starts with the sec value in the time_t structure representing the timestamp, and then converts from the lower layer to the higher layer of the protocol.
+
 #### Conversion Example
+
 1531980829 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 56325 19069 64 127 7184 59.7.91.91 121.205.88.134 ip_opt TCP 3389 63044 1092178785 2869829243 20 AP 64032 5779 0
 
 ### result
+
 Header2log outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
 
 ### Conversion Format
 
 #### Ethernet
+
 | Order |     Type    |       description       |      example      |
 |:-----:|:-----------:|:------------------------|:------------------|
 |   1   |     Text    | Protocol Name           | Ethernet2         |
@@ -30,6 +36,7 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 |   3   | MAC Address | Source MAC Address      | a4:7b:2c:1f:eb:61 |
 
 #### IP
+
 | Order |    Type    |       description         |     example     |
 |:-----:|:----------:|:--------------------------|:----------------|
 |   1   |    Text    | Protocol Name             | IP              |
@@ -46,6 +53,7 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 |   12  |    Text    | Presence of option field  | ip_opt          |
 
 #### ARP
+
 | Order |                        Type                        |                 description                  |                     example                     |
 |:-----:|:--------------------------------------------------:|:---------------------------------------------|:------------------------------------------------|
 |   1   |                        Text                        | Protocol name                                | ARP                                             |
@@ -74,6 +82,7 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 |  4-f  |          [MAC Address] [Text] [IP Address]         | OP Code : 9(InARP Reply)                     | a4:7b:2c:3f:eb:24 at 192.168.0.254              |
 
 ### ICMP
+
 | Order |   Type  |         description        |   example   |
 |:-----:|:-------:|:---------------------------|:------------|
 |   1   |   Text  | Protocol name              | ICMP        |
@@ -85,6 +94,7 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 |       |         |   * echo_reply             |             |
 
 ### TCP
+
 | Order |   Type  |        description       |   example  |
 |:-----:|:-------:|:-------------------------|:-----------|
 |   1   |   Text  | Protocol name            | TCP        |
@@ -99,6 +109,7 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 |   10  | Decimal | Urgent Pointer           | 0          |
 
 ### UDP
+
 | Order |   Type  |        description       | example |
 |:-----:|:-------:|:-------------------------|:--------|
 |   1   |   Text  | Protocol name            | UDP     |
@@ -107,11 +118,14 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 |   4   | Decimal | Length                   | 1048    |
 |   5   | Decimal | Checksum                 | 30584   |
 
-##Ⅲ. Usage
-----------------------------------------------------
+## Usage
+
 ### Program Usage  
+
 ```./header2log [OPTIONS]```
+
 ### OPTIONS
+
 * b: kafka broker (default: localhost:9092)
 * c: send packet count
 * d: debug mode (print debug messages)
@@ -125,32 +139,33 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 * q: queue packet bytes (how many bytes send once)
 * s: skip packet count
 * t: kafka topic (default: pcap)
-### Examples
-* Convert pcap file and send it to kafka server : ```./header2log -i [pcap file name] -b [kafka broker addr:port] -t [kafka topic] ```
-* Output only debugging messages (conversion result) after converting pcap file : ```./header2log -i [pcap file name] -d -k```
-* Save result file after converting pcap file : ```./header2log -i [pcap file name] -o [output file]```
-* Skip packets and convert pcap file : ```./header2log -i [pcap file name] -s [skip packet count]```
 
-##Ⅳ. Performance
------------------------------------------------------
+### Examples
+
+* Convert pcap file and send it to kafka server: ```./header2log -i [pcap file name] -b [kafka broker addr:port] -t [kafka topic]```
+* Output only debugging messages (conversion result) after converting pcap file: ```./header2log -i [pcap file name] -d -k```
+* Save result file after converting pcap file: ```./header2log -i [pcap file name] -o [output file]```
+* Skip packets and convert pcap file: ```./header2log -i [pcap file name] -s [skip packet count]```
+
+## Performance
+
 ###Test environment
+
 * CPU : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
 * Memory : 62GB
 
 ###Result
+
 | Contents | Speed |
 |:-----------------------|:-----------------------|
 | Packet Conversion Only | 68.75MBps / 410.39Kpps |
 | Kafka Transmission Only | 270.82MBps / 1622.70Kpps |
 | Packet Conversion + Kafka Transmission | 62.47MBps / 372.89Kpps |
 
+## Issue
 
-##Ⅴ. Issue
------------------------------------------------------
+## To do
 
-
-##Ⅵ. To do
------------------------------------------------------
 * Real-time conversion of sending and receiving packets in network interface (related option: i)
 * Add packet filtering function
-* Support More protocols 
+* Support More protocols
