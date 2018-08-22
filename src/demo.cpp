@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "header2log.h"
+#include "logconv.h"
 #include "options.h"
 #include "rdkafka_producer.h"
 
@@ -98,7 +99,7 @@ int main(int argc, char** argv)
     opt.dprint(F, "start");
     opt.start_evaluation();
 
-    unique_ptr<Pcap> pp = nullptr;
+    unique_ptr<Conv> cp = nullptr;
     unique_ptr<RdkafkaProducer> rpp = nullptr;
     char message[MESSAGE_SIZE];
     int length = 0;
@@ -108,11 +109,22 @@ int main(int argc, char** argv)
       length = strlen(message);
       opt.dprint(F, "message=", message, " (", length, ")");
     } else {
-      pp = make_unique<Pcap>(conf.input);
-      if (conf.count_skip) {
-        if (!pp->skip_packets(conf.count_skip)) {
-          opt.eprint(F, "Failed to skip");
-        }
+      switch (opt.get_input_type()) {
+      case InputType::PCAP:
+        cp = make_unique<Pcap>(conf.input);
+        opt.dprint(F, "input type=Pcap");
+        break;
+      case InputType::LOG:
+        cp = make_unique<LogConv>(conf.input);
+        opt.dprint(F, "input type=Log");
+        break;
+      default:
+        throw runtime_error("Specify the appropriate input (See help)");
+      }
+    }
+    if (conf.count_skip) {
+      if (!cp->skip(conf.count_skip)) {
+        opt.dprint(F, "failed to skip(%d)", conf.count_skip);
       }
     }
     if (!conf.mode_kafka) {
@@ -120,8 +132,12 @@ int main(int argc, char** argv)
     }
 
     while (true) {
+      opt.process_evaluation(length);
+      if (opt.check_count()) {
+        break;
+      }
       if (!conf.mode_parse) {
-        length = pp->get_next_stream(message, MESSAGE_SIZE);
+        length = cp->get_next_stream(message, MESSAGE_SIZE);
         if (length > 0) {
           // do nothing
         } else if (length == RESULT_FAIL) {
@@ -136,12 +152,8 @@ int main(int argc, char** argv)
       if (!conf.mode_kafka) {
         rpp->produce(string(message));
       }
-      opt.process_evaluation(length);
       opt.mprint(message);
       opt.fprint(message);
-      if (opt.check_count()) {
-        break;
-      }
     }
     opt.report_evaluation();
     opt.dprint(F, "end");
