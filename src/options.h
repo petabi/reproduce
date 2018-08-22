@@ -8,10 +8,11 @@
 #define F __func__
 
 enum class InputType {
-  NONE, // no type
-  PCAP, // pcap file
-  LOG,  // log file
-  NIC,  // network interface
+  NONE,   // no type
+  PCAP,   // pcap file
+  PCAPNG, // pcapng file
+  NIC,    // network interface
+  LOG,    // log file
 };
 
 struct Config {
