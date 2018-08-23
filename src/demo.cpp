@@ -106,12 +106,12 @@ int main(int argc, char** argv)
     if (conf.mode_parse) {
       strcpy(message, sample_data);
       length = strlen(message);
-      opt.dprint(F, "message=%s (%d)", message, length);
+      opt.dprint(F, "message=", message, " (", length, ")");
     } else {
       pp = make_unique<Pcap>(conf.input);
       if (conf.count_skip) {
         if (!pp->skip_packets(conf.count_skip)) {
-          opt.dprint(F, "failed to skip(%d)", conf.count_skip);
+          opt.eprint(F, "Failed to skip");
         }
       }
     }
@@ -137,7 +137,7 @@ int main(int argc, char** argv)
         rpp->produce(string(message));
       }
       opt.process_evaluation(length);
-      opt.mprint("%s", message);
+      opt.mprint(message);
       opt.fprint(message);
       if (opt.check_count()) {
         break;
@@ -146,7 +146,7 @@ int main(int argc, char** argv)
     opt.report_evaluation();
     opt.dprint(F, "end");
   } catch (exception const& e) {
-    cerr << "Exception: " << e.what() << '\n';
+    cerr << "[EXCEPTION] " << e.what() << "\n";
   }
 
   return 0;

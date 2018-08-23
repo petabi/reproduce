@@ -15,7 +15,7 @@ using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
 using u_short = unsigned short;
 
-enum { RESULT_FAIL = -1, RESULT_NO_MORE = 0 };
+enum { RESULT_FAIL = -1, RESULT_NO_MORE = 0, RESULT_OK = 1 };
 
 struct pcap_file_header {
   bpf_u_int32 magic;
@@ -52,23 +52,28 @@ public:
 
 private:
   FILE* pcapfile;
-  unsigned int linktype;
-  char packet_buf[PACKET_BUF_SIZE];
+  unsigned char packet_buf[PACKET_BUF_SIZE];
   char* ptr;
-  int stream_length = 0;
-  bool (Pcap::*get_datalink_process())(char* offset);
-  bool (Pcap::*get_internet_process(uint16_t ether_type))(char* offset);
-  bool (Pcap::*get_transport_process(uint8_t ip_p))(char* offset);
-  size_t pcap_header_process();
-  bool ethernet_process(char* offset);
-  bool ipv4_process(char* offset);
-  bool arp_process(char* offset);
-  bool icmp_process(char* offset);
-  bool udp_process(char* offset);
-  bool tcp_process(char* offset);
-  bool null_process(char* offset);
-  bool payload_process(size_t remain_len);
-  void add_token_to_stream(const char* fmt, ...);
+  unsigned int pcap_length;
+  int stream_length;
+  int length;
+  uint32_t l2_type;
+  uint16_t l3_type;
+  uint8_t l4_type;
+  int pcap_header_process();
+  bool (Pcap::*get_l2_process())(unsigned char* offset);
+  bool (Pcap::*get_l3_process())(unsigned char* offset);
+  bool (Pcap::*get_l4_process())(unsigned char* offset);
+  bool l2_ethernet_process(unsigned char* offset);
+  bool l2_null_process(unsigned char* offset);
+  bool l3_ipv4_process(unsigned char* offset);
+  bool l3_arp_process(unsigned char* offset);
+  bool l3_null_process(unsigned char* offset);
+  bool l4_icmp_process(unsigned char* offset);
+  bool l4_udp_process(unsigned char* offset);
+  bool l4_tcp_process(unsigned char* offset);
+  bool l4_null_process(unsigned char* offset);
+  bool add_stream_length();
 };
 
 #endif

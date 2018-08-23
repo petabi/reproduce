@@ -3,15 +3,16 @@
 
 #include <ctime>
 #include <fstream>
+#include <iostream>
 #include <string>
 
 #define F __func__
 
 enum class InputType {
-  NONE, // no type
-  PCAP, // pcap file
-  LOG,  // log file
-  NIC,  // network interface
+  NONE = 0,  // no type
+  PCAP_FILE, // pcap file
+  PCAP_NIC,  // network interface
+  TXT_LOG,   // log file
 };
 
 struct Config {
@@ -44,11 +45,17 @@ public:
   Options(Options&&) = delete;
   Options& operator=(Options&&) = delete;
   ~Options();
-  void show_options() const noexcept;
-  void dprint(const char* name, const char* fmt, ...) const noexcept;
-  void eprint(const char* name, const char* fmt, ...) const noexcept;
-  void mprint(const char* fmt, ...) const noexcept;
+  template <typename T> void print(T tail) const;
+  template <typename T, typename... Ts> void print(T head, Ts... tail) const;
+  template <typename T> void dprint(const char* name, T tail) const;
+  template <typename T, typename... Ts>
+  void dprint(const char* name, T head, Ts... tail) const;
+  template <typename T> void eprint(const char* name, T tail) const;
+  template <typename T, typename... Ts>
+  void eprint(const char* name, T head, Ts... tail) const;
+  void mprint(const char* message) const noexcept;
   void fprint(const char* message) noexcept;
+  void show_options() const noexcept;
   bool check_count() const noexcept;
   void start_evaluation() noexcept;
   void process_evaluation(size_t length) noexcept;
@@ -68,6 +75,50 @@ private:
   InputType input_type;      // input type
   std::ofstream output_file; // output file
 };
+
+template <typename T> void Options::print(T tail) const
+{
+  std::cout << tail << "\n";
+}
+
+template <typename T, typename... Ts>
+void Options::print(T head, Ts... tail) const
+{
+  std::cout << head;
+  print(tail...);
+}
+
+template <typename T> void Options::dprint(const char* name, T head) const
+{
+  if (!conf.mode_debug) {
+    return;
+  }
+
+  std::cout << "[DEBUG] " << name << ": " << head << "\n";
+}
+
+template <typename T, typename... Ts>
+void Options::dprint(const char* name, T head, Ts... tail) const
+{
+  if (!conf.mode_debug) {
+    return;
+  }
+
+  std::cout << "[DEBUG] " << name << ": " << head;
+  print(tail...);
+}
+
+template <typename T> void Options::eprint(const char* name, T tail) const
+{
+  std::cout << "[ERROR] " << name << ": " << tail << "\n";
+}
+
+template <typename T, typename... Ts>
+void Options::eprint(const char* name, T head, Ts... tail) const
+{
+  std::cout << "[ERROR] " << name << ": " << head;
+  print(tail...);
+}
 
 #endif
 
