@@ -382,8 +382,6 @@ bool Pcap::l4_icmp_process(unsigned char* offset)
   return true;
 }
 
-#if 1
-// replace this with ADD_STREAM macro
 bool Pcap::add_stream_length()
 {
   if (length < 0) {
@@ -395,6 +393,5 @@ bool Pcap::add_stream_length()
 
   return true;
 }
-#endif
 
 // vim: et:ts=2:sw=2
