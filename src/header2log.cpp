@@ -194,8 +194,7 @@ bool Pcap::l2_ethernet_process(unsigned char* offset)
       (eh->ether_shost)[3], (eh->ether_shost)[4], (eh->ether_shost)[5]);
 
   l3_type = htons(eh->ether_type);
-  bool success = invoke(get_l3_process(), this, offset);
-  if (!success) {
+  if (!invoke(get_l3_process(), this, offset)) {
     return false;
   }
 
@@ -221,8 +220,7 @@ bool Pcap::l3_ipv4_process(unsigned char* offset)
   }
 
   l4_type = iph->ip_p;
-  bool success = invoke(get_l4_process(), this, offset);
-  if (!success) {
+  if (!invoke(get_l4_process(), this, offset)) {
     return false;
   }
 
