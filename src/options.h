@@ -47,10 +47,10 @@ public:
   ~Options();
   template <typename T> void print(T tail) const;
   template <typename T, typename... Ts> void print(T head, Ts... tail) const;
-  template <typename T> void dprint(const char* name, T head) const;
+  template <typename T> void dprint(const char* name, T tail) const;
   template <typename T, typename... Ts>
   void dprint(const char* name, T head, Ts... tail) const;
-  template <typename T> void eprint(const char* name, T head) const;
+  template <typename T> void eprint(const char* name, T tail) const;
   template <typename T, typename... Ts>
   void eprint(const char* name, T head, Ts... tail) const;
   void mprint(const char* message) const noexcept;
@@ -76,9 +76,9 @@ private:
   std::ofstream output_file; // output file
 };
 
-template <typename T> void Options::print(T name) const
+template <typename T> void Options::print(T tail) const
 {
-  std::cout << name << "\n";
+  std::cout << tail << "\n";
 }
 
 template <typename T, typename... Ts>
@@ -108,9 +108,9 @@ void Options::dprint(const char* name, T head, Ts... tail) const
   print(tail...);
 }
 
-template <typename T> void Options::eprint(const char* name, T head) const
+template <typename T> void Options::eprint(const char* name, T tail) const
 {
-  std::cout << "[ERROR] " << name << ": " << head << "\n";
+  std::cout << "[ERROR] " << name << ": " << tail << "\n";
 }
 
 template <typename T, typename... Ts>

@@ -200,7 +200,7 @@ bool Options::open_output_file() noexcept
 {
   output_file.open(conf.output, ios::out);
   if (!output_file.is_open()) {
-    dprint(F, "Failed to write output file: ", conf.output);
+    eprint(F, "Failed to write output file: ", conf.output);
     return false;
   }
 
