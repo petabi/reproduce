@@ -23,7 +23,7 @@
 #define ADD_STREAM(args...)                                                    \
   if ((length = sprintf(ptr, ##args)) < 0) {                                   \
     return false;                                                              \
-  };                                                                           \
+  }                                                                            \
   ptr += length;                                                               \
   stream_length += length;
 
@@ -87,8 +87,9 @@ int Pcap::get_next_stream(char* message, size_t size)
   stream_length = 0;
   ptr = message;
 
-  if (!pcap_header_process()) {
-    return RESULT_NO_MORE;
+  int ret = pcap_header_process();
+  if (ret <= 0) {
+    return ret;
   }
 
 #if 0
@@ -153,12 +154,12 @@ bool (Pcap::*Pcap::get_l4_process())(unsigned char* offset)
   return &Pcap::l4_null_process;
 }
 
-bool Pcap::pcap_header_process()
+int Pcap::pcap_header_process()
 {
   struct pcap_pkthdr pp;
   size_t pp_len = sizeof(pp);
   if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
-    return false;
+    return RESULT_NO_MORE;
   }
 
 #if 0
@@ -168,12 +169,15 @@ bool Pcap::pcap_header_process()
   cap_time[strlen(cap_time) - 1] = '\0';
 #endif
 
-  // FIXME: error return
-  ADD_STREAM("%d ", pp.ts.tv_sec);
+  length = sprintf(ptr, "%d ", pp.ts.tv_sec);
+  if (length < 0) {
+    return RESULT_FAIL;
+  }
+  add_stream_length();
 
   pcap_length = pp.caplen;
 
-  return true;
+  return 1;
 }
 
 bool Pcap::l2_ethernet_process(unsigned char* offset)
@@ -378,16 +382,16 @@ bool Pcap::l4_icmp_process(unsigned char* offset)
   return true;
 }
 
-#if 0
+#if 1
 // replace this with ADD_STREAM macro
-bool Pcap::add_stream(int len)
+bool Pcap::add_stream_length()
 {
-  if (len < 0) {
+  if (length < 0) {
     return false;
   }
 
-  ptr += len;
-  stream_length += len;
+  ptr += length;
+  stream_length += length;
 
   return true;
 }

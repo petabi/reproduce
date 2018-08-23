@@ -15,7 +15,7 @@ using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
 using u_short = unsigned short;
 
-enum { RESULT_FAIL = -1, RESULT_NO_MORE = 0 };
+enum { RESULT_FAIL = -1, RESULT_NO_MORE = 0, RESULT_OK = 1 };
 
 struct pcap_file_header {
   bpf_u_int32 magic;
@@ -60,10 +60,10 @@ private:
   uint32_t l2_type;
   uint16_t l3_type;
   uint8_t l4_type;
+  int pcap_header_process();
   bool (Pcap::*get_l2_process())(unsigned char* offset);
   bool (Pcap::*get_l3_process())(unsigned char* offset);
   bool (Pcap::*get_l4_process())(unsigned char* offset);
-  bool pcap_header_process();
   bool l2_ethernet_process(unsigned char* offset);
   bool l2_null_process(unsigned char* offset);
   bool l3_ipv4_process(unsigned char* offset);
@@ -73,9 +73,7 @@ private:
   bool l4_udp_process(unsigned char* offset);
   bool l4_tcp_process(unsigned char* offset);
   bool l4_null_process(unsigned char* offset);
-#if 0
-  bool add_stream(int len);
-#endif
+  bool add_stream_length();
 };
 
 #endif
