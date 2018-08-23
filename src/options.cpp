@@ -99,7 +99,7 @@ void Options::mprint(const char* message) const noexcept
 
   if (conf.mode_eval) {
     cout << "[" << sent_byte << "/" << perf_kbps << "/" << sent_packet << "/"
-         << perf_kpps << "]";
+         << perf_kpps << "] ";
   }
 
   cout << message << "\n";
