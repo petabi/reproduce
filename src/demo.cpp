@@ -3,7 +3,7 @@
 #include <unistd.h>
 
 #include "header2log.h"
-#include "logConv.h"
+#include "logconv.h"
 #include "options.h"
 #include "rdkafka_producer.h"
 
@@ -109,14 +109,16 @@ int main(int argc, char** argv)
       length = strlen(message);
       opt.dprint(F, "message=%s (%d)", message, length);
     } else {
-      InputType input_type = opt.check_input_type();
-      if (input_type == InputType::PCAP) {
+      switch (opt.get_input_type()) {
+      case InputType::PCAP:
         cp = make_unique<Pcap>(conf.input);
-        opt.dprint(F, "input type=Pcap", message, length);
-      } else if (input_type == InputType::LOG) {
+        opt.dprint(F, "input type=Pcap");
+        break;
+      case InputType::LOG:
         cp = make_unique<LogConv>(conf.input);
-        opt.dprint(F, "input type=Log", message, length);
-      } else {
+        opt.dprint(F, "input type=Log");
+        break;
+      default:
         throw runtime_error("Specify the appropriate input (See help)");
       }
     }

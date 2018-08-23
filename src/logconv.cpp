@@ -2,7 +2,7 @@
 #include <fstream>
 #include <iostream>
 
-#include "logConv.h"
+#include "logconv.h"
 
 using namespace std;
 

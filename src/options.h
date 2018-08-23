@@ -56,9 +56,10 @@ public:
   void report_evaluation() const noexcept;
   bool open_output_file() noexcept;
   void increase_fail() noexcept;
-  InputType check_input_type() noexcept;
+  InputType get_input_type() noexcept;
 
 private:
+  void set_input_type() noexcept;
   size_t sent_byte;          // sent bytes
   size_t sent_packet;        // sent packets
   size_t fail_packet;        // failed packet count
@@ -67,6 +68,7 @@ private:
   clock_t time_start;        // start time
   clock_t time_now;          // current time
   double time_diff;          // time difference
+  InputType input_type;      // input type
   std::ofstream output_file; // output file
 };
 

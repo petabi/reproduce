@@ -25,7 +25,10 @@ Options::Options(Config _conf)
   if (conf.input.empty() && !conf.mode_parse) {
     throw runtime_error("Must specify input (See help)");
   }
-
+  // set input type
+  if (!conf.input.empty()) {
+    set_input_type();
+  }
   // set default value
   if (conf.broker.empty()) {
     conf.broker = default_broker;
@@ -234,7 +237,9 @@ bool Options::open_output_file() noexcept
 
 void Options::increase_fail() noexcept { fail_packet++; }
 
-InputType Options::check_input_type() noexcept
+InputType Options::get_input_type() noexcept { return input_type; }
+
+void Options::set_input_type() noexcept
 {
   const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
   const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
@@ -248,7 +253,7 @@ InputType Options::check_input_type() noexcept
 
   ifstream ifs(conf.input, ios::binary);
   if (!ifs.is_open()) {
-    return InputType::NONE;
+    input_type = InputType::NONE;
   }
 
   ifs.seekg(0, ios::beg);
@@ -259,11 +264,13 @@ InputType Options::check_input_type() noexcept
       memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
       memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
       memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
-    return InputType::PCAP;
+    input_type = InputType::PCAP;
   } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
              memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
-    return InputType::PCAPNG;
+    input_type = InputType::PCAPNG;
+  } else {
+    input_type = InputType::LOG;
   }
-  return InputType::LOG;
+  return;
 }
 // vim: et:ts=2:sw=2
