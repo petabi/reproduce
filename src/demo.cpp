@@ -10,7 +10,7 @@ using namespace std;
 
 static constexpr size_t MESSAGE_SIZE = 1024;
 static const char* program_name = "header2log";
-static const char* sample_data =
+static constexpr char sample_data[] =
     "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "
     "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "
     "86734452 2522990538 20 A 16425 7168 0";
@@ -104,7 +104,7 @@ int main(int argc, char** argv)
     int length = 0;
 
     if (conf.mode_parse) {
-      strcpy(message, sample_data);
+      copy(sample_data, sample_data + sizeof(sample_data), message);
       length = strlen(message);
       opt.dprint(F, "message=", message, " (", length, ")");
     } else {
