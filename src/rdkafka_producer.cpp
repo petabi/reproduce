@@ -1,3 +1,4 @@
+#include <array>
 #include <iostream>
 
 #include "rdkafka_producer.h"
@@ -19,7 +20,7 @@ struct KafkaConf {
   const char* desc;
 };
 
-static const KafkaConf kafka_conf[] = {
+static const array<KafkaConf, 4> kafka_conf = {{
     {KafkaConfType::GLOBAL, "delivery.report.only.error", "true", "false",
      "true", "false", "Only provide delivery reports for failed messages"},
 
@@ -38,7 +39,7 @@ static const KafkaConf kafka_conf[] = {
     {KafkaConfType::TOPIC, "compression.codec", "l24", "none", "none", "none",
      "none/gzip/snappy/lz4"},
 #endif
-};
+}};
 
 void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
 {
@@ -128,28 +129,26 @@ void RdkafkaProducer::set_kafka_conf()
   }
 
   // Set configuration properties: optional features
-  for (size_t i = 0; i < sizeof(kafka_conf) / sizeof(KafkaConf); i++) {
-    opt.dprint(F, "kafka_conf: ", kafka_conf[i].key, "=", kafka_conf[i].value,
-               " (", kafka_conf[i].min, "~", kafka_conf[i].max, ", ",
-               kafka_conf[i].base, ")");
-    switch (kafka_conf[i].type) {
+  for (const auto& entry : kafka_conf) {
+    opt.dprint(F, "kafka_conf: ", entry.key, "=", entry.value, " (", entry.min,
+               "~", entry.max, ", ", entry.base, ")");
+    switch (entry.type) {
     case KafkaConfType::GLOBAL:
-      if (conf->set(kafka_conf[i].key, kafka_conf[i].value, errstr) !=
-          RdKafka::Conf::CONF_OK) {
+      if (conf->set(entry.key, entry.value, errstr) != RdKafka::Conf::CONF_OK) {
         throw runtime_error("Failed to set global config: " +
-                            string(kafka_conf[i].key) + ": " + errstr);
+                            string(entry.key) + ": " + errstr);
       }
       break;
     case KafkaConfType::TOPIC:
-      if (tconf->set(kafka_conf[i].key, kafka_conf[i].value, errstr) !=
+      if (tconf->set(entry.key, entry.value, errstr) !=
           RdKafka::Conf::CONF_OK) {
-        throw runtime_error("Failed to set topic config: " +
-                            string(kafka_conf[i].key) + ": " + errstr);
+        throw runtime_error("Failed to set topic config: " + string(entry.key) +
+                            ": " + errstr);
       }
       break;
     default:
-      opt.eprint(F, "unknown kafka config type: ",
-                 static_cast<int>(kafka_conf[i].type));
+      opt.eprint(F,
+                 "unknown kafka config type: ", static_cast<int>(entry.type));
       break;
     }
   }
