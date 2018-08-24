@@ -16,23 +16,18 @@ enum class InputType {
 };
 
 struct Config {
-  bool mode_debug;    // debug mode (print debug messages)
-  bool mode_eval;     // evaluation mode (report statistics)
-  bool mode_kafka;    // do not send data to kafka (parse packet only)
-  bool mode_parse;    // do not parse packet (send hardcoded sample data)
-  size_t count_send;  // send packet count
-  size_t count_skip;  // skip packet count
-  size_t queue_size;  // queue size (how many bytes send once)
-  std::string input;  // input pcapfile or nic
-  std::string output; // output file
-  std::string filter; // tcpdump filter string
-  std::string broker; // kafka broker
-  std::string topic;  // kafka topic
-  Config()
-      : mode_debug(false), mode_eval(false), mode_kafka(false),
-        mode_parse(false), count_send(0), count_skip(0), queue_size(0)
-  {
-  }
+  bool mode_debug{false}; // debug mode (print debug messages)
+  bool mode_eval{false};  // evaluation mode (report statistics)
+  bool mode_kafka{false}; // do not send data to kafka (parse packet only)
+  bool mode_parse{false}; // do not parse packet (send hardcoded sample data)
+  size_t count_send{0};   // send packet count
+  size_t count_skip{0};   // skip packet count
+  size_t queue_size{0};   // queue size (how many bytes send once)
+  std::string input;      // input pcapfile or nic
+  std::string output;     // output file
+  std::string filter;     // tcpdump filter string
+  std::string broker;     // kafka broker
+  std::string topic;      // kafka topic
 };
 
 class Options {
