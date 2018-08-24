@@ -169,7 +169,7 @@ void RdkafkaProducer::show_kafka_conf() const
         opt.dprint(F, "### Topic Config");
       }
       // FIXME: iterator
-      for (list<string>::iterator it = dump->begin(); it != dump->end();) {
+      for (auto it = dump->cbegin(); it != dump->cend();) {
         string key = *it++;
         string value = *it++;
         opt.dprint(F, key, "=", value);

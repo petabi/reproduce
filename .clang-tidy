@@ -1,5 +1,5 @@
 ---
 Checks: 'cert-*,modernize-*,performance-*'
 HeaderFilterRegex: '(src|tests)/[^/]*$'
-WarningsAsErrors: 'cert-*,performance-*'
+WarningsAsErrors: 'cert-*,modernize-*,performance-*'
 ---
