@@ -14,8 +14,8 @@ public:
   LogConv(LogConv&& other) noexcept;
   LogConv& operator=(const LogConv&&) = delete;
   ~LogConv();
-  virtual bool skip(size_t count_skip);
-  virtual int get_next_stream(char* message, size_t size);
+  bool skip(size_t count_skip) override;
+  int get_next_stream(char* message, size_t size) override;
 
 private:
   std::ifstream logfile;

@@ -46,8 +46,8 @@ public:
   Pcap(Pcap&& other) noexcept;
   Pcap& operator=(const Pcap&&) = delete;
   ~Pcap();
-  virtual bool skip(size_t size);
-  virtual int get_next_stream(char* message, size_t size);
+  bool skip(size_t size) override;
+  int get_next_stream(char* message, size_t size) override;
 
 private:
   FILE* pcapfile;
