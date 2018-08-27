@@ -13,6 +13,7 @@ LogConv::LogConv(const std::string& filename)
     throw runtime_error("Failed to open input file: " + filename);
   }
 }
+
 LogConv::LogConv(LogConv&& other) noexcept
 {
   if (logfile.is_open()) {
@@ -59,3 +60,5 @@ int LogConv::get_next_stream(char* message, size_t size)
   stream_length = strlen(message);
   return stream_length;
 }
+
+// vim: et:ts=2:sw=2
