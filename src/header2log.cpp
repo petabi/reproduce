@@ -11,13 +11,21 @@
 
 #include "arp.h"
 #include "ethernet.h"
-#include "header2log.h"
 #include "icmp.h"
 #include "ipv4.h"
-#include "rdkafka_producer.h"
 #include "service.h"
 #include "tcp.h"
 #include "udp.h"
+
+#include "header2log.h"
+#include "rdkafka_producer.h"
+
+#define ADD_STREAM(args...)                                                    \
+  if ((length = sprintf(ptr, ##args)) < 0) {                                   \
+    return false;                                                              \
+  }                                                                            \
+  ptr += length;                                                               \
+  stream_length += length;
 
 using namespace std;
 
@@ -37,7 +45,7 @@ Pcap::Pcap(const string& filename)
     throw runtime_error("Invalid input pcap file: " + filename);
   }
 
-  linktype = pfh.linktype;
+  l2_type = pfh.linktype;
 }
 
 Pcap::Pcap(Pcap&& other) noexcept
@@ -79,9 +87,9 @@ int Pcap::get_next_stream(char* message, size_t size)
   stream_length = 0;
   ptr = message;
 
-  size_t packet_len = pcap_header_process();
-  if (packet_len == static_cast<size_t>(-1)) {
-    return RESULT_NO_MORE;
+  int ret = pcap_header_process();
+  if (ret <= 0) {
+    return ret;
   }
 
 #if 0
@@ -91,82 +99,67 @@ int Pcap::get_next_stream(char* message, size_t size)
   }
 #endif
 
-  if (fread(packet_buf, 1, packet_len, pcapfile) != packet_len) {
+  if (fread(packet_buf, 1, pcap_length, pcapfile) != pcap_length) {
     return RESULT_NO_MORE;
   }
 
-  bool success = invoke(get_datalink_process(), this, packet_buf);
-  if (!success) {
+  if (!invoke(get_l2_process(), this, packet_buf)) {
     return RESULT_FAIL;
   }
 
-  // TODO: Add payload process
+  // TODO: payload process
 
   return stream_length;
 }
 
-bool (Pcap::*Pcap::get_datalink_process())(char* offset)
+bool (Pcap::*Pcap::get_l2_process())(unsigned char* offset)
 {
-  switch (linktype) {
+  switch (l2_type) {
   case 1:
-    return &Pcap::ethernet_process;
-#if 0
-  case 6:
-    add_token_to_stream("%s ", "Token Ring ");
-    break;
-  case 10:
-    add_token_to_stream("%s ", "FDDI ");
-    break;
-  case 0:
-    add_token_to_stream("%s ", "Loopback ");
-    break;
-#endif
+    return &Pcap::l2_ethernet_process;
   default:
-    add_token_to_stream("Unknown_L2(%d) ", linktype);
     break;
   }
 
-  return &Pcap::null_process;
+  return &Pcap::l2_null_process;
 }
 
-bool (Pcap::*Pcap::get_internet_process(uint16_t ether_type))(char* offset)
+bool (Pcap::*Pcap::get_l3_process())(unsigned char* offset)
 {
-  switch (htons(ether_type)) {
+  switch (l3_type) {
   case ETHERTYPE_IP:
-    return &Pcap::ipv4_process;
+    return &Pcap::l3_ipv4_process;
   case ETHERTYPE_ARP:
-    return &Pcap::arp_process;
+    return &Pcap::l3_arp_process;
   default:
-    add_token_to_stream("Unknown_L3(%d) ", htons(ether_type));
     break;
   }
 
-  return &Pcap::null_process;
+  return &Pcap::l3_null_process;
 }
 
-bool (Pcap::*Pcap::get_transport_process(uint8_t ip_p))(char* offset)
+bool (Pcap::*Pcap::get_l4_process())(unsigned char* offset)
 {
-  switch (ip_p) {
+  switch (l4_type) {
   case IPPROTO_ICMP:
-    return &Pcap::icmp_process;
+    return &Pcap::l4_icmp_process;
   case IPPROTO_TCP:
-    return &Pcap::tcp_process;
+    return &Pcap::l4_tcp_process;
   case IPPROTO_UDP:
-    return &Pcap::udp_process;
+    return &Pcap::l4_udp_process;
   default:
-    add_token_to_stream("Unknown_L4(%d) ", ip_p);
     break;
   }
 
-  return &Pcap::null_process;
+  return &Pcap::l4_null_process;
 }
 
-size_t Pcap::pcap_header_process()
+int Pcap::pcap_header_process()
 {
   struct pcap_pkthdr pp;
   size_t pp_len = sizeof(pp);
   if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
-    return -1;
+    return RESULT_NO_MORE;
   }
 
 #if 0
@@ -174,62 +167,67 @@ size_t Pcap::pcap_header_process()
   char* cap_time = nullptr;
   cap_time = (char*)ctime((const time_t*)&sec);
   cap_time[strlen(cap_time) - 1] = '\0';
-#else
-  add_token_to_stream("%d ", pp.ts.tv_sec);
 #endif
 
-  return (size_t)pp.caplen;
+  length = sprintf(ptr, "%d ", pp.ts.tv_sec);
+  if (length < 0) {
+    return RESULT_FAIL;
+  }
+  add_stream_length();
+
+  pcap_length = pp.caplen;
+
+  return 1;
 }
 
-bool Pcap::ethernet_process(char* offset)
+bool Pcap::l2_ethernet_process(unsigned char* offset)
 {
   auto eh = reinterpret_cast<ether_header*>(offset);
 
   offset += sizeof(struct ether_header);
 
-  add_token_to_stream(
+  ADD_STREAM(
       "Ethernet2 %02x:%02x:%02x:%02x:%02x:%02x %02x:%02x:%02x:%02x:%02x:%02x ",
       (eh->ether_dhost)[0], (eh->ether_dhost)[1], (eh->ether_dhost)[2],
       (eh->ether_dhost)[3], (eh->ether_dhost)[4], (eh->ether_dhost)[5],
       (eh->ether_shost)[0], (eh->ether_shost)[1], (eh->ether_shost)[2],
       (eh->ether_shost)[3], (eh->ether_shost)[4], (eh->ether_shost)[5]);
 
-  bool success = invoke(get_internet_process(eh->ether_type), this, offset);
-  if (!success) {
+  l3_type = htons(eh->ether_type);
+  if (!invoke(get_l3_process(), this, offset)) {
     return false;
   }
 
   return true;
 }
 
-bool Pcap::ipv4_process(char* offset)
+bool Pcap::l3_ipv4_process(unsigned char* offset)
 {
   auto iph = reinterpret_cast<ip*>(offset);
   size_t opt = 0;
   offset += sizeof(IP_MINLEN);
 
-  add_token_to_stream("IP %d %d %d %d %d %d %d %d %d.%d.%d.%d %d.%d.%d.%d ",
-                      IP_V(iph->ip_vhl), IP_HL(iph->ip_vhl), iph->ip_tos,
-                      iph->ip_len, iph->ip_id, iph->ip_off, iph->ip_ttl,
-                      iph->ip_sum, iph->ip_src[0], iph->ip_src[1],
-                      iph->ip_src[2], iph->ip_src[3], iph->ip_dst[0],
-                      iph->ip_dst[1], iph->ip_dst[2], iph->ip_dst[3]);
+  ADD_STREAM("IP %d %d %d %d %d %d %d %d %u.%u.%u.%u %u.%u.%u.%u ",
+             IP_V(iph->ip_vhl), IP_HL(iph->ip_vhl), iph->ip_tos, iph->ip_len,
+             iph->ip_id, iph->ip_off, iph->ip_ttl, iph->ip_sum, iph->ip_src[0],
+             iph->ip_src[1], iph->ip_src[2], iph->ip_src[3], iph->ip_dst[0],
+             iph->ip_dst[1], iph->ip_dst[2], iph->ip_dst[3]);
 
   opt = IP_HL(iph->ip_vhl) * 4 - sizeof(IP_MINLEN);
   if (opt != 0) {
     offset += opt;
-    add_token_to_stream("%s ", "ip_opt");
+    ADD_STREAM("%s ", "ip_opt");
   }
 
-  bool success = invoke(get_transport_process(iph->ip_p), this, offset);
-  if (!success) {
+  l4_type = iph->ip_p;
+  if (!invoke(get_l4_process(), this, offset)) {
     return false;
   }
 
   return true;
 }
 
-bool Pcap::arp_process(char* offset)
+bool Pcap::l3_arp_process(unsigned char* offset)
 {
   auto arph = reinterpret_cast<arp_pkthdr*>(offset);
   uint16_t hrd = 0, pro = 0;
@@ -237,60 +235,57 @@ bool Pcap::arp_process(char* offset)
   hrd = htons(arph->ar_hrd);
   pro = htons(arph->ar_pro);
 
-  add_token_to_stream("ARP %s %s ", arpop_values.find(hrd)->second,
-                      ethertype_values.find(pro)->second);
+  ADD_STREAM("ARP %s %s ", arpop_values.find(hrd)->second,
+             ethertype_values.find(pro)->second);
 
   if ((pro != ETHERTYPE_IP && pro != ETHERTYPE_TRAIL) || arph->ar_pln != 4 ||
       arph->ar_hln != 6) {
-    add_token_to_stream("%s ", "Unknown_ARP(HW_ADDR)");
+    ADD_STREAM("%s ", "Unknown_ARP(HW_ADDR)");
     return true;
   }
 
-  char* eth_sha = offset;
+  unsigned char* eth_sha = offset;
   offset += arph->ar_hln;
-  char* ip_spa = offset;
+  unsigned char* ip_spa = offset;
   offset += arph->ar_pln;
-  char* eth_tha = offset;
+  unsigned char* eth_tha = offset;
   offset += arph->ar_hln;
-  char* ip_tpa = offset;
+  unsigned char* ip_tpa = offset;
 
   switch (htons(arph->ar_op)) {
   case ARPOP_REQUEST:
-    add_token_to_stream("who-has %d.%d.%d.%d tell %d.%d.%d.%d ", ip_tpa[0],
-                        ip_tpa[1], ip_tpa[2], ip_tpa[3], ip_spa[0], ip_spa[1],
-                        ip_spa[2], ip_spa[3]);
+    ADD_STREAM("who-has %u.%u.%u.%u tell %u.%u.%u.%u ", ip_tpa[0], ip_tpa[1],
+               ip_tpa[2], ip_tpa[3], ip_spa[0], ip_spa[1], ip_spa[2],
+               ip_spa[3]);
     break;
   case ARPOP_REPLY:
-    add_token_to_stream("%d.%d.%d.%d is-at %02x:%02x:%02x:%02x:%02x:%02x ",
-                        ip_spa[0], ip_spa[1], ip_spa[2], ip_spa[3], eth_sha[0],
-                        eth_sha[1], eth_sha[2], eth_sha[3], eth_sha[4],
-                        eth_sha[5]);
+    ADD_STREAM("%u.%u.%u.%u is-at %02x:%02x:%02x:%02x:%02x:%02x ", ip_spa[0],
+               ip_spa[1], ip_spa[2], ip_spa[3], eth_sha[0], eth_sha[1],
+               eth_sha[2], eth_sha[3], eth_sha[4], eth_sha[5]);
     break;
   case ARPOP_REVREQUEST:
-    add_token_to_stream("who-is %02x:%02x:%02x:%02x:%02x:%02x tell "
-                        "%02x:%02x:%02x:%02x:%02x:%02x ",
-                        eth_tha[0], eth_tha[1], eth_tha[2], eth_tha[3],
-                        eth_tha[4], eth_tha[5], eth_tha[0], eth_sha[1],
-                        eth_sha[2], eth_sha[3], eth_sha[4], eth_sha[5]);
+    ADD_STREAM("who-is %02x:%02x:%02x:%02x:%02x:%02x tell "
+               "%02x:%02x:%02x:%02x:%02x:%02x ",
+               eth_tha[0], eth_tha[1], eth_tha[2], eth_tha[3], eth_tha[4],
+               eth_tha[5], eth_tha[0], eth_sha[1], eth_sha[2], eth_sha[3],
+               eth_sha[4], eth_sha[5]);
     break;
   case ARPOP_REVREPLY:
-    add_token_to_stream("%02x:%02x:%02x:%02x:%02x:%02x at %d.%d.%d.%d ",
-                        eth_tha[0], eth_tha[1], eth_tha[2], eth_tha[3],
-                        eth_tha[4], eth_tha[5], ip_tpa[0], ip_tpa[1], ip_tpa[2],
-                        ip_tpa[3]);
+    ADD_STREAM("%02x:%02x:%02x:%02x:%02x:%02x at %u.%u.%u.%u ", eth_tha[0],
+               eth_tha[1], eth_tha[2], eth_tha[3], eth_tha[4], eth_tha[5],
+               ip_tpa[0], ip_tpa[1], ip_tpa[2], ip_tpa[3]);
     break;
   case ARPOP_INVREQUEST:
-    add_token_to_stream("who-is %02x:%02x:%02x:%02x:%02x:%02x tell "
-                        "%02x:%02x:%02x:%02x:%02x:%02x ",
-                        eth_tha[0], eth_tha[1], eth_tha[2], eth_tha[3],
-                        eth_tha[4], eth_tha[5], eth_tha[0], eth_sha[1],
-                        eth_sha[2], eth_sha[3], eth_sha[4], eth_sha[5]);
+    ADD_STREAM("who-is %02x:%02x:%02x:%02x:%02x:%02x tell "
+               "%02x:%02x:%02x:%02x:%02x:%02x ",
+               eth_tha[0], eth_tha[1], eth_tha[2], eth_tha[3], eth_tha[4],
+               eth_tha[5], eth_tha[0], eth_sha[1], eth_sha[2], eth_sha[3],
+               eth_sha[4], eth_sha[5]);
     break;
   case ARPOP_INVREPLY:
-    add_token_to_stream("%02x:%02x:%02x:%02x:%02x:%02x at %d.%d.%d.%d ",
-                        eth_sha[0], eth_sha[1], eth_sha[2], eth_sha[3],
-                        eth_sha[4], eth_sha[5], ip_spa[0], ip_spa[1], ip_spa[2],
-                        ip_spa[3]);
+    ADD_STREAM("%02x:%02x:%02x:%02x:%02x:%02x at %u.%u.%u.%u ", eth_sha[0],
+               eth_sha[1], eth_sha[2], eth_sha[3], eth_sha[4], eth_sha[5],
+               ip_spa[0], ip_spa[1], ip_spa[2], ip_spa[3]);
     break;
   default:
     break;
@@ -299,9 +294,28 @@ bool Pcap::arp_process(char* offset)
   return true;
 }
 
-bool Pcap::null_process(char* offset) { return true; }
+bool Pcap::l2_null_process(unsigned char* offset)
+{
+  ADD_STREAM("Unknown_L2(%d) ", l2_type);
 
-bool Pcap::tcp_process(char* offset)
+  return true;
+}
+
+bool Pcap::l3_null_process(unsigned char* offset)
+{
+  ADD_STREAM("Unknown_L3(%d) ", l3_type);
+
+  return true;
+}
+
+bool Pcap::l4_null_process(unsigned char* offset)
+{
+  ADD_STREAM("Unknown_L4(%d) ", l4_type);
+
+  return true;
+}
+
+bool Pcap::l4_tcp_process(unsigned char* offset)
 {
   auto tcph = reinterpret_cast<tcphdr*>(offset);
 
@@ -310,7 +324,7 @@ bool Pcap::tcp_process(char* offset)
   offset += TCP_MINLEN;
 #endif
 
-  add_token_to_stream(
+  ADD_STREAM(
       "TCP %d %d %u %u %d %s%s%s%s%s%s %d %d %d ", ntohs(tcph->th_sport),
       ntohs(tcph->th_dport), ntohl(tcph->th_seq), ntohl(tcph->th_ack),
       TCP_HLEN(tcph->th_offx2) * 4, tcph->th_flags & TH_URG ? "U" : "",
@@ -325,13 +339,13 @@ bool Pcap::tcp_process(char* offset)
       min(min(ntohs(tcph->th_sport), ntohs(tcph->th_dport)),
         MAX_DEFINED_PORT_NUMBER));
   if (service < MAX_DEFINED_PORT_NUMBER)
-    add_token_to_stream("%s ", TCP_PORT_SERV_DICT.find(service)->second);
+    ADD_STREAM("%s ", TCP_PORT_SERV_DICT.find(service)->second);
 #endif
 
   return true;
 }
 
-bool Pcap::udp_process(char* offset)
+bool Pcap::l4_udp_process(unsigned char* offset)
 {
   auto udph = reinterpret_cast<udphdr*>(offset);
 
@@ -340,14 +354,13 @@ bool Pcap::udp_process(char* offset)
   offset += sizeof(struct udphdr);
 #endif
 
-  add_token_to_stream("UDP %d %d %d %d ", ntohs(udph->uh_sport),
-                      ntohs(udph->uh_dport), ntohs(udph->uh_ulen),
-                      ntohs(udph->uh_sum));
+  ADD_STREAM("UDP %d %d %d %d ", ntohs(udph->uh_sport), ntohs(udph->uh_dport),
+             ntohs(udph->uh_ulen), ntohs(udph->uh_sum));
 
   return true;
 }
 
-bool Pcap::icmp_process(char* offset)
+bool Pcap::l4_icmp_process(unsigned char* offset)
 {
   auto icmph = reinterpret_cast<icmp*>(offset);
 
@@ -357,25 +370,26 @@ bool Pcap::icmp_process(char* offset)
 #endif
 
   if ((unsigned int)(icmph->icmp_type) == 11) {
-    add_token_to_stream("ICMP %d %d %d %s ", icmph->icmp_type, icmph->icmp_code,
-                        icmph->icmp_cksum, "ttl_expired");
+    ADD_STREAM("ICMP %d %d %d %s ", icmph->icmp_type, icmph->icmp_code,
+               icmph->icmp_cksum, "ttl_expired");
   } else if ((unsigned int)(icmph->icmp_type) == ICMP_ECHOREPLY) {
-    add_token_to_stream("ICMP %d %d %d %s ", icmph->icmp_type, icmph->icmp_code,
-                        icmph->icmp_cksum, "echo_reply");
+    ADD_STREAM("ICMP %d %d %d %s ", icmph->icmp_type, icmph->icmp_code,
+               icmph->icmp_cksum, "echo_reply");
   }
 
   return true;
 }
 
-void Pcap::add_token_to_stream(const char* fmt, ...)
+bool Pcap::add_stream_length()
 {
-  va_list args;
-  va_start(args, fmt);
-  int len = vsprintf(ptr, fmt, args);
-  va_end(args);
+  if (length < 0) {
+    return false;
+  }
 
-  ptr += len;
-  stream_length += len;
+  ptr += length;
+  stream_length += length;
+
+  return true;
 }
 
 // vim: et:ts=2:sw=2

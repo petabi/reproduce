@@ -90,64 +90,18 @@ Options::~Options()
   }
 }
 
-void Options::show_options() const noexcept
-{
-  dprint(F, "mode_debug=%d", conf.mode_debug);
-  dprint(F, "mode_evel=%d", conf.mode_eval);
-  dprint(F, "mode_kafka=%d", conf.mode_kafka);
-  dprint(F, "mode_parse=%d", conf.mode_parse);
-  dprint(F, "count_send=%lu", conf.count_send);
-  dprint(F, "count_skip=%lu", conf.count_skip);
-  dprint(F, "queue_size=%u", conf.queue_size);
-  dprint(F, "input=%s", conf.input.c_str());
-  dprint(F, "output=%s", conf.output.c_str());
-  dprint(F, "filter=%s", conf.filter.c_str());
-  dprint(F, "broker=%s", conf.broker.c_str());
-  dprint(F, "topic=%s", conf.topic.c_str());
-}
-
-void Options::dprint(const char* name, const char* fmt, ...) const noexcept
-{
-  if (!conf.mode_debug) {
-    return;
-  }
-
-  va_list args;
-
-  fprintf(stdout, "[DEBUG] %s: ", name);
-  va_start(args, fmt);
-  vfprintf(stdout, fmt, args);
-  va_end(args);
-  fprintf(stdout, "\n");
-}
-
-void Options::eprint(const char* name, const char* fmt, ...) const noexcept
-{
-  va_list args;
-
-  fprintf(stdout, "[ERROR] %s: ", name);
-  va_start(args, fmt);
-  vfprintf(stdout, fmt, args);
-  va_end(args);
-  fprintf(stdout, "\n");
-}
-
-void Options::mprint(const char* fmt, ...) const noexcept
+void Options::mprint(const char* message) const noexcept
 {
   if (!conf.mode_debug) {
     return;
   }
 
   if (conf.mode_eval) {
-    fprintf(stdout, "[%lu/%.1f/%lu/%.1f] ", sent_byte, perf_kbps, sent_packet,
-            perf_kpps);
+    cout << "[" << sent_byte << "/" << perf_kbps << "/" << sent_packet << "/"
+         << perf_kpps << "] ";
   }
 
-  va_list args;
-  va_start(args, fmt);
-  vfprintf(stdout, fmt, args);
-  va_end(args);
-  fprintf(stdout, "\n");
+  cout << message << "\n";
 }
 
 void Options::fprint(const char* message) noexcept
@@ -156,7 +110,24 @@ void Options::fprint(const char* message) noexcept
     return;
   }
 
-  output_file << message << '\n';
+  output_file << message << "\n";
+}
+
+void Options::show_options() const noexcept
+{
+  dprint(F, "mode_debug=", conf.mode_debug);
+  dprint(F, "mode_eval=", conf.mode_eval);
+  dprint(F, "mode_kafka=", conf.mode_kafka);
+  dprint(F, "mode_parse=", conf.mode_parse);
+  dprint(F, "count_send=", conf.count_send);
+  dprint(F, "count_skip=", conf.count_skip);
+  dprint(F, "queue_size=", conf.queue_size);
+  dprint(F, "input=", conf.input);
+  dprint(F, "input_type=", static_cast<int>(input_type));
+  dprint(F, "output=", conf.output);
+  dprint(F, "filter=", conf.filter);
+  dprint(F, "broker=", conf.broker);
+  dprint(F, "topic=", conf.topic);
 }
 
 bool Options::check_count() const noexcept
@@ -205,30 +176,32 @@ void Options::report_evaluation() const noexcept
 
   struct stat st;
 
-  fprintf(stdout, "--------------------------------------------------\n");
+  cout.precision(2);
+  cout << fixed;
+  cout << "--------------------------------------------------\n";
   if (stat(conf.input.c_str(), &st) != -1) {
-    fprintf(stdout, "Input File  : %s (%.2fM)\n", conf.input.c_str(),
-            (double)st.st_size / MBYTE);
+    cout << "Input File  : " << conf.input << "(" << (double)st.st_size / MBYTE
+         << ")\n";
   } else {
-    fprintf(stdout, "Input File  : invalid\n");
+    cout << "Input File  : invalid\n";
   }
-  fprintf(stdout, "Sent Bytes  : %lu(%.2fM)\n", sent_byte,
-          (double)sent_byte / MBYTE);
-  fprintf(stdout, "Sent Packets: %lu(%.2fM)\n", sent_packet,
-          (double)sent_packet / MPACKET);
-  fprintf(stdout, "Fail Packets: %lu(%.2fM)\n", fail_packet,
-          (double)fail_packet / MPACKET);
-  fprintf(stdout, "Elapsed Time: %.2fs\n", time_diff);
-  fprintf(stdout, "Performance : %.2fMBps/%.2fKpps\n", perf_kbps / KBYTE,
-          perf_kpps);
-  fprintf(stdout, "--------------------------------------------------\n");
+  cout << "Sent Bytes  : " << sent_byte << "(" << (double)sent_byte / MBYTE
+       << "M)\n";
+  cout << "Sent Packets: " << sent_packet << "("
+       << (double)sent_packet / MPACKET << "M)\n";
+  cout << "Fail Packets: " << fail_packet << "("
+       << (double)fail_packet / MPACKET << "M)\n";
+  cout << "Elapsed Time: " << time_diff << "s\n";
+  cout << "Performance : " << perf_kbps / KBYTE << "MBps/" << perf_kpps
+       << "Kpps\n";
+  cout << "--------------------------------------------------\n";
 }
 
 bool Options::open_output_file() noexcept
 {
   output_file.open(conf.output, ios::out);
   if (!output_file.is_open()) {
-    dprint(F, "Failed to write %s file", conf.output.c_str());
+    eprint(F, "Failed to write output file: ", conf.output);
     return false;
   }
 
