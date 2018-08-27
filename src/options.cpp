@@ -1,5 +1,5 @@
+#include <cstdarg>
 #include <cstring>
-#include <stdarg.h>
 #include <sys/stat.h>
 
 #include "options.h"
