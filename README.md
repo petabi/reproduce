@@ -7,7 +7,7 @@
   Header2log is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
 Packet translation is up to the transport layer, and the protocols currently supported are Ethernet, IP, ARP, TCP, UDP, and ICMP.
 
-## Ⅱ. Function Specification
+## Function Specification
 
 ### Data entry
 
