@@ -140,10 +140,10 @@ int main(int argc, char** argv)
         length = cp->get_next_stream(message, MESSAGE_SIZE);
         if (length > 0) {
           // do nothing
-        } else if (static_cast<Conv_result>(length) == Conv_result::FAIL) {
+        } else if (static_cast<ConvResult>(length) == ConvResult::FAIL) {
           opt.increase_fail();
           continue;
-        } else if (static_cast<Conv_result>(length) == Conv_result::NO_MORE) {
+        } else if (static_cast<ConvResult>(length) == ConvResult::NO_MORE) {
           break;
         } else {
           // can't get here
