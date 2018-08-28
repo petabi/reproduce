@@ -58,7 +58,7 @@ public:
   void report_evaluation() const noexcept;
   bool open_output_file() noexcept;
   void increase_fail() noexcept;
-  InputType get_input_type() noexcept;
+  const InputType get_input_type() const noexcept;
 
 private:
   void set_input_type() noexcept;

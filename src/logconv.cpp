@@ -52,9 +52,9 @@ int LogConv::get_next_stream(char* message, size_t size)
   string line;
   if (!logfile.getline(message, size)) {
     if (logfile.eof()) {
-      return RESULT_NO_MORE;
+      return static_cast<int>(Conv_result::NO_MORE);
     } else if (logfile.bad() || logfile.fail()) {
-      return RESULT_FAIL;
+      return static_cast<int>(Conv_result::FAIL);
     }
   }
   stream_length = strlen(message);

@@ -25,7 +25,6 @@ Options::Options(Config _conf)
   if (conf.input.empty() && !conf.mode_parse) {
     throw runtime_error("Must specify input (See help)");
   }
-  // set input type
   if (!conf.input.empty()) {
     set_input_type();
   }
@@ -210,7 +209,7 @@ bool Options::open_output_file() noexcept
 
 void Options::increase_fail() noexcept { fail_packet++; }
 
-InputType Options::get_input_type() noexcept { return input_type; }
+const InputType Options::get_input_type() const noexcept { return input_type; }
 
 void Options::set_input_type() noexcept
 {

@@ -1,7 +1,7 @@
 #ifndef CONV_H
 #define CONV_H
 
-enum { RESULT_FAIL = -2, RESULT_NO_MORE = -1 };
+enum class Conv_result { FAIL = -2, NO_MORE = -1 };
 
 class Conv {
 public:
