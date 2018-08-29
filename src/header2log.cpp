@@ -18,7 +18,6 @@
 #include "udp.h"
 
 #include "header2log.h"
-#include "rdkafka_producer.h"
 
 #define ADD_STREAM(args...)                                                    \
   if ((length = sprintf(ptr, ##args)) < 0) {                                   \

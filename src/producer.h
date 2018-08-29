@@ -1,5 +1,5 @@
-#ifndef RDKAFKA_PRODUCER_H
-#define RDKAFKA_PRODUCER_H
+#ifndef PRODUCER_H
+#define PRODUCER_H
 
 #include <memory>
 #include <string>
@@ -7,6 +7,14 @@
 #include "librdkafka/rdkafkacpp.h"
 
 #include "options.h"
+
+/**
+ * Producer
+ */
+
+/**
+ * KafkaProducer
+ */
 
 class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
 public:
@@ -20,15 +28,15 @@ public:
   void event_cb(RdKafka::Event&) override;
 };
 
-class RdkafkaProducer {
+class KafkaProducer {
 public:
-  RdkafkaProducer() = delete;
-  RdkafkaProducer(const Options&);
-  RdkafkaProducer(const RdkafkaProducer&) = delete;
-  RdkafkaProducer& operator=(const RdkafkaProducer&) = delete;
-  RdkafkaProducer(RdkafkaProducer&&) = default;
-  RdkafkaProducer& operator=(RdkafkaProducer&&) = default;
-  ~RdkafkaProducer();
+  KafkaProducer() = delete;
+  KafkaProducer(const Options&);
+  KafkaProducer(const KafkaProducer&) = delete;
+  KafkaProducer& operator=(const KafkaProducer&) = delete;
+  KafkaProducer(KafkaProducer&&) = default;
+  KafkaProducer& operator=(KafkaProducer&&) = default;
+  ~KafkaProducer();
   void wait_queue(const int count) noexcept;
   bool produce(const std::string& message) noexcept;
 
@@ -45,6 +53,14 @@ private:
   void set_kafka_conf();
   void show_kafka_conf() const;
 };
+
+/**
+ * FileProducer
+ */
+
+/**
+ * NullProducer
+ */
 
 #endif
 

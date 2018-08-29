@@ -1,9 +1,13 @@
 #include <array>
 #include <iostream>
 
-#include "rdkafka_producer.h"
+#include "producer.h"
 
 using namespace std;
+
+/**
+ * KafkaProducer
+ */
 
 enum class KafkaConfType {
   GLOBAL = 1,
@@ -73,7 +77,7 @@ void RdEventCb::event_cb(RdKafka::Event& event)
   }
 }
 
-RdkafkaProducer::RdkafkaProducer(const Options& _opt) : opt(_opt)
+KafkaProducer::KafkaProducer(const Options& _opt) : opt(_opt)
 {
   if (opt.conf.broker.empty() || opt.conf.topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
@@ -111,7 +115,7 @@ RdkafkaProducer::RdkafkaProducer(const Options& _opt) : opt(_opt)
   }
 }
 
-void RdkafkaProducer::set_kafka_conf()
+void KafkaProducer::set_kafka_conf()
 {
   string errstr;
 
@@ -154,7 +158,7 @@ void RdkafkaProducer::set_kafka_conf()
   }
 }
 
-void RdkafkaProducer::show_kafka_conf() const
+void KafkaProducer::show_kafka_conf() const
 {
   // show kafka producer config
   if (opt.conf.mode_debug) {
@@ -178,7 +182,7 @@ void RdkafkaProducer::show_kafka_conf() const
   }
 }
 
-void RdkafkaProducer::wait_queue(const int count) noexcept
+void KafkaProducer::wait_queue(const int count) noexcept
 {
   while (producer->outq_len() > count) {
     opt.dprint(F, "waiting for ", producer->outq_len());
@@ -188,7 +192,7 @@ void RdkafkaProducer::wait_queue(const int count) noexcept
   }
 }
 
-bool RdkafkaProducer::produce_core(const string& message) noexcept
+bool KafkaProducer::produce_core(const string& message) noexcept
 {
   // Produce message
   RdKafka::ErrorCode resp = producer->produce(
@@ -208,7 +212,7 @@ bool RdkafkaProducer::produce_core(const string& message) noexcept
   return true;
 }
 
-bool RdkafkaProducer::produce(const string& message) noexcept
+bool KafkaProducer::produce(const string& message) noexcept
 {
   if (queue_data.length() + message.length() >= opt.conf.queue_size) {
     if (!produce_core(queue_data)) {
@@ -223,7 +227,7 @@ bool RdkafkaProducer::produce(const string& message) noexcept
   return true;
 }
 
-RdkafkaProducer::~RdkafkaProducer()
+KafkaProducer::~KafkaProducer()
 {
   opt.dprint(F, "last queued data: ", queue_data.size());
 
@@ -235,5 +239,13 @@ RdkafkaProducer::~RdkafkaProducer()
 
   RdKafka::wait_destroyed(1000);
 }
+
+/**
+ * FileProducer
+ */
+
+/**
+ * NullProducer
+ */
 
 // vim: et:ts=2:sw=2

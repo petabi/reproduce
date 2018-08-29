@@ -8,7 +8,7 @@
 #include <string>
 
 #include "conv.h"
-#include "rdkafka_producer.h"
+#include "producer.h"
 
 constexpr int PACKET_BUF_SIZE = 2048;
 

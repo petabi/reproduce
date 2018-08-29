@@ -5,7 +5,7 @@
 #include "header2log.h"
 #include "logconv.h"
 #include "options.h"
-#include "rdkafka_producer.h"
+#include "producer.h"
 
 using namespace std;
 
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
     opt.start_evaluation();
 
     unique_ptr<Conv> cp = nullptr;
-    unique_ptr<RdkafkaProducer> rpp = nullptr;
+    unique_ptr<KafkaProducer> rpp = nullptr;
     char message[MESSAGE_SIZE];
     int length = 0;
 
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
       }
     }
     if (!conf.mode_kafka) {
-      rpp = make_unique<RdkafkaProducer>(opt);
+      rpp = make_unique<KafkaProducer>(opt);
     }
 
     while (true) {
