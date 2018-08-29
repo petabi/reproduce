@@ -65,7 +65,7 @@ Pcap::~Pcap()
   }
 }
 
-bool Pcap::skip_packets(size_t count_skip)
+bool Pcap::skip(size_t count_skip)
 {
   struct pcap_pkthdr pp;
   size_t count = 0;
@@ -100,11 +100,11 @@ int Pcap::get_next_stream(char* message, size_t size)
 #endif
 
   if (fread(packet_buf, 1, pcap_length, pcapfile) != pcap_length) {
-    return RESULT_NO_MORE;
+    return static_cast<int>(ConvResult::NO_MORE);
   }
 
   if (!invoke(get_l2_process(), this, packet_buf)) {
-    return RESULT_FAIL;
+    return static_cast<int>(ConvResult::FAIL);
   }
 
   // TODO: payload process
@@ -159,7 +159,7 @@ int Pcap::pcap_header_process()
   struct pcap_pkthdr pp;
   size_t pp_len = sizeof(pp);
   if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
-    return RESULT_NO_MORE;
+    return static_cast<int>(ConvResult::NO_MORE);
   }
 
 #if 0
@@ -171,7 +171,7 @@ int Pcap::pcap_header_process()
 
   length = sprintf(ptr, "%d ", pp.ts.tv_sec);
   if (length < 0) {
-    return RESULT_FAIL;
+    return static_cast<int>(ConvResult::FAIL);
   }
   add_stream_length();
 

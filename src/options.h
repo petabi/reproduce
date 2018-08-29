@@ -9,10 +9,11 @@
 #define F __func__
 
 enum class InputType {
-  NONE = 0,  // no type
-  PCAP_FILE, // pcap file
-  PCAP_NIC,  // network interface
-  TXT_LOG,   // log file
+  NONE,   // no type
+  PCAP,   // pcap file
+  PCAPNG, // pcapng file
+  NIC,    // network interface
+  LOG,    // log file
 };
 
 struct Config {
@@ -53,12 +54,14 @@ public:
   void show_options() const noexcept;
   bool check_count() const noexcept;
   void start_evaluation() noexcept;
-  void process_evaluation(size_t length) noexcept;
+  void process_evaluation(int length) noexcept;
   void report_evaluation() const noexcept;
   bool open_output_file() noexcept;
   void increase_fail() noexcept;
+  const InputType get_input_type() const noexcept;
 
 private:
+  void set_input_type() noexcept;
   size_t sent_byte;          // sent bytes
   size_t sent_packet;        // sent packets
   size_t fail_packet;        // failed packet count

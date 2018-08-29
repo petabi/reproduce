@@ -1,6 +1,5 @@
 #include <cstdarg>
-#include <iomanip>
-#include <iostream>
+#include <cstring>
 #include <sys/stat.h>
 
 #include "options.h"
@@ -20,14 +19,15 @@ static constexpr size_t sample_count = 1000000;
 
 Options::Options(Config _conf)
     : conf(move(_conf)), sent_byte(0), sent_packet(0), fail_packet(0),
-      perf_kbps(0), perf_kpps(0), time_start(0), time_now(0), time_diff(0),
-      input_type(InputType::NONE)
+      perf_kbps(0), perf_kpps(0), time_start(0), time_now(0), time_diff(0)
 {
   // input is madatory when mode_parse is not set
   if (conf.input.empty() && !conf.mode_parse) {
     throw runtime_error("Must specify input (See help)");
   }
-
+  if (!conf.input.empty()) {
+    set_input_type();
+  }
   // set default value
   if (conf.broker.empty()) {
     conf.broker = default_broker;
@@ -60,7 +60,6 @@ Options::Options(const Options& other)
   time_start = other.time_start;
   time_now = other.time_now;
   time_diff = other.time_diff;
-  input_type = other.input_type;
   // do not use output when it is copied
   // (*this).open_output_file();
 }
@@ -76,7 +75,6 @@ Options& Options::operator=(const Options& other)
     time_start = other.time_start;
     time_now = other.time_now;
     time_diff = other.time_diff;
-    input_type = other.input_type;
     // do not use output when it is assigned
     // (*this).open_output_file();
   }
@@ -149,9 +147,11 @@ void Options::start_evaluation() noexcept
   time_start = clock();
 }
 
-void Options::process_evaluation(size_t length) noexcept
+void Options::process_evaluation(int length) noexcept
 {
-  sent_byte += length;
+  if (length > 0) {
+    sent_byte += length;
+  }
   sent_packet++;
 
   if (!conf.mode_eval) {
@@ -209,4 +209,40 @@ bool Options::open_output_file() noexcept
 
 void Options::increase_fail() noexcept { fail_packet++; }
 
+const InputType Options::get_input_type() const noexcept { return input_type; }
+
+void Options::set_input_type() noexcept
+{
+  const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
+  const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
+  const unsigned char mn_pcap_little_nano[4] = {0x4d, 0x3c, 0xb2, 0xa1};
+  const unsigned char mn_pcap_big_nano[4] = {0xa1, 0xb2, 0x3c, 0x4d};
+  const unsigned char mn_pcapng_little[4] = {0x4D, 0x3C, 0x2B, 0x1A};
+  const unsigned char mn_pcapng_big[4] = {0x1A, 0x2B, 0x3C, 0x4D};
+
+  // TODO:Check whether input is a network interface
+  // return NIC;
+
+  ifstream ifs(conf.input, ios::binary);
+  if (!ifs.is_open()) {
+    input_type = InputType::NONE;
+  }
+
+  ifs.seekg(0, ios::beg);
+  unsigned char magic[4] = {0};
+  ifs.read((char*)magic, sizeof(magic));
+
+  if (memcmp(magic, mn_pcap_little_micro, sizeof(magic)) == 0 ||
+      memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
+      memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
+      memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
+    input_type = InputType::PCAP;
+  } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
+             memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
+    input_type = InputType::PCAPNG;
+  } else {
+    input_type = InputType::LOG;
+  }
+  return;
+}
 // vim: et:ts=2:sw=2
