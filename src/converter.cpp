@@ -17,18 +17,23 @@
 #include "tcp.h"
 #include "udp.h"
 
-#include "header2log.h"
+#include "converter.h"
+#include "producer.h"
+
+using namespace std;
+
+/**
+ * PacketConverter
+ */
 
 #define ADD_STREAM(args...)                                                    \
   if ((length = sprintf(ptr, ##args)) < 0) {                                   \
     return false;                                                              \
   }                                                                            \
   ptr += length;                                                               \
-  stream_length += length;
+  conv_len += length;
 
-using namespace std;
-
-Pcap::Pcap(const string& filename)
+PacketConverter::PacketConverter(const string& filename)
 {
   pcapfile = fopen(filename.c_str(), "r");
   if (pcapfile == nullptr) {
@@ -47,7 +52,7 @@ Pcap::Pcap(const string& filename)
   l2_type = pfh.linktype;
 }
 
-Pcap::Pcap(Pcap&& other) noexcept
+PacketConverter::PacketConverter(PacketConverter&& other) noexcept
 {
   FILE* tmp = other.pcapfile;
   other.pcapfile = nullptr;
@@ -57,14 +62,14 @@ Pcap::Pcap(Pcap&& other) noexcept
   pcapfile = tmp;
 }
 
-Pcap::~Pcap()
+PacketConverter::~PacketConverter()
 {
   if (pcapfile != nullptr) {
     fclose(pcapfile);
   }
 }
 
-bool Pcap::skip(size_t count_skip)
+bool PacketConverter::skip(size_t count_skip)
 {
   struct pcap_pkthdr pp;
   size_t count = 0;
@@ -81,9 +86,9 @@ bool Pcap::skip(size_t count_skip)
   return true;
 }
 
-int Pcap::get_next_stream(char* message, size_t size)
+int PacketConverter::convert(char* message, size_t size)
 {
-  stream_length = 0;
+  conv_len = 0;
   ptr = message;
 
   int ret = pcap_header_process();
@@ -99,66 +104,69 @@ int Pcap::get_next_stream(char* message, size_t size)
 #endif
 
   if (fread(packet_buf, 1, pcap_length, pcapfile) != pcap_length) {
-    return static_cast<int>(ConvResult::NO_MORE);
+    return static_cast<int>(ConverterResult::NO_MORE);
   }
 
   if (!invoke(get_l2_process(), this, packet_buf)) {
-    return static_cast<int>(ConvResult::FAIL);
+    return static_cast<int>(ConverterResult::FAIL);
   }
 
   // TODO: payload process
 
-  return stream_length;
+  return conv_len;
 }
 
-bool (Pcap::*Pcap::get_l2_process())(unsigned char* offset)
+bool (PacketConverter::*PacketConverter::get_l2_process())(
+    unsigned char* offset)
 {
   switch (l2_type) {
   case 1:
-    return &Pcap::l2_ethernet_process;
+    return &PacketConverter::l2_ethernet_process;
   default:
     break;
   }
 
-  return &Pcap::l2_null_process;
+  return &PacketConverter::l2_null_process;
 }
 
-bool (Pcap::*Pcap::get_l3_process())(unsigned char* offset)
+bool (PacketConverter::*PacketConverter::get_l3_process())(
+    unsigned char* offset)
 {
   switch (l3_type) {
   case ETHERTYPE_IP:
-    return &Pcap::l3_ipv4_process;
+    return &PacketConverter::l3_ipv4_process;
   case ETHERTYPE_ARP:
-    return &Pcap::l3_arp_process;
+    return &PacketConverter::l3_arp_process;
   default:
     break;
   }
 
-  return &Pcap::l3_null_process;
+  return &PacketConverter::l3_null_process;
 }
 
-bool (Pcap::*Pcap::get_l4_process())(unsigned char* offset)
+bool (PacketConverter::*PacketConverter::get_l4_process())(
+    unsigned char* offset)
 {
   switch (l4_type) {
   case IPPROTO_ICMP:
-    return &Pcap::l4_icmp_process;
+    return &PacketConverter::l4_icmp_process;
   case IPPROTO_TCP:
-    return &Pcap::l4_tcp_process;
+    return &PacketConverter::l4_tcp_process;
   case IPPROTO_UDP:
-    return &Pcap::l4_udp_process;
+    return &PacketConverter::l4_udp_process;
   default:
     break;
   }
 
-  return &Pcap::l4_null_process;
+  return &PacketConverter::l4_null_process;
 }
 
-int Pcap::pcap_header_process()
+int PacketConverter::pcap_header_process()
 {
   struct pcap_pkthdr pp;
   size_t pp_len = sizeof(pp);
   if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
-    return static_cast<int>(ConvResult::NO_MORE);
+    return static_cast<int>(ConverterResult::NO_MORE);
   }
 
 #if 0
@@ -170,16 +178,16 @@ int Pcap::pcap_header_process()
 
   length = sprintf(ptr, "%d ", pp.ts.tv_sec);
   if (length < 0) {
-    return static_cast<int>(ConvResult::FAIL);
+    return static_cast<int>(ConverterResult::FAIL);
   }
-  add_stream_length();
+  add_conv_len();
 
   pcap_length = pp.caplen;
 
   return 1;
 }
 
-bool Pcap::l2_ethernet_process(unsigned char* offset)
+bool PacketConverter::l2_ethernet_process(unsigned char* offset)
 {
   auto eh = reinterpret_cast<ether_header*>(offset);
 
@@ -200,7 +208,7 @@ bool Pcap::l2_ethernet_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l3_ipv4_process(unsigned char* offset)
+bool PacketConverter::l3_ipv4_process(unsigned char* offset)
 {
   auto iph = reinterpret_cast<ip*>(offset);
   size_t opt = 0;
@@ -226,7 +234,7 @@ bool Pcap::l3_ipv4_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l3_arp_process(unsigned char* offset)
+bool PacketConverter::l3_arp_process(unsigned char* offset)
 {
   auto arph = reinterpret_cast<arp_pkthdr*>(offset);
   uint16_t hrd = 0, pro = 0;
@@ -293,28 +301,28 @@ bool Pcap::l3_arp_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l2_null_process(unsigned char* offset)
+bool PacketConverter::l2_null_process(unsigned char* offset)
 {
   ADD_STREAM("Unknown_L2(%d) ", l2_type);
 
   return true;
 }
 
-bool Pcap::l3_null_process(unsigned char* offset)
+bool PacketConverter::l3_null_process(unsigned char* offset)
 {
   ADD_STREAM("Unknown_L3(%d) ", l3_type);
 
   return true;
 }
 
-bool Pcap::l4_null_process(unsigned char* offset)
+bool PacketConverter::l4_null_process(unsigned char* offset)
 {
   ADD_STREAM("Unknown_L4(%d) ", l4_type);
 
   return true;
 }
 
-bool Pcap::l4_tcp_process(unsigned char* offset)
+bool PacketConverter::l4_tcp_process(unsigned char* offset)
 {
   auto tcph = reinterpret_cast<tcphdr*>(offset);
 
@@ -344,7 +352,7 @@ bool Pcap::l4_tcp_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l4_udp_process(unsigned char* offset)
+bool PacketConverter::l4_udp_process(unsigned char* offset)
 {
   auto udph = reinterpret_cast<udphdr*>(offset);
 
@@ -359,7 +367,7 @@ bool Pcap::l4_udp_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l4_icmp_process(unsigned char* offset)
+bool PacketConverter::l4_icmp_process(unsigned char* offset)
 {
   auto icmph = reinterpret_cast<icmp*>(offset);
 
@@ -379,16 +387,79 @@ bool Pcap::l4_icmp_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::add_stream_length()
+bool PacketConverter::add_conv_len()
 {
   if (length < 0) {
     return false;
   }
 
   ptr += length;
-  stream_length += length;
+  conv_len += length;
 
   return true;
 }
+
+/**
+ * LogConverter
+ */
+
+LogConverter::LogConverter(const std::string& filename)
+{
+  logfile.open(filename.c_str(), fstream::in);
+  if (!logfile.is_open()) {
+    throw runtime_error("Failed to open input file: " + filename);
+  }
+}
+
+LogConverter::LogConverter(LogConverter&& other) noexcept
+{
+  if (logfile.is_open()) {
+    logfile.close();
+  }
+  logfile.swap(other.logfile);
+}
+
+LogConverter::~LogConverter()
+{
+  if (logfile.is_open()) {
+    logfile.close();
+  }
+}
+
+bool LogConverter::skip(size_t count_skip)
+{
+  char buf[1];
+  size_t count = 0;
+  while (count < count_skip) {
+    if (!logfile.getline(buf, 1)) {
+      if (logfile.eof()) {
+        return false;
+      } else if (logfile.bad() || logfile.fail()) {
+        return false;
+      }
+    }
+    count++;
+  }
+  return true;
+}
+
+int LogConverter::convert(char* message, size_t size)
+{
+  conv_len = 0;
+  string line;
+  if (!logfile.getline(message, size)) {
+    if (logfile.eof()) {
+      return static_cast<int>(ConverterResult::NO_MORE);
+    } else if (logfile.bad() || logfile.fail()) {
+      return static_cast<int>(ConverterResult::FAIL);
+    }
+  }
+  conv_len = strlen(message);
+  return conv_len;
+}
+
+/**
+ * NullConverter
+ */
 
 // vim: et:ts=2:sw=2

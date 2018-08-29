@@ -1,14 +1,30 @@
-#ifndef HEADER2LOG_H
-#define HEADER2LOG_H
+#ifndef CONVERTER_H
+#define CONVERTER_H
 
 #include <cstdint>
+#include <fstream>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 
-#include "conv.h"
 #include "producer.h"
+
+/**
+ * Converter
+ */
+
+enum class ConverterResult { FAIL = -2, NO_MORE = -1 };
+
+class Converter {
+public:
+  virtual bool skip(size_t size) = 0;
+  virtual int convert(char* message, size_t size) = 0;
+};
+
+/**
+ * PacketConverter
+ */
 
 constexpr int PACKET_BUF_SIZE = 2048;
 
@@ -37,32 +53,32 @@ struct pcap_pkthdr {
   bpf_u_int32 len;        /* length this packet (off wire) */
 };
 
-class Pcap : public Conv {
+class PacketConverter : public Converter {
 public:
-  Pcap() = delete;
-  Pcap(const std::string& filename);
-  Pcap(const Pcap&) = delete;
-  Pcap& operator=(const Pcap&) = delete;
-  Pcap(Pcap&& other) noexcept;
-  Pcap& operator=(const Pcap&&) = delete;
-  ~Pcap();
+  PacketConverter() = delete;
+  PacketConverter(const std::string& filename);
+  PacketConverter(const PacketConverter&) = delete;
+  PacketConverter& operator=(const PacketConverter&) = delete;
+  PacketConverter(PacketConverter&& other) noexcept;
+  PacketConverter& operator=(const PacketConverter&&) = delete;
+  ~PacketConverter();
   bool skip(size_t size) override;
-  int get_next_stream(char* message, size_t size) override;
+  int convert(char* message, size_t size) override;
 
 private:
+  int conv_len = 0;
   FILE* pcapfile;
   unsigned char packet_buf[PACKET_BUF_SIZE];
   char* ptr;
   unsigned int pcap_length;
-  int stream_length;
   int length;
   uint32_t l2_type;
   uint16_t l3_type;
   uint8_t l4_type;
   int pcap_header_process();
-  bool (Pcap::*get_l2_process())(unsigned char* offset);
-  bool (Pcap::*get_l3_process())(unsigned char* offset);
-  bool (Pcap::*get_l4_process())(unsigned char* offset);
+  bool (PacketConverter::*get_l2_process())(unsigned char* offset);
+  bool (PacketConverter::*get_l3_process())(unsigned char* offset);
+  bool (PacketConverter::*get_l4_process())(unsigned char* offset);
   bool l2_ethernet_process(unsigned char* offset);
   bool l2_null_process(unsigned char* offset);
   bool l3_ipv4_process(unsigned char* offset);
@@ -72,8 +88,33 @@ private:
   bool l4_udp_process(unsigned char* offset);
   bool l4_tcp_process(unsigned char* offset);
   bool l4_null_process(unsigned char* offset);
-  bool add_stream_length();
+  bool add_conv_len();
 };
+
+/**
+ * LogConverter
+ */
+
+class LogConverter : public Converter {
+public:
+  LogConverter() = delete;
+  LogConverter(const std::string& filename);
+  LogConverter(const LogConverter&) = delete;
+  LogConverter& operator=(const LogConverter&) = delete;
+  LogConverter(LogConverter&& other) noexcept;
+  LogConverter& operator=(const LogConverter&&) = delete;
+  ~LogConverter();
+  bool skip(size_t count_skip) override;
+  int convert(char* message, size_t size) override;
+
+private:
+  int conv_len = 0;
+  std::ifstream logfile;
+};
+
+/**
+ * NullConverter
+ */
 
 #endif
 

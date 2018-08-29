@@ -2,8 +2,7 @@
 #include <iostream>
 #include <unistd.h>
 
-#include "header2log.h"
-#include "logconv.h"
+#include "converter.h"
 #include "options.h"
 #include "producer.h"
 
@@ -99,7 +98,7 @@ int main(int argc, char** argv)
     opt.dprint(F, "start");
     opt.start_evaluation();
 
-    unique_ptr<Conv> cp = nullptr;
+    unique_ptr<Converter> cp = nullptr;
     unique_ptr<KafkaProducer> rpp = nullptr;
     char message[MESSAGE_SIZE];
     int length = 0;
@@ -111,11 +110,11 @@ int main(int argc, char** argv)
     } else {
       switch (opt.get_input_type()) {
       case InputType::PCAP:
-        cp = make_unique<Pcap>(conf.input);
+        cp = make_unique<PacketConverter>(conf.input);
         opt.dprint(F, "input type=Pcap");
         break;
       case InputType::LOG:
-        cp = make_unique<LogConv>(conf.input);
+        cp = make_unique<LogConverter>(conf.input);
         opt.dprint(F, "input type=Log");
         break;
       default:
@@ -137,13 +136,13 @@ int main(int argc, char** argv)
         break;
       }
       if (!conf.mode_parse) {
-        length = cp->get_next_stream(message, MESSAGE_SIZE);
+        length = cp->convert(message, MESSAGE_SIZE);
         if (length > 0) {
           // do nothing
-        } else if (length == static_cast<int>(ConvResult::FAIL)) {
+        } else if (length == static_cast<int>(ConverterResult::FAIL)) {
           opt.increase_fail();
           continue;
-        } else if (length == static_cast<int>(ConvResult::NO_MORE)) {
+        } else if (length == static_cast<int>(ConverterResult::NO_MORE)) {
           break;
         } else {
           // can't get here
