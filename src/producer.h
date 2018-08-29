@@ -1,6 +1,7 @@
 #ifndef PRODUCER_H
 #define PRODUCER_H
 
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -11,6 +12,17 @@
 /**
  * Producer
  */
+
+enum class OutputType {
+  KAFKA,
+  FILE,
+  NONE,
+};
+
+class Producer {
+public:
+  virtual bool produce(const std::string& message) = 0;
+};
 
 /**
  * KafkaProducer
@@ -28,7 +40,7 @@ public:
   void event_cb(RdKafka::Event&) override;
 };
 
-class KafkaProducer {
+class KafkaProducer : Producer {
 public:
   KafkaProducer() = delete;
   KafkaProducer(const Options&);
@@ -37,8 +49,7 @@ public:
   KafkaProducer(KafkaProducer&&) = default;
   KafkaProducer& operator=(KafkaProducer&&) = default;
   ~KafkaProducer();
-  void wait_queue(const int count) noexcept;
-  bool produce(const std::string& message) noexcept;
+  bool produce(const std::string& message) noexcept override;
 
 private:
   Options opt;
@@ -50,6 +61,7 @@ private:
   RdEventCb rd_event_cb;
   std::string queue_data;
   bool produce_core(const std::string& message) noexcept;
+  void wait_queue(const int count) noexcept;
   void set_kafka_conf();
   void show_kafka_conf() const;
 };
@@ -58,9 +70,37 @@ private:
  * FileProducer
  */
 
+class FileProducer : Producer {
+public:
+  FileProducer() = delete;
+  FileProducer(Config);
+  FileProducer(const FileProducer&) = delete;
+  FileProducer& operator=(const FileProducer&) = delete;
+  FileProducer(FileProducer&&) = delete;
+  FileProducer& operator=(FileProducer&&) = delete;
+  ~FileProducer();
+  bool produce(const std::string& message) noexcept override;
+
+private:
+  Config conf;
+  std::ofstream file;
+  bool open() noexcept;
+};
+
 /**
  * NullProducer
  */
+
+class NullProducer : Producer {
+public:
+  NullProducer() = delete;
+  NullProducer(const NullProducer&) = delete;
+  NullProducer& operator=(const NullProducer&) = delete;
+  NullProducer(NullProducer&&) = delete;
+  NullProducer& operator=(NullProducer&&) = delete;
+  ~NullProducer();
+  bool produce(const std::string& message) noexcept override;
+};
 
 #endif
 

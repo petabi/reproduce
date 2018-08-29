@@ -1,5 +1,4 @@
 #include <array>
-#include <iostream>
 
 #include "producer.h"
 
@@ -33,7 +32,7 @@ static const array<KafkaConf, 4> kafka_conf = {{
      "1000000000", "1000000", "Maximum Kafka protocol request message size"},
     {KafkaConfType::GLOBAL, "queue.buffering.max.messages", "100000", "1",
      "10000000", "100000",
-     "Maximum total message size sum allowed on the producer queue"},
+     "Maximum number of messages allowed on the producer queue"},
     {KafkaConfType::GLOBAL, "queue.buffering.max.kbytes", "1048576", "1",
      "2097151", "1048576",
      "Maximum total message size sum allowed on the producer queue"},
@@ -172,7 +171,6 @@ void KafkaProducer::show_kafka_conf() const
         dump = tconf->dump();
         opt.dprint(F, "### Topic Config");
       }
-      // FIXME: iterator
       for (auto it = dump->cbegin(); it != dump->cend();) {
         string key = *it++;
         string value = *it++;
@@ -244,8 +242,47 @@ KafkaProducer::~KafkaProducer()
  * FileProducer
  */
 
+FileProducer::FileProducer(Config _conf) : conf(move(_conf))
+{
+  if (!conf.output.empty()) {
+    if (!open()) {
+      throw runtime_error("Failed to open output file: " + conf.output);
+    }
+  }
+}
+
+FileProducer::~FileProducer()
+{
+  if (file.is_open()) {
+    file.close();
+  }
+}
+
+bool FileProducer::produce(const string& message) noexcept
+{
+  file << message << "\n";
+
+  // FIXME: check error?
+
+  return true;
+}
+
+bool FileProducer::open() noexcept
+{
+  file.open(conf.output, ios::out);
+  if (!file.is_open()) {
+    // FIXME:
+    // eprint(F, "Failed to open file: ", conf.output);
+    return false;
+  }
+
+  return true;
+}
+
 /**
  * NullProducer
  */
+
+bool NullProducer::produce(const string& message) noexcept { return true; }
 
 // vim: et:ts=2:sw=2
