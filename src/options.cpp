@@ -245,4 +245,5 @@ void Options::set_input_type() noexcept
   }
   return;
 }
+
 // vim: et:ts=2:sw=2

@@ -58,11 +58,11 @@ struct pcap_pkthdr {
 
 class PacketConverter : public Converter {
 public:
-  PacketConverter() = delete;
-  // TODO(immediately): PacketConverter(const std::string& filename);
+  PacketConverter() = default;
+  // TODO(immediately): PacketConverter(const std::string&);
   PacketConverter(const PacketConverter&) = delete;
   PacketConverter& operator=(const PacketConverter&) = delete;
-  PacketConverter(PacketConverter&& other) noexcept;
+  PacketConverter(PacketConverter&&) noexcept;
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter();
   // bool skip(size_t size) override;
@@ -100,11 +100,11 @@ private:
 
 class LogConverter : public Converter {
 public:
-  LogConverter() = delete;
-  // TODO(immediately): LogConverter(const std::string& filename);
+  LogConverter() = default;
+  // TODO(immediately): LogConverter(const std::string&);
   LogConverter(const LogConverter&) = delete;
   LogConverter& operator=(const LogConverter&) = delete;
-  LogConverter(LogConverter&& other) noexcept;
+  LogConverter(LogConverter&&) noexcept;
   LogConverter& operator=(const LogConverter&&) = delete;
   ~LogConverter();
   // bool skip(size_t count_skip) override;

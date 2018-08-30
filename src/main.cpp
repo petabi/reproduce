@@ -100,32 +100,36 @@ int main(int argc, char** argv)
 
     unique_ptr<Converter> cp = nullptr;
     unique_ptr<KafkaProducer> rpp = nullptr;
-    char message[MESSAGE_SIZE];
+    char imessage[MESSAGE_SIZE];
+    char omessage[MESSAGE_SIZE];
     int length = 0;
 
     if (conf.mode_parse) {
-      copy(sample_data, sample_data + sizeof(sample_data), message);
-      length = strlen(message);
-      opt.dprint(F, "message=", message, " (", length, ")");
+      copy(sample_data, sample_data + sizeof(sample_data), imessage);
+      length = strlen(imessage);
+      opt.dprint(F, "imessage=", imessage, " (", length, ")");
     } else {
       switch (opt.get_input_type()) {
       case InputType::PCAP:
-        cp = make_unique<PacketConverter>(conf.input);
+        cp = make_unique<PacketConverter>();
         opt.dprint(F, "input type=Pcap");
         break;
       case InputType::LOG:
-        cp = make_unique<LogConverter>(conf.input);
+        cp = make_unique<LogConverter>();
         opt.dprint(F, "input type=Log");
         break;
       default:
         throw runtime_error("Specify the appropriate input (See help)");
       }
     }
+#if 0
+    // FIXME:
     if (conf.count_skip) {
       if (!cp->skip(conf.count_skip)) {
         opt.dprint(F, "failed to skip(%d)", conf.count_skip);
       }
     }
+#endif
     if (!conf.mode_kafka) {
       rpp = make_unique<KafkaProducer>(opt);
     }
@@ -136,7 +140,7 @@ int main(int argc, char** argv)
         break;
       }
       if (!conf.mode_parse) {
-        length = cp->convert(message, MESSAGE_SIZE);
+        length = cp->convert(imessage, MESSAGE_SIZE, omessage, MESSAGE_SIZE);
         if (length > 0) {
           // do nothing
         } else if (length == static_cast<int>(ConverterResult::FAIL)) {
@@ -149,10 +153,10 @@ int main(int argc, char** argv)
         }
       }
       if (!conf.mode_kafka) {
-        rpp->produce(string(message));
+        rpp->produce(omessage);
       }
-      opt.mprint(message);
-      opt.fprint(message);
+      opt.mprint(omessage);
+      opt.fprint(omessage);
     }
     opt.report_evaluation();
     opt.dprint(F, "end");

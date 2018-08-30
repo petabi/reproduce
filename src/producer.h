@@ -40,7 +40,7 @@ public:
   void event_cb(RdKafka::Event&) override;
 };
 
-class KafkaProducer : Producer {
+class KafkaProducer : public Producer {
 public:
   KafkaProducer() = delete;
   KafkaProducer(const Options&);
@@ -70,7 +70,7 @@ private:
  * FileProducer
  */
 
-class FileProducer : Producer {
+class FileProducer : public Producer {
 public:
   FileProducer() = delete;
   FileProducer(Config);
@@ -91,7 +91,7 @@ private:
  * NullProducer
  */
 
-class NullProducer : Producer {
+class NullProducer : public Producer {
 public:
   NullProducer() = delete;
   NullProducer(const NullProducer&) = delete;

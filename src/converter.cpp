@@ -113,11 +113,11 @@ int PacketConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
     if (fread(packet_buf, 1, pcap_length, pcapfile) != pcap_length) {
       return static_cast<int>(ConverterResult::NO_MORE);
     }
-  */
 
   if (!invoke(get_l2_process(), this, in)) {
     return static_cast<int>(ConverterResult::FAIL);
   }
+  */
 
   // TODO: payload process
 
@@ -415,6 +415,7 @@ bool PacketConverter::add_conv_len()
  * LogConverter
  */
 
+#if 0
 LogConverter::LogConverter(const std::string& filename)
 {
   logfile.open(filename.c_str(), fstream::in);
@@ -422,6 +423,7 @@ LogConverter::LogConverter(const std::string& filename)
     throw runtime_error("Failed to open input file: " + filename);
   }
 }
+#endif
 
 LogConverter::LogConverter(LogConverter&& other) noexcept
 {
@@ -438,6 +440,7 @@ LogConverter::~LogConverter()
   }
 }
 
+#if 0
 bool LogConverter::skip(size_t count_skip)
 {
   char buf[1];
@@ -454,6 +457,7 @@ bool LogConverter::skip(size_t count_skip)
   }
   return true;
 }
+#endif
 
 int LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
