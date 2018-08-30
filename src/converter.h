@@ -14,6 +14,14 @@
  * Converter
  */
 
+enum class ConverterType {
+  NONE,
+  PCAP,
+  PCAPNG,
+  NIC,
+  LOG,
+};
+
 enum class ConverterResult { FAIL = -2, NO_MORE = -1 };
 
 class Converter {

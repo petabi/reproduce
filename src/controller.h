@@ -10,20 +10,6 @@
 #include "options.h"
 #include "producer.h"
 
-enum class InputType {
-  NONE,   // no type
-  PCAP,   // pcap file
-  PCAPNG, // pcapng file
-  NIC,    // network interface
-  LOG,    // log file
-};
-
-enum class OutputType {
-  NONE,
-  KAFKA,
-  FILE,
-};
-
 class Controller {
 public:
   Controller() = delete;
@@ -37,8 +23,8 @@ public:
 
 private:
   Config conf;
-  InputType get_input_type() const;
-  OutputType get_output_type() const;
+  ConverterType get_converter_type() const;
+  ProducerType get_producer_type() const;
 };
 
 #endif

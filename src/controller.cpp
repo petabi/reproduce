@@ -2,8 +2,6 @@
 #include <cstring>
 
 #include "controller.h"
-#include "options.h"
-#include "producer.h"
 
 using namespace std;
 
@@ -15,25 +13,23 @@ void Controller::run()
 {
   Options opt(conf);
 
-  opt.show_options();
   opt.dprint(F, "start");
-  opt.start_evaluation();
+  opt.show_options();
 
   unique_ptr<Converter> conv = nullptr;
-  switch (get_input_type()) {
-  case InputType::PCAP:
+  switch (get_converter_type()) {
+  case ConverterType::PCAP:
     conv = make_unique<PacketConverter>();
     opt.dprint(F, "input type: PCAP");
     break;
-  case InputType::LOG:
+  case ConverterType::LOG:
     conv = make_unique<LogConverter>();
     opt.dprint(F, "input type: LOG");
     break;
-  case InputType::NONE:
+  default:
+  case ConverterType::NONE:
     conv = make_unique<NullConverter>();
     opt.dprint(F, "input type: NONE");
-  default:
-    throw runtime_error("Specify the appropriate input (See help)");
   }
 
 #if 0
@@ -46,17 +42,20 @@ void Controller::run()
 #endif
 
   unique_ptr<Producer> prod = nullptr;
-  switch (get_output_type()) {
-  case OutputType::KAFKA:
+  switch (get_producer_type()) {
+  default:
+  case ProducerType::KAFKA:
     prod = make_unique<KafkaProducer>();
     break;
-  case OutputType::FILE:
+  case ProducerType::FILE:
     prod = make_unique<FileProducer>();
     break;
-  case OutputType::NONE:
+  case ProducerType::NONE:
     prod = make_unique<NullProducer>();
     break;
   }
+
+  opt.start_evaluation();
 
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
@@ -77,17 +76,16 @@ void Controller::run()
     } else {
       // can't get here
     }
-    if (!conf.mode_kafka) {
-      prod->produce(omessage);
-    }
+    prod->produce(omessage);
     opt.mprint(omessage);
     opt.fprint(omessage);
   }
+
   opt.report_evaluation();
   opt.dprint(F, "end");
 }
 
-InputType Controller::get_input_type() const
+ConverterType Controller::get_converter_type() const
 {
   const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
   const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
@@ -96,12 +94,12 @@ InputType Controller::get_input_type() const
   const unsigned char mn_pcapng_little[4] = {0x4D, 0x3C, 0x2B, 0x1A};
   const unsigned char mn_pcapng_big[4] = {0x1A, 0x2B, 0x3C, 0x4D};
 
-  // TODO:Check whether input is a network interface
+  // TODO: Check whether input is a network interface
   // return NIC;
 
   ifstream ifs(conf.input, ios::binary);
   if (!ifs.is_open()) {
-    return InputType::NONE;
+    return ConverterType::NONE;
   }
 
   ifs.seekg(0, ios::beg);
@@ -112,17 +110,28 @@ InputType Controller::get_input_type() const
       memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
       memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
       memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
-    return InputType::PCAP;
+    return ConverterType::PCAP;
   } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
              memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
-    return InputType::PCAPNG;
+    return ConverterType::PCAPNG;
   } else {
-    return InputType::LOG;
+    return ConverterType::LOG;
   }
 
-  return InputType::NONE;
+  return ConverterType::NONE;
 }
 
-OutputType Controller::get_output_type() const { return OutputType::KAFKA; }
+ProducerType Controller::get_producer_type() const
+{
+  if (conf.output.empty()) {
+    return ProducerType::KAFKA;
+  }
+
+  if (conf.output == "none") {
+    return ProducerType::NONE;
+  }
+
+  return ProducerType::FILE;
+}
 
 // vim: et:ts=2:sw=2
