@@ -11,33 +11,7 @@ static constexpr double MBYTE = KBYTE * KBYTE;
 static constexpr double KPACKET = 1000.0;
 static constexpr double MPACKET = KPACKET * KPACKET;
 
-// default config
-const char* default_broker = "localhost:9092";
-const char* default_topic = "pcap";
-static constexpr size_t default_queue_size = 900000;
-static constexpr size_t sample_count = 1000000;
-
-Options::Options(Config _conf)
-    : conf(move(_conf)), sent_byte(0), sent_packet(0), fail_packet(0),
-      perf_kbps(0), perf_kpps(0), time_start(0), time_now(0), time_diff(0)
-{
-  // set default value
-  if (conf.broker.empty()) {
-    conf.broker = default_broker;
-  }
-  if (conf.topic.empty()) {
-    conf.topic = default_topic;
-  }
-#if 0
-  // FIXME: remove mode_parse
-  if (conf.mode_parse && conf.count_send == 0) {
-    conf.count_send = sample_count;
-  }
-#endif
-  if (conf.queue_size == 0) {
-    conf.queue_size = default_queue_size;
-  }
-}
+Options::Options(Config _conf) : conf(move(_conf)) {}
 
 Options::Options(const Options& other)
 {
@@ -185,44 +159,5 @@ bool Options::open_output_file() noexcept
 }
 
 void Options::increase_fail() noexcept { fail_packet++; }
-
-#if 0
-const InputType Options::get_input_type() const noexcept { return input_type; }
-
-void Options::set_input_type() noexcept
-{
-  const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
-  const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
-  const unsigned char mn_pcap_little_nano[4] = {0x4d, 0x3c, 0xb2, 0xa1};
-  const unsigned char mn_pcap_big_nano[4] = {0xa1, 0xb2, 0x3c, 0x4d};
-  const unsigned char mn_pcapng_little[4] = {0x4D, 0x3C, 0x2B, 0x1A};
-  const unsigned char mn_pcapng_big[4] = {0x1A, 0x2B, 0x3C, 0x4D};
-
-  // TODO:Check whether input is a network interface
-  // return NIC;
-
-  ifstream ifs(conf.input, ios::binary);
-  if (!ifs.is_open()) {
-    input_type = InputType::NONE;
-  }
-
-  ifs.seekg(0, ios::beg);
-  unsigned char magic[4] = {0};
-  ifs.read((char*)magic, sizeof(magic));
-
-  if (memcmp(magic, mn_pcap_little_micro, sizeof(magic)) == 0 ||
-      memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
-      memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
-      memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
-    input_type = InputType::PCAP;
-  } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
-             memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
-    input_type = InputType::PCAPNG;
-  } else {
-    input_type = InputType::LOG;
-  }
-  return;
-}
-#endif
 
 // vim: et:ts=2:sw=2

@@ -6,20 +6,9 @@
 #include <iostream>
 #include <string>
 
-#define F __func__
+#include "config.h"
 
-struct Config {
-  bool mode_debug{false}; // debug mode (print debug messages)
-  bool mode_eval{false};  // evaluation mode (report statistics)
-  size_t count_send{0};   // send packet count
-  size_t count_skip{0};   // skip packet count
-  size_t queue_size{0};   // queue size (how many bytes send once)
-  std::string input;      // input pcapfile or nic
-  std::string output;     // output file
-  std::string filter;     // tcpdump filter string
-  std::string broker;     // kafka broker
-  std::string topic;      // kafka topic
-};
+#define F __func__
 
 class Options {
 public:
@@ -49,14 +38,14 @@ public:
   void increase_fail() noexcept;
 
 private:
-  size_t sent_byte;          // sent bytes
-  size_t sent_packet;        // sent packets
-  size_t fail_packet;        // failed packet count
-  double perf_kbps;          // kilo byte per second
-  double perf_kpps;          // kilo packet per second
-  clock_t time_start;        // start time
-  clock_t time_now;          // current time
-  double time_diff;          // time difference
+  size_t sent_byte{0};       // sent bytes
+  size_t sent_packet{0};     // sent packets
+  size_t fail_packet{0};     // failed packet count
+  double perf_kbps{0.0};     // kilo byte per second
+  double perf_kpps{0.0};     // kilo packet per second
+  clock_t time_start{0};     // start time
+  clock_t time_now{0};       // current time
+  double time_diff{0.0};     // time difference
   std::ofstream output_file; // output file
 };
 
