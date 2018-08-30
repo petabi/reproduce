@@ -15,8 +15,6 @@ static constexpr char sample_data[] =
 
 Controller::Controller(Config _conf) : conf(move(_conf)) {}
 
-Controller::~Controller() {}
-
 void Controller::run()
 {
   Options opt(conf);

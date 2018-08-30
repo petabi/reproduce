@@ -18,7 +18,7 @@ public:
   Controller& operator=(const Controller&) = delete;
   Controller(Controller&&) = delete;
   Controller& operator=(const Controller&&) = delete;
-  ~Controller();
+  ~Controller() = default;
   void run();
 
 private:
