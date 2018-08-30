@@ -23,11 +23,9 @@ void help()
   cout << "  -e: evaluation mode (report statistics)\n";
   cout << "  -f: tcpdump filter\n";
   cout << "  -h: help\n";
-  cout << "  -i: input file(pcap/log) or nic\n";
-  cout << "  -k: do not send data to kafka\n";
-  cout << "  -o: output file\n";
-  cout << "  -p: do not parse packet"
-       << " (send hardcoded sample data. with -c option)\n";
+  cout << "  -i: input [PCAPFILE/LOGFILE/NIC/none(no specification)])\n";
+  cout << "  -o: output [kafka(no specification)/TEXTFILE/none] (default: "
+          "kafka)\n";
   cout << "  -q: queue byte (how many bytes send once)\n";
   cout << "  -s: skip packet count\n";
   cout << "  -t: kafka topic"
@@ -39,7 +37,7 @@ int main(int argc, char** argv)
   int o;
   Config conf;
 
-  while ((o = getopt(argc, argv, "b:c:defhi:ko:pq:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:defhi:o:q:s:t:")) != -1) {
     switch (o) {
     case 'b':
       conf.broker = optarg;
@@ -61,14 +59,8 @@ int main(int argc, char** argv)
       // FIXME: not support log file and nic yet
       conf.input = optarg;
       break;
-    case 'k':
-      conf.mode_kafka = true;
-      break;
     case 'o':
       conf.output = optarg;
-      break;
-    case 'p':
-      conf.mode_parse = true;
       break;
     case 'q':
       conf.queue_size = strtoul(optarg, nullptr, 0);

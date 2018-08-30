@@ -21,15 +21,6 @@ Options::Options(Config _conf)
     : conf(move(_conf)), sent_byte(0), sent_packet(0), fail_packet(0),
       perf_kbps(0), perf_kpps(0), time_start(0), time_now(0), time_diff(0)
 {
-  // input is madatory when mode_parse is not set
-  if (conf.input.empty() && !conf.mode_parse) {
-    throw runtime_error("Must specify input (See help)");
-  }
-#if 0
-  if (!conf.input.empty()) {
-    set_input_type();
-  }
-#endif
   // set default value
   if (conf.broker.empty()) {
     conf.broker = default_broker;
@@ -37,21 +28,15 @@ Options::Options(Config _conf)
   if (conf.topic.empty()) {
     conf.topic = default_topic;
   }
+#if 0
+  // FIXME: remove mode_parse
   if (conf.mode_parse && conf.count_send == 0) {
     conf.count_send = sample_count;
   }
+#endif
   if (conf.queue_size == 0) {
     conf.queue_size = default_queue_size;
   }
-
-#if 0
-  // open output file
-  if (!conf.output.empty()) {
-    if (!open_output_file()) {
-      throw runtime_error("Failed to open output file: " + conf.output);
-    }
-  }
-#endif
 }
 
 Options::Options(const Options& other)
@@ -120,13 +105,10 @@ void Options::show_options() const noexcept
 {
   dprint(F, "mode_debug=", conf.mode_debug);
   dprint(F, "mode_eval=", conf.mode_eval);
-  dprint(F, "mode_kafka=", conf.mode_kafka);
-  dprint(F, "mode_parse=", conf.mode_parse);
   dprint(F, "count_send=", conf.count_send);
   dprint(F, "count_skip=", conf.count_skip);
   dprint(F, "queue_size=", conf.queue_size);
   dprint(F, "input=", conf.input);
-  // dprint(F, "input_type=", static_cast<int>(input_type));
   dprint(F, "output=", conf.output);
   dprint(F, "filter=", conf.filter);
   dprint(F, "broker=", conf.broker);

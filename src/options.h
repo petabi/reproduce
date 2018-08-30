@@ -8,21 +8,9 @@
 
 #define F __func__
 
-#if 0
-enum class InputType {
-  NONE,   // no type
-  PCAP,   // pcap file
-  PCAPNG, // pcapng file
-  NIC,    // network interface
-  LOG,    // log file
-};
-#endif
-
 struct Config {
   bool mode_debug{false}; // debug mode (print debug messages)
   bool mode_eval{false};  // evaluation mode (report statistics)
-  bool mode_kafka{false}; // do not send data to kafka (parse packet only)
-  bool mode_parse{false}; // do not parse packet (send hardcoded sample data)
   size_t count_send{0};   // send packet count
   size_t count_skip{0};   // skip packet count
   size_t queue_size{0};   // queue size (how many bytes send once)
@@ -60,19 +48,16 @@ public:
   void report_evaluation() const noexcept;
   bool open_output_file() noexcept;
   void increase_fail() noexcept;
-  // const InputType get_input_type() const noexcept;
 
 private:
-  // void set_input_type() noexcept;
-  size_t sent_byte;   // sent bytes
-  size_t sent_packet; // sent packets
-  size_t fail_packet; // failed packet count
-  double perf_kbps;   // kilo byte per second
-  double perf_kpps;   // kilo packet per second
-  clock_t time_start; // start time
-  clock_t time_now;   // current time
-  double time_diff;   // time difference
-  // InputType input_type;      // input type
+  size_t sent_byte;          // sent bytes
+  size_t sent_packet;        // sent packets
+  size_t fail_packet;        // failed packet count
+  double perf_kbps;          // kilo byte per second
+  double perf_kpps;          // kilo packet per second
+  clock_t time_start;        // start time
+  clock_t time_now;          // current time
+  double time_diff;          // time difference
   std::ofstream output_file; // output file
 };
 
