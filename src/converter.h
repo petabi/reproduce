@@ -119,6 +119,20 @@ private:
  * NullConverter
  */
 
+class NullConverter : public Converter {
+public:
+  NullConverter() = default;
+  NullConverter(const NullConverter&) = delete;
+  NullConverter& operator=(const NullConverter&) = delete;
+  NullConverter(NullConverter&&) noexcept = default;
+  NullConverter& operator=(const NullConverter&&) = delete;
+  ~NullConverter();
+
+private:
+  int conv_len = 0;
+  int convert(char* in, size_t in_len, char* out, size_t out_len) override;
+};
+
 #endif
 
 // vim: et:ts=2:sw=2
