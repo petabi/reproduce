@@ -33,6 +33,7 @@ using namespace std;
   ptr += length;                                                               \
   conv_len += length;
 
+/* TODO(immediately): work in controller
 PacketConverter::PacketConverter(const string& filename)
 {
   pcapfile = fopen(filename.c_str(), "r");
@@ -51,6 +52,7 @@ PacketConverter::PacketConverter(const string& filename)
 
   l2_type = pfh.linktype;
 }
+*/
 
 PacketConverter::PacketConverter(PacketConverter&& other) noexcept
 {
@@ -69,6 +71,7 @@ PacketConverter::~PacketConverter()
   }
 }
 
+/* TODO(immediately): work in controller
 bool PacketConverter::skip(size_t count_skip)
 {
   struct pcap_pkthdr pp;
@@ -85,16 +88,19 @@ bool PacketConverter::skip(size_t count_skip)
 
   return true;
 }
+*/
 
-int PacketConverter::convert(char* message, size_t size)
+int PacketConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
   conv_len = 0;
-  ptr = message;
+  ptr = out;
 
-  int ret = pcap_header_process();
-  if (ret <= 0) {
-    return ret;
-  }
+  /* TODO(immediately): work in controller
+    int ret = pcap_header_process();
+    if (ret <= 0) {
+      return ret;
+    }
+  */
 
 #if 0
   // we assume packet_len < PACKET_BUF_SIZE
@@ -103,11 +109,13 @@ int PacketConverter::convert(char* message, size_t size)
   }
 #endif
 
-  if (fread(packet_buf, 1, pcap_length, pcapfile) != pcap_length) {
-    return static_cast<int>(ConverterResult::NO_MORE);
-  }
+  /* TODO(immediately): work in controller
+    if (fread(packet_buf, 1, pcap_length, pcapfile) != pcap_length) {
+      return static_cast<int>(ConverterResult::NO_MORE);
+    }
+  */
 
-  if (!invoke(get_l2_process(), this, packet_buf)) {
+  if (!invoke(get_l2_process(), this, in)) {
     return static_cast<int>(ConverterResult::FAIL);
   }
 
@@ -161,6 +169,7 @@ bool (PacketConverter::*PacketConverter::get_l4_process())(
   return &PacketConverter::l4_null_process;
 }
 
+/* TODO(immediately): work in controller
 int PacketConverter::pcap_header_process()
 {
   struct pcap_pkthdr pp;
@@ -186,6 +195,7 @@ int PacketConverter::pcap_header_process()
 
   return 1;
 }
+*/
 
 bool PacketConverter::l2_ethernet_process(unsigned char* offset)
 {
@@ -387,6 +397,7 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset)
   return true;
 }
 
+/* TODO(immediately): remove
 bool PacketConverter::add_conv_len()
 {
   if (length < 0) {
@@ -398,6 +409,7 @@ bool PacketConverter::add_conv_len()
 
   return true;
 }
+*/
 
 /**
  * LogConverter
@@ -443,18 +455,26 @@ bool LogConverter::skip(size_t count_skip)
   return true;
 }
 
-int LogConverter::convert(char* message, size_t size)
+int LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
   conv_len = 0;
-  string line;
-  if (!logfile.getline(message, size)) {
-    if (logfile.eof()) {
-      return static_cast<int>(ConverterResult::NO_MORE);
-    } else if (logfile.bad() || logfile.fail()) {
-      return static_cast<int>(ConverterResult::FAIL);
+
+  /* TODO(immediately): work in controller
+    string line;
+    if (!logfile.getline(message, size)) {
+      if (logfile.eof()) {
+        return static_cast<int>(ConverterResult::NO_MORE);
+      } else if (logfile.bad() || logfile.fail()) {
+        return static_cast<int>(ConverterResult::FAIL);
+      }
     }
+  */
+  if (in_len < out_len) {
+    memcpy(in, out, in_len);
+  } else {
+    memcpy(in, out, out_len);
   }
-  conv_len = strlen(message);
+  conv_len = out_len;
   return conv_len;
 }
 

@@ -18,15 +18,18 @@ enum class ConverterResult { FAIL = -2, NO_MORE = -1 };
 
 class Converter {
 public:
-  virtual bool skip(size_t size) = 0;
-  virtual int convert(char* message, size_t size) = 0;
+  /* TODO(immediately): work in controller
+    virtual bool skip(size_t size) = 0;
+  */
+  virtual int convert(char* in, size_t in_len, char* out, size_t out_len) = 0;
 };
 
 /**
  * PacketConverter
  */
 
-constexpr int PACKET_BUF_SIZE = 2048;
+constexpr size_t PACKET_BUF_SIZE = 2048;
+constexpr size_t OUTPUT_BUF_SIZE = 1024;
 
 using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
@@ -56,14 +59,14 @@ struct pcap_pkthdr {
 class PacketConverter : public Converter {
 public:
   PacketConverter() = delete;
-  PacketConverter(const std::string& filename);
+  // TODO(immediately): PacketConverter(const std::string& filename);
   PacketConverter(const PacketConverter&) = delete;
   PacketConverter& operator=(const PacketConverter&) = delete;
   PacketConverter(PacketConverter&& other) noexcept;
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter();
-  bool skip(size_t size) override;
-  int convert(char* message, size_t size) override;
+  // bool skip(size_t size) override;
+  int convert(char* in, size_t in_len, char* out, size_t out_len) override;
 
 private:
   int conv_len = 0;
@@ -98,14 +101,14 @@ private:
 class LogConverter : public Converter {
 public:
   LogConverter() = delete;
-  LogConverter(const std::string& filename);
+  // TODO(immediately): LogConverter(const std::string& filename);
   LogConverter(const LogConverter&) = delete;
   LogConverter& operator=(const LogConverter&) = delete;
   LogConverter(LogConverter&& other) noexcept;
   LogConverter& operator=(const LogConverter&&) = delete;
   ~LogConverter();
-  bool skip(size_t count_skip) override;
-  int convert(char* message, size_t size) override;
+  // bool skip(size_t count_skip) override;
+  int convert(char* in, size_t in_len, char* out, size_t out_len) override;
 
 private:
   int conv_len = 0;
