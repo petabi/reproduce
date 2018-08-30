@@ -13,12 +13,6 @@
  * Producer
  */
 
-enum class OutputType {
-  KAFKA,
-  FILE,
-  NONE,
-};
-
 class Producer {
 public:
   virtual bool produce(const std::string& message) = 0;
@@ -42,7 +36,7 @@ public:
 
 class KafkaProducer : public Producer {
 public:
-  KafkaProducer() = delete;
+  KafkaProducer() = default;
   KafkaProducer(const Options&);
   KafkaProducer(const KafkaProducer&) = delete;
   KafkaProducer& operator=(const KafkaProducer&) = delete;
@@ -72,11 +66,11 @@ private:
 
 class FileProducer : public Producer {
 public:
-  FileProducer() = delete;
+  FileProducer() = default;
   FileProducer(Config);
   FileProducer(const FileProducer&) = delete;
   FileProducer& operator=(const FileProducer&) = delete;
-  FileProducer(FileProducer&&) = delete;
+  FileProducer(FileProducer&&) = default;
   FileProducer& operator=(FileProducer&&) = delete;
   ~FileProducer();
   bool produce(const std::string& message) noexcept override;
@@ -93,10 +87,10 @@ private:
 
 class NullProducer : public Producer {
 public:
-  NullProducer() = delete;
+  NullProducer() = default;
   NullProducer(const NullProducer&) = delete;
   NullProducer& operator=(const NullProducer&) = delete;
-  NullProducer(NullProducer&&) = delete;
+  NullProducer(NullProducer&&) = default;
   NullProducer& operator=(NullProducer&&) = delete;
   ~NullProducer();
   bool produce(const std::string& message) noexcept override;

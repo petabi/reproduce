@@ -25,9 +25,11 @@ Options::Options(Config _conf)
   if (conf.input.empty() && !conf.mode_parse) {
     throw runtime_error("Must specify input (See help)");
   }
+#if 0
   if (!conf.input.empty()) {
     set_input_type();
   }
+#endif
   // set default value
   if (conf.broker.empty()) {
     conf.broker = default_broker;
@@ -42,12 +44,14 @@ Options::Options(Config _conf)
     conf.queue_size = default_queue_size;
   }
 
+#if 0
   // open output file
   if (!conf.output.empty()) {
     if (!open_output_file()) {
       throw runtime_error("Failed to open output file: " + conf.output);
     }
   }
+#endif
 }
 
 Options::Options(const Options& other)
@@ -122,7 +126,7 @@ void Options::show_options() const noexcept
   dprint(F, "count_skip=", conf.count_skip);
   dprint(F, "queue_size=", conf.queue_size);
   dprint(F, "input=", conf.input);
-  dprint(F, "input_type=", static_cast<int>(input_type));
+  // dprint(F, "input_type=", static_cast<int>(input_type));
   dprint(F, "output=", conf.output);
   dprint(F, "filter=", conf.filter);
   dprint(F, "broker=", conf.broker);
@@ -209,6 +213,7 @@ bool Options::open_output_file() noexcept
 
 void Options::increase_fail() noexcept { fail_packet++; }
 
+#if 0
 const InputType Options::get_input_type() const noexcept { return input_type; }
 
 void Options::set_input_type() noexcept
@@ -245,5 +250,6 @@ void Options::set_input_type() noexcept
   }
   return;
 }
+#endif
 
 // vim: et:ts=2:sw=2

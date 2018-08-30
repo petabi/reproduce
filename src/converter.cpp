@@ -492,9 +492,10 @@ int NullConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
       "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "
       "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "
       "86734452 2522990538 20 A 16425 7168 0";
+
   strncpy(out, sample_data, out_len);
-  conv_len = strlen(sample_data);
-  return conv_len;
+
+  return strlen(sample_data);
 }
 
 // vim: et:ts=2:sw=2

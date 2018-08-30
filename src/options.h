@@ -8,6 +8,7 @@
 
 #define F __func__
 
+#if 0
 enum class InputType {
   NONE,   // no type
   PCAP,   // pcap file
@@ -15,6 +16,7 @@ enum class InputType {
   NIC,    // network interface
   LOG,    // log file
 };
+#endif
 
 struct Config {
   bool mode_debug{false}; // debug mode (print debug messages)
@@ -58,19 +60,19 @@ public:
   void report_evaluation() const noexcept;
   bool open_output_file() noexcept;
   void increase_fail() noexcept;
-  const InputType get_input_type() const noexcept;
+  // const InputType get_input_type() const noexcept;
 
 private:
-  void set_input_type() noexcept;
-  size_t sent_byte;          // sent bytes
-  size_t sent_packet;        // sent packets
-  size_t fail_packet;        // failed packet count
-  double perf_kbps;          // kilo byte per second
-  double perf_kpps;          // kilo packet per second
-  clock_t time_start;        // start time
-  clock_t time_now;          // current time
-  double time_diff;          // time difference
-  InputType input_type;      // input type
+  // void set_input_type() noexcept;
+  size_t sent_byte;   // sent bytes
+  size_t sent_packet; // sent packets
+  size_t fail_packet; // failed packet count
+  double perf_kbps;   // kilo byte per second
+  double perf_kpps;   // kilo packet per second
+  clock_t time_start; // start time
+  clock_t time_now;   // current time
+  double time_diff;   // time difference
+  // InputType input_type;      // input type
   std::ofstream output_file; // output file
 };
 
