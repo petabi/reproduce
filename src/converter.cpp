@@ -37,7 +37,7 @@ int PacketConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
   conv_len = 0;
   ptr = out;
-  struct pcap_pkthdr* pp = reinterpret_cast<pcap_pkthdr*>(in);
+  auto* pp = reinterpret_cast<pcap_pkthdr*>(in);
 
 #if 0
   // TODO: Fix to enhance performance

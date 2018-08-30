@@ -199,7 +199,7 @@ int Controller::get_next_pcap_format(char* imessage, size_t imessage_len)
   if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
     return false;
   }
-  struct pcap_pkthdr* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
+  auto* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
 
 #if 0
   // we assume packet_len < PACKET_BUF_SIZE
