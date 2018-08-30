@@ -11,7 +11,7 @@ static const char* default_topic = "pcap";
 static constexpr size_t default_queue_size = 900000;
 static constexpr size_t default_count = 1000000;
 
-void Config::set_default()
+void Config::set_default() noexcept
 {
   if (broker.empty()) {
     broker = default_broker;
@@ -26,7 +26,7 @@ void Config::set_default()
   }
 }
 
-bool Config::get_argument(int argc, char** argv)
+bool Config::set_config(int argc, char** argv) noexcept
 {
   int o;
 
@@ -77,7 +77,7 @@ bool Config::get_argument(int argc, char** argv)
   return true;
 }
 
-void Config::help() const
+void Config::help() const noexcept
 {
   cout << "[USAGE] " << program_name << " OPTIONS\n";
   cout << "  -b: kafka broker"

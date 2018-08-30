@@ -12,11 +12,11 @@ int main(int argc, char** argv)
 {
   Config conf;
 
-  try {
-    if (!conf.get_argument(argc, argv)) {
-      exit(0);
-    }
+  if (!conf.set_config(argc, argv)) {
+    exit(0);
+  }
 
+  try {
     Controller ctrl(conf);
     ctrl.run();
   } catch (exception const& e) {

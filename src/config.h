@@ -21,11 +21,11 @@ public:
   Config(Config&&) = default;
   Config& operator=(Config&&) = delete;
   ~Config() = default;
-  bool get_argument(int argc, char** argv);
+  bool set_config(int argc, char** argv) noexcept;
 
 private:
-  void help() const;
-  void set_default();
+  void help() const noexcept;
+  void set_default() noexcept;
 };
 
 #endif
