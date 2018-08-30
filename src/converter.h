@@ -134,7 +134,7 @@ public:
   NullConverter& operator=(const NullConverter&) = delete;
   NullConverter(NullConverter&&) noexcept = default;
   NullConverter& operator=(const NullConverter&&) = delete;
-  ~NullConverter();
+  ~NullConverter() = default;
   int convert(char* in, size_t in_len, char* out, size_t out_len) override;
 };
 

@@ -98,7 +98,7 @@ public:
   NullProducer& operator=(const NullProducer&) = delete;
   NullProducer(NullProducer&&) = default;
   NullProducer& operator=(NullProducer&&) = delete;
-  ~NullProducer();
+  ~NullProducer() = default;
   bool produce(const std::string& message) noexcept override;
 };
 
