@@ -78,7 +78,6 @@ void Controller::run()
     }
     prod->produce(omessage);
     opt.mprint(omessage);
-    opt.fprint(omessage);
   }
 
   opt.report_evaluation();

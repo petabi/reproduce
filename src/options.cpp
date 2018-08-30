@@ -92,15 +92,6 @@ void Options::mprint(const char* message) const noexcept
   cout << message << "\n";
 }
 
-void Options::fprint(const char* message) noexcept
-{
-  if (conf.output.empty()) {
-    return;
-  }
-
-  output_file << message << "\n";
-}
-
 void Options::show_options() const noexcept
 {
   dprint(F, "mode_debug=", conf.mode_debug);

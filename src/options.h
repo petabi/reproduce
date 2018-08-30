@@ -40,7 +40,6 @@ public:
   template <typename T, typename... Ts>
   void eprint(const char* name, T head, Ts... tail) const;
   void mprint(const char* message) const noexcept;
-  void fprint(const char* message) noexcept;
   void show_options() const noexcept;
   bool check_count() const noexcept;
   void start_evaluation() noexcept;
