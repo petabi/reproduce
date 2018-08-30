@@ -26,18 +26,12 @@ enum class ConverterResult { FAIL = -2, NO_MORE = -1 };
 
 class Converter {
 public:
-  /* TODO(immediately): work in controller
-    virtual bool skip(size_t size) = 0;
-  */
   virtual int convert(char* in, size_t in_len, char* out, size_t out_len) = 0;
 };
 
 /**
  * PacketConverter
  */
-
-constexpr size_t PACKET_BUF_SIZE = 2048;
-constexpr size_t OUTPUT_BUF_SIZE = 1024;
 
 using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
@@ -66,27 +60,23 @@ struct pcap_pkthdr {
 
 class PacketConverter : public Converter {
 public:
+  PacketConverter(uint32_t _l2_type) { l2_type = _l2_type; };
   PacketConverter() = default;
-  // TODO(immediately): PacketConverter(const std::string&);
   PacketConverter(const PacketConverter&) = delete;
   PacketConverter& operator=(const PacketConverter&) = delete;
   PacketConverter(PacketConverter&&) noexcept;
   PacketConverter& operator=(const PacketConverter&&) = delete;
-  ~PacketConverter();
+  ~PacketConverter() = default;
   // bool skip(size_t size) override;
   int convert(char* in, size_t in_len, char* out, size_t out_len) override;
 
 private:
   int conv_len = 0;
-  FILE* pcapfile;
-  unsigned char packet_buf[PACKET_BUF_SIZE];
   char* ptr;
-  unsigned int pcap_length;
   int length;
   uint32_t l2_type;
   uint16_t l3_type;
   uint8_t l4_type;
-  int pcap_header_process();
   bool (PacketConverter::*get_l2_process())(unsigned char* offset);
   bool (PacketConverter::*get_l3_process())(unsigned char* offset);
   bool (PacketConverter::*get_l4_process())(unsigned char* offset);

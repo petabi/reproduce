@@ -33,91 +33,25 @@ using namespace std;
   ptr += length;                                                               \
   conv_len += length;
 
-/* TODO(immediately): work in controller
-PacketConverter::PacketConverter(const string& filename)
-{
-  pcapfile = fopen(filename.c_str(), "r");
-  if (pcapfile == nullptr) {
-    throw runtime_error("Failed to open input file: " + filename);
-  }
-
-  struct pcap_file_header pfh;
-  size_t pfh_len = sizeof(pfh);
-  if (fread(&pfh, 1, pfh_len, pcapfile) != pfh_len) {
-    throw runtime_error("Invalid input pcap file: " + filename);
-  }
-  if (pfh.magic != 0xa1b2c3d4) {
-    throw runtime_error("Invalid input pcap file: " + filename);
-  }
-
-  l2_type = pfh.linktype;
-}
-*/
-
-PacketConverter::PacketConverter(PacketConverter&& other) noexcept
-{
-  FILE* tmp = other.pcapfile;
-  other.pcapfile = nullptr;
-  if (pcapfile != nullptr) {
-    fclose(pcapfile);
-  }
-  pcapfile = tmp;
-}
-
-PacketConverter::~PacketConverter()
-{
-  if (pcapfile != nullptr) {
-    fclose(pcapfile);
-  }
-}
-
-/* TODO(immediately): work in controller
-bool PacketConverter::skip(size_t count_skip)
-{
-  struct pcap_pkthdr pp;
-  size_t count = 0;
-  size_t pp_len = sizeof(pp);
-
-  while (count < count_skip) {
-    if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
-      return false;
-    }
-    fseek(pcapfile, pp.caplen, SEEK_CUR);
-    count++;
-  }
-
-  return true;
-}
-*/
-
 int PacketConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
   conv_len = 0;
   ptr = out;
-
-  /* TODO(immediately): work in controller
-    int ret = pcap_header_process();
-    if (ret <= 0) {
-      return ret;
-    }
-  */
+  struct pcap_pkthdr* pp = reinterpret_cast<pcap_pkthdr*>(in);
 
 #if 0
-  // we assume packet_len < PACKET_BUF_SIZE
-  if (packet_len >= PACKET_BUF_SIZE) {
-    throw runtime_error("Packet buffer too small");
-  }
+  // TODO: Fix to enhance performance
+  char* cap_time = nullptr;
+  cap_time = (char*)ctime((const time_t*)&sec);
+  cap_time[strlen(cap_time) - 1] = '\0';
 #endif
 
-  /* TODO(immediately): work in controller
-    if (fread(packet_buf, 1, pcap_length, pcapfile) != pcap_length) {
-      return static_cast<int>(ConverterResult::NO_MORE);
-    }
+  ADD_STREAM("%d ", pp->ts.tv_sec);
 
-  if (!invoke(get_l2_process(), this, in)) {
+  if (!invoke(get_l2_process(), this,
+              reinterpret_cast<unsigned char*>(in + sizeof(pcap_pkthdr)))) {
     return static_cast<int>(ConverterResult::FAIL);
   }
-  */
 
   // TODO: payload process
 
@@ -168,34 +102,6 @@ bool (PacketConverter::*PacketConverter::get_l4_process())(
 
   return &PacketConverter::l4_null_process;
 }
-
-/* TODO(immediately): work in controller
-int PacketConverter::pcap_header_process()
-{
-  struct pcap_pkthdr pp;
-  size_t pp_len = sizeof(pp);
-  if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
-    return static_cast<int>(ConverterResult::NO_MORE);
-  }
-
-#if 0
-  // TODO: Fix to enhance performance
-  char* cap_time = nullptr;
-  cap_time = (char*)ctime((const time_t*)&sec);
-  cap_time[strlen(cap_time) - 1] = '\0';
-#endif
-
-  length = sprintf(ptr, "%d ", pp.ts.tv_sec);
-  if (length < 0) {
-    return static_cast<int>(ConverterResult::FAIL);
-  }
-  add_conv_len();
-
-  pcap_length = pp.caplen;
-
-  return 1;
-}
-*/
 
 bool PacketConverter::l2_ethernet_process(unsigned char* offset)
 {
@@ -396,24 +302,6 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset)
 
   return true;
 }
-
-/* TODO(immediately): remove
-bool PacketConverter::add_conv_len()
-{
-  if (length < 0) {
-    return false;
-  }
-
-  ptr += length;
-  conv_len += length;
-
-  return true;
-}
-*/
-
-/**
- * LogConverter
- */
 
 #if 0
 LogConverter::LogConverter(const std::string& filename)

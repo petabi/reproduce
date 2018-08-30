@@ -18,13 +18,19 @@ public:
   Controller& operator=(const Controller&) = delete;
   Controller(Controller&&) = delete;
   Controller& operator=(const Controller&&) = delete;
-  ~Controller() = default;
+  ~Controller();
   void run();
 
 private:
   Config conf;
   ConverterType get_converter_type() const;
   ProducerType get_producer_type() const;
+  uint32_t l2_type;
+  FILE* pcapfile;
+  uint32_t open_pcap(const std::string& filename);
+  void close_pcap();
+  bool skip_pcap(size_t count_skip);
+  int get_next_pcap_format(char* imessage, size_t imessage_len);
 };
 
 #endif

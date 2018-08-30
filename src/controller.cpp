@@ -9,6 +9,20 @@ static constexpr size_t MESSAGE_SIZE = 1024;
 
 Controller::Controller(Config _conf) : conf(move(_conf)) {}
 
+/* TODO: fix for controller
+PacketConverter::PacketConverter(PacketConverter&& other) noexcept
+{
+  FILE* tmp = other.pcapfile;
+  other.pcapfile = nullptr;
+  if (pcapfile != nullptr) {
+    fclose(pcapfile);
+  }
+  pcapfile = tmp;
+}
+*/
+
+Controller::~Controller() { close_pcap(); }
+
 void Controller::run()
 {
   Options opt(conf);
@@ -19,7 +33,8 @@ void Controller::run()
   unique_ptr<Converter> conv = nullptr;
   switch (get_converter_type()) {
   case ConverterType::PCAP:
-    conv = make_unique<PacketConverter>();
+    l2_type = open_pcap(conf.input);
+    conv = make_unique<PacketConverter>(l2_type);
     opt.dprint(F, "input type: PCAP");
     break;
   case ConverterType::LOG:
@@ -65,7 +80,9 @@ void Controller::run()
     if (opt.check_count()) {
       break;
     }
-    length = conv->convert(imessage, MESSAGE_SIZE, omessage, MESSAGE_SIZE);
+    if (get_next_pcap_format(imessage, MESSAGE_SIZE)) {
+      length = conv->convert(imessage, MESSAGE_SIZE, omessage, MESSAGE_SIZE);
+    }
     if (length > 0) {
       // do nothing
     } else if (length == static_cast<int>(ConverterResult::FAIL)) {
@@ -131,6 +148,77 @@ ProducerType Controller::get_producer_type() const
   }
 
   return ProducerType::FILE;
+}
+
+uint32_t Controller::open_pcap(const string& filename)
+{
+  pcapfile = fopen(filename.c_str(), "r");
+  if (pcapfile == nullptr) {
+    throw runtime_error("Failed to open input file: " + filename);
+  }
+
+  struct pcap_file_header pfh;
+  size_t pfh_len = sizeof(pfh);
+  if (fread(&pfh, 1, pfh_len, pcapfile) != pfh_len) {
+    throw runtime_error("Invalid input pcap file: " + filename);
+  }
+  if (pfh.magic != 0xa1b2c3d4) {
+    throw runtime_error("Invalid input pcap file: " + filename);
+  }
+
+  return pfh.linktype;
+}
+
+void Controller::close_pcap()
+{
+  if (pcapfile != nullptr) {
+    fclose(pcapfile);
+  }
+}
+
+bool Controller::skip_pcap(size_t count_skip)
+{
+  struct pcap_pkthdr pp;
+  size_t count = 0;
+  size_t pp_len = sizeof(pp);
+
+  while (count < count_skip) {
+    if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
+      return false;
+    }
+    fseek(pcapfile, pp.caplen, SEEK_CUR);
+    count++;
+  }
+
+  return true;
+}
+
+int Controller::get_next_pcap_format(char* imessage, size_t imessage_len)
+{
+  size_t pp_len = sizeof(pcap_pkthdr);
+  if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
+    return false;
+  }
+  struct pcap_pkthdr* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
+
+#if 0
+  // we assume packet_len < PACKET_BUF_SIZE
+  if (packet_len >= PACKET_BUF_SIZE) {
+    throw runtime_error("Packet buffer too small");
+  }
+#endif
+
+  size_t read_len;
+  if (imessage_len < pp->caplen + pp_len) {
+    read_len = imessage_len - pp->caplen - 1;
+  } else {
+    read_len = pp->caplen;
+  }
+  if (fread(imessage + (int)pp_len, 1, read_len, pcapfile) != read_len) {
+    return false;
+  }
+
+  return true;
 }
 
 // vim: et:ts=2:sw=2
