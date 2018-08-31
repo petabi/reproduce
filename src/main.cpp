@@ -9,13 +9,12 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-  Config conf;
-
-  if (!conf.set(argc, argv)) {
-    exit(0);
-  }
-
   try {
+    Config conf;
+    if (!conf.set(argc, argv)) {
+      exit(0);
+    }
+
     Controller ctrl(conf);
     ctrl.run();
   } catch (exception const& e) {
