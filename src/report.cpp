@@ -52,17 +52,19 @@ void Report::end() const noexcept
   cout.precision(2);
   cout << fixed;
   cout << "--------------------------------------------------\n";
+  // FIXME: input info: according to input type...
   if (stat(conf.input.c_str(), &st) != -1) {
-    cout << "Input File  : " << conf.input << "(" << (double)st.st_size / MBYTE
+    cout << "Input       : " << conf.input << "(" << (double)st.st_size / MBYTE
          << "M)\n";
   } else {
-    cout << "Input File  : invalid\n";
+    cout << "Input       : invalid\n";
   }
+  // TODO: output info
   cout << "Sent Bytes  : " << sent_byte << "(" << (double)sent_byte / MBYTE
        << "M)\n";
-  cout << "Sent Packets: " << sent_count << "(" << (double)sent_count / MPACKET
+  cout << "Sent Count  : " << sent_count << "(" << (double)sent_count / MPACKET
        << "M)\n";
-  cout << "Fail Packets: " << fail_count << "(" << (double)fail_count / MPACKET
+  cout << "Fail Count  : " << fail_count << "(" << (double)fail_count / MPACKET
        << "M)\n";
   cout << "Elapsed Time: " << time_diff << "s\n";
   cout << "Performance : " << perf_kbps / KBYTE << "MBps/" << perf_kpps
@@ -72,6 +74,6 @@ void Report::end() const noexcept
 
 void Report::fail() noexcept { fail_count++; }
 
-size_t Report::get_sent_count() noexcept { return sent_count; }
+size_t Report::get_sent_count() const noexcept { return sent_count; }
 
 // vim: et:ts=2:sw=2

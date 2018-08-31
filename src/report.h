@@ -14,10 +14,10 @@ public:
   Report& operator=(Report&&) = delete;
   ~Report() = default;
   void start() noexcept;
-  void process(int length) noexcept;
+  void process(const int length) noexcept;
   void end() const noexcept;
   void fail() noexcept;
-  size_t get_sent_count() noexcept;
+  size_t get_sent_count() const noexcept;
 
 private:
   size_t sent_byte{0};
