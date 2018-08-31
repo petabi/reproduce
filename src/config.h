@@ -25,12 +25,13 @@ public:
   Config(Config&&) = default;
   Config& operator=(Config&&) = delete;
   ~Config() = default;
-  bool set(int argc, char** argv) noexcept;
+  bool set(int argc, char** argv);
   void show() const noexcept;
 
 private:
   void help() const noexcept;
   void set_default() noexcept;
+  void check() const;
 };
 
 #endif
