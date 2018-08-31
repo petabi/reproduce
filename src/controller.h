@@ -27,20 +27,21 @@ private:
   Config conf;
   ConverterType get_converter_type() const;
   ProducerType get_producer_type() const;
-  FileRead (Controller::*get_next_format)(char* imessage, size_t imessage_len);
-  uint32_t l2_type;
+  FileRead (Controller::*get_next_data)(char* imessage, size_t imessage_len);
+  bool (Controller::*skip_data)(size_t count);
   FILE* pcapfile;
+  std::ifstream logfile;
   uint32_t open_pcap(const std::string& filename);
   void close_pcap();
-  bool skip_pcap(size_t count_skip);
-  bool check_count(const size_t sent_count) const noexcept;
-  FileRead get_next_pcap_format(char* imessage, size_t imessage_len);
-  FileRead get_next_log_format(char* imessage, size_t imessage_len);
-  FileRead get_next_null_format(char* imessage, size_t imessage_len);
-  std::ifstream logfile;
   void open_log(const std::string& filename);
   void close_log();
-  bool skip_log(size_t count_skip);
+  FileRead get_next_pcap(char* imessage, size_t imessage_len);
+  FileRead get_next_log(char* imessage, size_t imessage_len);
+  FileRead get_next_null(char* imessage, size_t imessage_len);
+  bool skip_pcap(size_t count_skip);
+  bool skip_log(size_t count);
+  bool skip_null(size_t count);
+  bool check_count(const size_t sent_count) const noexcept;
 };
 
 #endif

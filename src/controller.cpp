@@ -43,32 +43,29 @@ void Controller::run()
 
   unique_ptr<Converter> conv = nullptr;
   switch (get_converter_type()) {
+  default:
   case ConverterType::PCAP:
+    uint32_t l2_type;
     l2_type = open_pcap(conf.input);
     conv = make_unique<PacketConverter>(l2_type);
-    get_next_format = &Controller::get_next_pcap_format;
+    get_next_data = &Controller::get_next_pcap;
+    skip_data = &Controller::skip_pcap;
     util.dprint(F, "input type: PCAP");
     break;
   case ConverterType::LOG:
+    open_log(conf.input);
     conv = make_unique<LogConverter>();
-    get_next_format = &Controller::get_next_log_format;
+    get_next_data = &Controller::get_next_log;
+    skip_data = &Controller::skip_log;
     util.dprint(F, "input type: LOG");
     break;
-  default:
   case ConverterType::NONE:
     conv = make_unique<NullConverter>();
-    get_next_format = &Controller::get_next_null_format;
+    get_next_data = &Controller::get_next_null;
+    skip_data = &Controller::skip_null;
     util.dprint(F, "input type: NONE");
+    break;
   }
-
-#if 0
-  // FIXME:
-  if (conf.count_skip) {
-    if (!conv->skip(conf.count_skip)) {
-      util.dprint(F, "failed to skip(%d)", conf.count_skip);
-    }
-  }
-#endif
 
   unique_ptr<Producer> prod = nullptr;
   switch (get_producer_type()) {
@@ -92,10 +89,16 @@ void Controller::run()
   int length = 0;
   FileRead ret;
 
+  if (conf.count_skip) {
+    if (!(this->*skip_data)(conf.count_skip)) {
+      util.dprint(F, "failed to skip(%d)", conf.count_skip);
+    }
+  }
+
   report.start();
   while (true) {
     length = MESSAGE_SIZE;
-    ret = (this->*get_next_format)(imessage, length);
+    ret = (this->*get_next_data)(imessage, length);
     if (ret == FileRead::SUCCESS) {
       length = conv->convert(imessage, length, omessage, MESSAGE_SIZE);
       if (length <= 0) {
@@ -199,24 +202,22 @@ void Controller::close_pcap()
   }
 }
 
-bool Controller::skip_pcap(size_t count_skip)
+void Controller::open_log(const std::string& filename)
 {
-  struct pcap_pkthdr pp;
-  size_t count = 0;
-  size_t pp_len = sizeof(pp);
-
-  while (count < count_skip) {
-    if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
-      return false;
-    }
-    fseek(pcapfile, pp.caplen, SEEK_CUR);
-    count++;
+  logfile.open(filename.c_str(), fstream::in);
+  if (!logfile.is_open()) {
+    throw runtime_error("Failed to open input file: " + filename);
   }
-
-  return true;
 }
 
-FileRead Controller::get_next_pcap_format(char* imessage, size_t imessage_len)
+void Controller::close_log()
+{
+  if (logfile.is_open()) {
+    logfile.close();
+  }
+}
+
+FileRead Controller::get_next_pcap(char* imessage, size_t imessage_len)
 {
   size_t pp_len = sizeof(pcap_pkthdr);
   if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
@@ -233,30 +234,52 @@ FileRead Controller::get_next_pcap_format(char* imessage, size_t imessage_len)
 
   size_t read_len;
   if (imessage_len < pp->caplen + pp_len) {
-    read_len = imessage_len - pp->caplen - 1;
+    read_len = imessage_len - pp_len - 1;
   } else {
     read_len = pp->caplen;
   }
-  if (fread(imessage + (int)pp_len, 1, read_len, pcapfile) != read_len) {
+  if (fread(reinterpret_cast<char*>(imessage + static_cast<int>(pp_len)), 1,
+            read_len, pcapfile) != read_len) {
     return FileRead::FAIL;
   }
   imessage_len = read_len;
   return FileRead::SUCCESS;
 }
 
-void Controller::open_log(const std::string& filename)
+FileRead Controller::get_next_log(char* imessage, size_t imessage_len)
 {
-  logfile.open(filename.c_str(), fstream::in);
-  if (!logfile.is_open()) {
-    throw runtime_error("Failed to open input file: " + filename);
+  string line;
+  if (!logfile.getline(imessage, imessage_len)) {
+    if (logfile.eof()) {
+      return FileRead::NO_MORE;
+    } else if (logfile.bad() || logfile.fail()) {
+      return FileRead::FAIL;
+    }
   }
+  imessage_len = strlen(imessage);
+  return FileRead::SUCCESS;
 }
 
-void Controller::close_log()
+FileRead Controller::get_next_null(char* imessage, size_t imessage_len)
 {
-  if (logfile.is_open()) {
-    logfile.close();
+  return FileRead::SUCCESS;
+}
+
+bool Controller::skip_pcap(size_t count_skip)
+{
+  struct pcap_pkthdr pp;
+  size_t count = 0;
+  size_t pp_len = sizeof(pp);
+
+  while (count < count_skip) {
+    if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
+      return false;
+    }
+    fseek(pcapfile, pp.caplen, SEEK_CUR);
+    count++;
   }
+
+  return true;
 }
 
 bool Controller::skip_log(size_t count_skip)
@@ -276,6 +299,8 @@ bool Controller::skip_log(size_t count_skip)
   return true;
 }
 
+bool Controller::skip_null(size_t count) { return true; }
+
 bool Controller::check_count(const size_t sent_count) const noexcept
 {
   if (conf.count_send == 0 || sent_count < conf.count_send) {
@@ -285,22 +310,4 @@ bool Controller::check_count(const size_t sent_count) const noexcept
   return true;
 }
 
-FileRead Controller::get_next_log_format(char* imessage, size_t imessage_len)
-{
-  string line;
-  if (!logfile.getline(imessage, imessage_len)) {
-    if (logfile.eof()) {
-      return FileRead::NO_MORE;
-    } else if (logfile.bad() || logfile.fail()) {
-      return FileRead::FAIL;
-    }
-  }
-  imessage_len = strlen(imessage);
-  return FileRead::SUCCESS;
-}
-
-FileRead Controller::get_next_null_format(char* imessage, size_t imessage_len)
-{
-  return FileRead::SUCCESS;
-}
 // vim: et:ts=2:sw=2
