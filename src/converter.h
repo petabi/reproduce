@@ -5,10 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
-#include <stdexcept>
 #include <string>
-
-#include "producer.h"
 
 /**
  * Converter

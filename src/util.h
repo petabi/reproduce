@@ -6,8 +6,6 @@
 #include <iostream>
 #include <string>
 
-//#include "config.h"
-
 #define F __func__
 
 class Util {

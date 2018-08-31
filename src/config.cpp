@@ -2,7 +2,6 @@
 #include <unistd.h>
 
 #include "config.h"
-#include "util.h"
 
 using namespace std;
 
