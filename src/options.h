@@ -30,22 +30,10 @@ public:
   void eprint(const char* name, T head, Ts... tail) const;
   void mprint(const char* message) const noexcept;
   void show_options() const noexcept;
-  bool check_count() const noexcept;
-  void start_evaluation() noexcept;
-  void process_evaluation(int length) noexcept;
-  void report_evaluation() const noexcept;
+  bool check_count(const size_t sent_count) const noexcept;
   bool open_output_file() noexcept;
-  void increase_fail() noexcept;
 
 private:
-  size_t sent_byte{0};       // sent bytes
-  size_t sent_packet{0};     // sent packets
-  size_t fail_packet{0};     // failed packet count
-  double perf_kbps{0.0};     // kilo byte per second
-  double perf_kpps{0.0};     // kilo packet per second
-  clock_t time_start{0};     // start time
-  clock_t time_now{0};       // current time
-  double time_diff{0.0};     // time difference
   std::ofstream output_file; // output file
 };
 

@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include "controller.h"
+#include "report.h"
 
 using namespace std;
 
@@ -26,6 +27,7 @@ Controller::~Controller() { close_pcap(); }
 void Controller::run()
 {
   Options opt(conf);
+  Report report(conf);
 
   opt.dprint(F, "start");
   opt.show_options();
@@ -70,14 +72,14 @@ void Controller::run()
     break;
   }
 
-  opt.start_evaluation();
+  report.start();
 
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
   int length = 0;
   while (true) {
-    opt.process_evaluation(length);
-    if (opt.check_count()) {
+    report.process(length);
+    if (opt.check_count(report.get_sent_count())) {
       break;
     }
     if (get_next_pcap_format(imessage, MESSAGE_SIZE)) {
@@ -86,7 +88,7 @@ void Controller::run()
     if (length > 0) {
       // do nothing
     } else if (length == static_cast<int>(ConverterResult::FAIL)) {
-      opt.increase_fail();
+      report.fail();
       continue;
     } else if (length == static_cast<int>(ConverterResult::NO_MORE)) {
       break;
@@ -97,7 +99,7 @@ void Controller::run()
     opt.mprint(omessage);
   }
 
-  opt.report_evaluation();
+  report.end();
   opt.dprint(F, "end");
 }
 
