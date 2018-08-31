@@ -86,7 +86,7 @@ void Controller::run()
 
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
-  int length = 0;
+  int length;
   FileRead ret;
 
   if (conf.count_skip) {
@@ -96,6 +96,7 @@ void Controller::run()
   }
 
   report.start();
+
   while (true) {
     length = MESSAGE_SIZE;
     ret = (this->*get_next_data)(imessage, length);
@@ -114,6 +115,7 @@ void Controller::run()
     } else {
       break;
     }
+
     prod->produce(omessage);
     util.mprint(omessage);
     report.process(length);

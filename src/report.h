@@ -7,7 +7,7 @@ class Report {
 public:
   Config conf;
   Report() = delete;
-  Report(Config&);
+  Report(const Config&);
   Report(const Report&) = delete;
   Report& operator=(const Report&) = delete;
   Report(Report&&) = delete;
