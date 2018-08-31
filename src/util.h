@@ -1,25 +1,24 @@
-#ifndef OPTIONS_H
-#define OPTIONS_H
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <string>
 
-#include "config.h"
+//#include "config.h"
 
 #define F __func__
 
-class Options {
+class Util {
 public:
-  Config conf;
-  Options() = default;
-  Options(Config);
-  Options(const Options&);
-  Options& operator=(const Options&);
-  Options(Options&&) = delete;
-  Options& operator=(Options&&) = delete;
-  ~Options();
+  Util() = default;
+  Util(const bool);
+  Util(const Util&) = default;
+  Util& operator=(const Util&) = default;
+  Util(Util&&) = delete;
+  Util& operator=(Util&&) = delete;
+  ~Util() = default;
   template <typename T> void print(T tail) const;
   template <typename T, typename... Ts> void print(T head, Ts... tail) const;
   template <typename T> void dprint(const char* name, T tail) const;
@@ -29,29 +28,26 @@ public:
   template <typename T, typename... Ts>
   void eprint(const char* name, T head, Ts... tail) const;
   void mprint(const char* message) const noexcept;
-  void show_options() const noexcept;
-  bool check_count(const size_t sent_count) const noexcept;
-  bool open_output_file() noexcept;
+  void set_debug(const bool& debug);
 
 private:
-  std::ofstream output_file; // output file
+  bool debug{false};
 };
 
-template <typename T> void Options::print(T tail) const
+template <typename T> void Util::print(T tail) const
 {
   std::cout << tail << "\n";
 }
 
-template <typename T, typename... Ts>
-void Options::print(T head, Ts... tail) const
+template <typename T, typename... Ts> void Util::print(T head, Ts... tail) const
 {
   std::cout << head;
   print(tail...);
 }
 
-template <typename T> void Options::dprint(const char* name, T head) const
+template <typename T> void Util::dprint(const char* name, T head) const
 {
-  if (!conf.mode_debug) {
+  if (!debug) {
     return;
   }
 
@@ -59,9 +55,9 @@ template <typename T> void Options::dprint(const char* name, T head) const
 }
 
 template <typename T, typename... Ts>
-void Options::dprint(const char* name, T head, Ts... tail) const
+void Util::dprint(const char* name, T head, Ts... tail) const
 {
-  if (!conf.mode_debug) {
+  if (!debug) {
     return;
   }
 
@@ -69,13 +65,13 @@ void Options::dprint(const char* name, T head, Ts... tail) const
   print(tail...);
 }
 
-template <typename T> void Options::eprint(const char* name, T tail) const
+template <typename T> void Util::eprint(const char* name, T tail) const
 {
   std::cout << "[ERROR] " << name << ": " << tail << "\n";
 }
 
 template <typename T, typename... Ts>
-void Options::eprint(const char* name, T head, Ts... tail) const
+void Util::eprint(const char* name, T head, Ts... tail) const
 {
   std::cout << "[ERROR] " << name << ": " << head;
   print(tail...);

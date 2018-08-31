@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "util.h"
+
 class Config {
 public:
   bool mode_debug{false}; // print debug messages
@@ -15,13 +17,16 @@ public:
   std::string filter;     // tcpdump filter string
   std::string broker;     // kafka broker
   std::string topic;      // kafka topic
+  Util util;
   Config() = default;
+  Config(const bool&);
   Config(const Config&) = default;
   Config& operator=(const Config&) = default;
   Config(Config&&) = default;
   Config& operator=(Config&&) = delete;
   ~Config() = default;
-  bool set_config(int argc, char** argv) noexcept;
+  bool set(int argc, char** argv) noexcept;
+  void show() const noexcept;
 
 private:
   void help() const noexcept;

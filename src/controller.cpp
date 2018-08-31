@@ -8,7 +8,7 @@ using namespace std;
 
 static constexpr size_t MESSAGE_SIZE = 1024;
 
-Controller::Controller(Config _conf) : conf(move(_conf)) {}
+Controller::Controller(const Config& _conf) : conf(_conf) {}
 
 /* TODO: fix for controller
 PacketConverter::PacketConverter(PacketConverter&& other) noexcept
@@ -26,34 +26,34 @@ Controller::~Controller() { close_pcap(); }
 
 void Controller::run()
 {
-  Options opt(conf);
+  Util util(conf.mode_debug);
   Report report(conf);
 
-  opt.dprint(F, "start");
-  opt.show_options();
+  util.dprint(F, "start");
+  conf.show();
 
   unique_ptr<Converter> conv = nullptr;
   switch (get_converter_type()) {
   case ConverterType::PCAP:
     l2_type = open_pcap(conf.input);
     conv = make_unique<PacketConverter>(l2_type);
-    opt.dprint(F, "input type: PCAP");
+    util.dprint(F, "input type: PCAP");
     break;
   case ConverterType::LOG:
     conv = make_unique<LogConverter>();
-    opt.dprint(F, "input type: LOG");
+    util.dprint(F, "input type: LOG");
     break;
   default:
   case ConverterType::NONE:
     conv = make_unique<NullConverter>();
-    opt.dprint(F, "input type: NONE");
+    util.dprint(F, "input type: NONE");
   }
 
 #if 0
   // FIXME:
   if (conf.count_skip) {
     if (!conv->skip(conf.count_skip)) {
-      opt.dprint(F, "failed to skip(%d)", conf.count_skip);
+      util.dprint(F, "failed to skip(%d)", conf.count_skip);
     }
   }
 #endif
@@ -79,7 +79,7 @@ void Controller::run()
   int length = 0;
   while (true) {
     report.process(length);
-    if (opt.check_count(report.get_sent_count())) {
+    if (check_count(report.get_sent_count())) {
       break;
     }
     if (get_next_pcap_format(imessage, MESSAGE_SIZE)) {
@@ -96,11 +96,11 @@ void Controller::run()
       // can't get here
     }
     prod->produce(omessage);
-    opt.mprint(omessage);
+    util.mprint(omessage);
   }
 
   report.end();
-  opt.dprint(F, "end");
+  util.dprint(F, "end");
 }
 
 ConverterType Controller::get_converter_type() const
@@ -217,6 +217,15 @@ int Controller::get_next_pcap_format(char* imessage, size_t imessage_len)
     read_len = pp->caplen;
   }
   if (fread(imessage + (int)pp_len, 1, read_len, pcapfile) != read_len) {
+    return false;
+  }
+
+  return true;
+}
+
+bool Controller::check_count(const size_t sent_count) const noexcept
+{
+  if (conf.count_send == 0 || sent_count < conf.count_send) {
     return false;
   }
 

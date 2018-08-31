@@ -46,11 +46,11 @@ static const array<KafkaConf, 4> kafka_conf = {{
 
 void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
 {
-  opt.eprint(F, "message delivery(", message.len(),
-             " bytes): ", message.errstr());
+  util.eprint(F, "message delivery(", message.len(),
+              " bytes): ", message.errstr());
 
   if (message.key()) {
-    opt.eprint(F, "key: ", *(message.key()));
+    util.eprint(F, "key: ", *(message.key()));
   }
 }
 
@@ -58,40 +58,44 @@ void RdEventCb::event_cb(RdKafka::Event& event)
 {
   switch (event.type()) {
   case RdKafka::Event::EVENT_ERROR:
-    opt.eprint(F, RdKafka::err2str(event.err()), ": ", event.str());
+    util.eprint(F, RdKafka::err2str(event.err()), ": ", event.str());
     if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) {
       // FIXME: what do we do?
     }
     break;
   case RdKafka::Event::EVENT_STATS:
-    opt.dprint(F, "STAT: ", event.str());
+    util.dprint(F, "STAT: ", event.str());
     break;
   case RdKafka::Event::EVENT_LOG:
-    opt.dprint(F, "LOG-", event.severity(), "-", event.fac(), ": ",
-               event.str());
+    util.dprint(F, "LOG-", event.severity(), "-", event.fac(), ": ",
+                event.str());
     break;
   default:
-    opt.eprint(F, "EVENT: ", RdKafka::err2str(event.err()), ": ", event.str());
+    util.eprint(F, "EVENT: ", RdKafka::err2str(event.err()), ": ", event.str());
     break;
   }
 }
 
-KafkaProducer::KafkaProducer(const Options& _opt) : opt(_opt)
+KafkaProducer::KafkaProducer(const Config& _conf, const Util& _util)
+    : conf(_conf), util(_util)
 {
-  if (opt.conf.broker.empty() || opt.conf.topic.empty()) {
+  if (conf.broker.empty() || conf.topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
   }
 
-  rd_dr_cb.opt = _opt;
-  rd_event_cb.opt = _opt;
+  // FIXME:
+  rd_dr_cb.util = _util;
+  rd_dr_cb.util.set_debug(conf.mode_debug);
+  rd_event_cb.util = _util;
+  rd_event_cb.util.set_debug(conf.mode_debug);
 
   // Create configuration objects
-  conf.reset(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
-  if (!conf) {
+  kafka_gconf.reset(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
+  if (!kafka_gconf) {
     throw runtime_error("Failed to create global configuration object");
   }
-  tconf.reset(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
-  if (!tconf) {
+  kafka_tconf.reset(RdKafka::Conf::create(RdKafka::Conf::CONF_TOPIC));
+  if (!kafka_tconf) {
     throw runtime_error("Failed to create topic configuration object");
   }
 
@@ -101,16 +105,16 @@ KafkaProducer::KafkaProducer(const Options& _opt) : opt(_opt)
   string errstr;
 
   // Create producer handle
-  producer.reset(RdKafka::Producer::create(conf.get(), errstr));
-  if (!producer) {
-    throw runtime_error("Failed to create producer: " + errstr);
+  kafka_producer.reset(RdKafka::Producer::create(kafka_gconf.get(), errstr));
+  if (!kafka_producer) {
+    throw runtime_error("Failed to create kafka producer: " + errstr);
   }
 
   // Create topic handle
-  topic.reset(RdKafka::Topic::create(producer.get(), opt.conf.topic,
-                                     tconf.get(), errstr));
-  if (!topic) {
-    throw runtime_error("Failed to create topic: " + errstr);
+  kafka_topic.reset(RdKafka::Topic::create(kafka_producer.get(), conf.topic,
+                                           kafka_tconf.get(), errstr));
+  if (!kafka_topic) {
+    throw runtime_error("Failed to create kafka topic: " + errstr);
   }
 }
 
@@ -119,39 +123,41 @@ void KafkaProducer::set_kafka_conf()
   string errstr;
 
   // Set configuration properties
-  if (conf->set("metadata.broker.list", opt.conf.broker, errstr) !=
+  if (kafka_gconf->set("metadata.broker.list", conf.broker, errstr) !=
       RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: metadata.broker.list: " +
                         errstr);
   }
-  if (conf->set("event_cb", &rd_event_cb, errstr) != RdKafka::Conf::CONF_OK) {
+  if (kafka_gconf->set("event_cb", &rd_event_cb, errstr) !=
+      RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: event_cb: " + errstr);
   }
-  if (conf->set("dr_cb", &rd_dr_cb, errstr) != RdKafka::Conf::CONF_OK) {
+  if (kafka_gconf->set("dr_cb", &rd_dr_cb, errstr) != RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: dr_cb: " + errstr);
   }
 
-  // Set configuration properties: optional features
+  // Set configuration properties: utilional features
   for (const auto& entry : kafka_conf) {
-    opt.dprint(F, "kafka_conf: ", entry.key, "=", entry.value, " (", entry.min,
-               "~", entry.max, ", ", entry.base, ")");
+    util.dprint(F, "kafka_conf: ", entry.key, "=", entry.value, " (", entry.min,
+                "~", entry.max, ", ", entry.base, ")");
     switch (entry.type) {
     case KafkaConfType::GLOBAL:
-      if (conf->set(entry.key, entry.value, errstr) != RdKafka::Conf::CONF_OK) {
-        throw runtime_error("Failed to set global config: " +
+      if (kafka_gconf->set(entry.key, entry.value, errstr) !=
+          RdKafka::Conf::CONF_OK) {
+        throw runtime_error("Failed to set kafka global config: " +
                             string(entry.key) + ": " + errstr);
       }
       break;
     case KafkaConfType::TOPIC:
-      if (tconf->set(entry.key, entry.value, errstr) !=
+      if (kafka_tconf->set(entry.key, entry.value, errstr) !=
           RdKafka::Conf::CONF_OK) {
-        throw runtime_error("Failed to set topic config: " + string(entry.key) +
-                            ": " + errstr);
+        throw runtime_error("Failed to set kafka topic config: " +
+                            string(entry.key) + ": " + errstr);
       }
       break;
     default:
-      opt.eprint(F,
-                 "unknown kafka config type: ", static_cast<int>(entry.type));
+      util.eprint(F,
+                  "unknown kafka config type: ", static_cast<int>(entry.type));
       break;
     }
   }
@@ -160,21 +166,21 @@ void KafkaProducer::set_kafka_conf()
 void KafkaProducer::show_kafka_conf() const
 {
   // show kafka producer config
-  if (opt.conf.mode_debug) {
+  if (conf.mode_debug) {
     int pass;
     for (pass = 0; pass < 2; pass++) {
       list<string>* dump;
       if (pass == 0) {
-        dump = conf->dump();
-        opt.dprint(F, "### Global Config");
+        dump = kafka_gconf->dump();
+        util.dprint(F, "### Global Config");
       } else {
-        dump = tconf->dump();
-        opt.dprint(F, "### Topic Config");
+        dump = kafka_tconf->dump();
+        util.dprint(F, "### Topic Config");
       }
       for (auto it = dump->cbegin(); it != dump->cend();) {
         string key = *it++;
         string value = *it++;
-        opt.dprint(F, key, "=", value);
+        util.dprint(F, key, "=", value);
       }
     }
   }
@@ -182,37 +188,37 @@ void KafkaProducer::show_kafka_conf() const
 
 void KafkaProducer::wait_queue(const int count) noexcept
 {
-  while (producer->outq_len() > count) {
-    opt.dprint(F, "waiting for ", producer->outq_len());
+  while (kafka_producer->outq_len() > count) {
+    util.dprint(F, "waiting for ", kafka_producer->outq_len());
 
     // FIXME: test effects of timeout (original 1000)
-    producer->poll(100);
+    kafka_producer->poll(100);
   }
 }
 
 bool KafkaProducer::produce_core(const string& message) noexcept
 {
   // Produce message
-  RdKafka::ErrorCode resp = producer->produce(
-      topic.get(), RdKafka::Topic::PARTITION_UA,
+  RdKafka::ErrorCode resp = kafka_producer->produce(
+      kafka_topic.get(), RdKafka::Topic::PARTITION_UA,
       RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
       const_cast<char*>(message.c_str()), message.size(), nullptr, nullptr);
 
   if (resp != RdKafka::ERR_NO_ERROR) {
-    opt.eprint(F, "produce failed: ", RdKafka::err2str(resp));
+    util.eprint(F, "produce failed: ", RdKafka::err2str(resp));
     return false;
   }
 
-  opt.dprint(F, "produced message: ", message.size(), " bytes");
+  util.dprint(F, "produced message: ", message.size(), " bytes");
 
-  producer->poll(0);
+  kafka_producer->poll(0);
 
   return true;
 }
 
 bool KafkaProducer::produce(const string& message) noexcept
 {
-  if (queue_data.length() + message.length() >= opt.conf.queue_size) {
+  if (queue_data.length() + message.length() >= conf.queue_size) {
     if (!produce_core(queue_data)) {
       // FIXME: error handling
     }
@@ -227,7 +233,7 @@ bool KafkaProducer::produce(const string& message) noexcept
 
 KafkaProducer::~KafkaProducer()
 {
-  opt.dprint(F, "last queued data: ", queue_data.size());
+  util.dprint(F, "last queued data: ", queue_data.size());
 
   if (queue_data.size()) {
     produce_core(queue_data);
@@ -242,7 +248,8 @@ KafkaProducer::~KafkaProducer()
  * FileProducer
  */
 
-FileProducer::FileProducer(Config _conf) : conf(move(_conf))
+FileProducer::FileProducer(const Config& _conf, const Util& _util)
+    : conf(_conf), util(_util)
 {
   if (!conf.output.empty()) {
     if (!open()) {
@@ -271,8 +278,7 @@ bool FileProducer::open() noexcept
 {
   file.open(conf.output, ios::out);
   if (!file.is_open()) {
-    // FIXME:
-    // eprint(F, "Failed to open file: ", conf.output);
+    util.eprint(F, "Failed to open file: ", conf.output);
     return false;
   }
 

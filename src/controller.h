@@ -7,13 +7,13 @@
 #include <string>
 
 #include "converter.h"
-#include "options.h"
 #include "producer.h"
+#include "util.h"
 
 class Controller {
 public:
   Controller() = delete;
-  Controller(Config);
+  Controller(const Config&);
   Controller(const Controller&) = delete;
   Controller& operator=(const Controller&) = delete;
   Controller(Controller&&) = delete;
@@ -31,6 +31,7 @@ private:
   void close_pcap();
   bool skip_pcap(size_t count_skip);
   int get_next_pcap_format(char* imessage, size_t imessage_len);
+  bool check_count(const size_t sent_count) const noexcept;
 };
 
 #endif

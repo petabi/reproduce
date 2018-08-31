@@ -2,6 +2,7 @@
 #include <unistd.h>
 
 #include "config.h"
+#include "util.h"
 
 using namespace std;
 
@@ -10,6 +11,8 @@ static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
 static constexpr size_t default_queue_size = 900000;
 static constexpr size_t default_count = 1000000;
+
+Config::Config(const bool& debug) { util.set_debug(debug); }
 
 void Config::set_default() noexcept
 {
@@ -26,7 +29,7 @@ void Config::set_default() noexcept
   }
 }
 
-bool Config::set_config(int argc, char** argv) noexcept
+bool Config::set(int argc, char** argv) noexcept
 {
   int o;
 
@@ -73,6 +76,7 @@ bool Config::set_config(int argc, char** argv) noexcept
   }
 
   set_default();
+  show();
 
   return true;
 }
@@ -94,6 +98,20 @@ void Config::help() const noexcept
   cout << "  -s: skip packet count\n";
   cout << "  -t: kafka topic"
        << " (default: " << default_topic << ")\n";
+}
+
+void Config::show() const noexcept
+{
+  util.dprint(F, "mode_debug=", mode_debug);
+  util.dprint(F, "mode_eval=", mode_eval);
+  util.dprint(F, "count_send=", count_send);
+  util.dprint(F, "count_skip=", count_skip);
+  util.dprint(F, "queue_size=", queue_size);
+  util.dprint(F, "input=", input);
+  util.dprint(F, "output=", output);
+  util.dprint(F, "filter=", filter);
+  util.dprint(F, "broker=", broker);
+  util.dprint(F, "topic=", topic);
 }
 
 // vim: et:ts=2:sw=2

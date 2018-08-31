@@ -3,7 +3,6 @@
 #include "config.h"
 #include "controller.h"
 #include "converter.h"
-#include "options.h"
 #include "producer.h"
 
 using namespace std;
@@ -12,7 +11,7 @@ int main(int argc, char** argv)
 {
   Config conf;
 
-  if (!conf.set_config(argc, argv)) {
+  if (!conf.set(argc, argv)) {
     exit(0);
   }
 

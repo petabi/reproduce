@@ -7,7 +7,8 @@
 
 #include "librdkafka/rdkafkacpp.h"
 
-#include "options.h"
+#include "config.h"
+#include "util.h"
 
 /**
  * Producer
@@ -30,20 +31,20 @@ public:
 
 class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
 public:
-  Options opt;
+  Util util;
   void dr_cb(RdKafka::Message&) override;
 };
 
 class RdEventCb : public RdKafka::EventCb {
 public:
-  Options opt;
+  Util util;
   void event_cb(RdKafka::Event&) override;
 };
 
 class KafkaProducer : public Producer {
 public:
   KafkaProducer() = default;
-  KafkaProducer(const Options&);
+  KafkaProducer(const Config&, const Util&);
   KafkaProducer(const KafkaProducer&) = delete;
   KafkaProducer& operator=(const KafkaProducer&) = delete;
   KafkaProducer(KafkaProducer&&) = default;
@@ -52,11 +53,12 @@ public:
   bool produce(const std::string& message) noexcept override;
 
 private:
-  Options opt;
-  std::unique_ptr<RdKafka::Conf> conf;
-  std::unique_ptr<RdKafka::Conf> tconf;
-  std::unique_ptr<RdKafka::Topic> topic;
-  std::unique_ptr<RdKafka::Producer> producer;
+  Config conf;
+  Util util;
+  std::unique_ptr<RdKafka::Conf> kafka_gconf;
+  std::unique_ptr<RdKafka::Conf> kafka_tconf;
+  std::unique_ptr<RdKafka::Topic> kafka_topic;
+  std::unique_ptr<RdKafka::Producer> kafka_producer;
   RdDeliveryReportCb rd_dr_cb;
   RdEventCb rd_event_cb;
   std::string queue_data;
@@ -73,7 +75,7 @@ private:
 class FileProducer : public Producer {
 public:
   FileProducer() = default;
-  FileProducer(Config);
+  FileProducer(const Config&, const Util&);
   FileProducer(const FileProducer&) = delete;
   FileProducer& operator=(const FileProducer&) = delete;
   FileProducer(FileProducer&&) = default;
@@ -83,6 +85,7 @@ public:
 
 private:
   Config conf;
+  Util util;
   std::ofstream file;
   bool open() noexcept;
 };
