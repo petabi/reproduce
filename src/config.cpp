@@ -15,6 +15,8 @@ Config::Config(const bool& debug) { util.set_debug(debug); }
 
 void Config::set_default() noexcept
 {
+  util.dprint(F, "set default config");
+
   if (broker.empty()) {
     broker = default_broker;
   }
@@ -31,7 +33,6 @@ void Config::set_default() noexcept
 bool Config::set(int argc, char** argv) noexcept
 {
   int o;
-
   while ((o = getopt(argc, argv, "b:c:defhi:o:q:s:t:")) != -1) {
     switch (o) {
     case 'b':
@@ -74,6 +75,7 @@ bool Config::set(int argc, char** argv) noexcept
     }
   }
 
+  util.set_debug(mode_debug);
   set_default();
   show();
 
@@ -85,16 +87,16 @@ void Config::help() const noexcept
   cout << "[USAGE] " << program_name << " OPTIONS\n";
   cout << "  -b: kafka broker"
        << " (default: " << default_broker << ")\n";
-  cout << "  -c: send packet count\n";
-  cout << "  -d: debug mode (print debug messages)\n";
-  cout << "  -e: evaluation mode (report statistics)\n";
-  cout << "  -f: tcpdump filter\n";
+  cout << "  -c: send count\n";
+  cout << "  -d: debug mode. print debug messages\n";
+  cout << "  -e: evaluation mode. report statistics\n";
+  cout << "  -f: tcpdump filter (when input is PCAP or NIC)\n";
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/NIC/none(no specification)])\n";
   cout << "  -o: output [kafka(no specification)/TEXTFILE/none] (default: "
           "kafka)\n";
-  cout << "  -q: queue byte (how many bytes send once)\n";
-  cout << "  -s: skip packet count\n";
+  cout << "  -q: queue size in byte. how many bytes send once\n";
+  cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
        << " (default: " << default_topic << ")\n";
 }

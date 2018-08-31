@@ -30,7 +30,6 @@ void Controller::run()
   Report report(conf);
 
   util.dprint(F, "start");
-  conf.show();
 
   unique_ptr<Converter> conv = nullptr;
   switch (get_converter_type()) {
@@ -63,12 +62,15 @@ void Controller::run()
   default:
   case ProducerType::KAFKA:
     prod = make_unique<KafkaProducer>();
+    util.dprint(F, "output type: KAFKA");
     break;
   case ProducerType::FILE:
     prod = make_unique<FileProducer>();
+    util.dprint(F, "output type: FILE");
     break;
   case ProducerType::NONE:
     prod = make_unique<NullProducer>();
+    util.dprint(F, "output type: NONE");
     break;
   }
 
@@ -78,10 +80,6 @@ void Controller::run()
   char omessage[MESSAGE_SIZE];
   int length = 0;
   while (true) {
-    report.process(length);
-    if (check_count(report.get_sent_count())) {
-      break;
-    }
     if (get_next_pcap_format(imessage, MESSAGE_SIZE)) {
       length = conv->convert(imessage, MESSAGE_SIZE, omessage, MESSAGE_SIZE);
     }
@@ -95,8 +93,14 @@ void Controller::run()
     } else {
       // can't get here
     }
+
     prod->produce(omessage);
     util.mprint(omessage);
+    report.process(length);
+
+    if (check_count(report.get_sent_count())) {
+      break;
+    }
   }
 
   report.end();
