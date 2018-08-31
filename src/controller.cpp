@@ -10,19 +10,29 @@ static constexpr size_t MESSAGE_SIZE = 1024;
 
 Controller::Controller(const Config& _conf) : conf(_conf) {}
 
-/* TODO: fix for controller
-PacketConverter::PacketConverter(PacketConverter&& other) noexcept
+Controller::Controller(Controller&& other) noexcept
 {
-  FILE* tmp = other.pcapfile;
-  other.pcapfile = nullptr;
-  if (pcapfile != nullptr) {
-    fclose(pcapfile);
+  if (other.pcapfile != nullptr) {
+    FILE* tmp = other.pcapfile;
+    other.pcapfile = nullptr;
+    if (pcapfile != nullptr) {
+      fclose(pcapfile);
+    }
+    pcapfile = tmp;
   }
-  pcapfile = tmp;
+  if (other.logfile.is_open()) {
+    if (logfile.is_open()) {
+      logfile.close();
+    }
+    logfile.swap(other.logfile);
+  }
 }
-*/
 
-Controller::~Controller() { close_pcap(); }
+Controller::~Controller()
+{
+  close_pcap();
+  close_log();
+}
 
 void Controller::run()
 {
@@ -36,15 +46,18 @@ void Controller::run()
   case ConverterType::PCAP:
     l2_type = open_pcap(conf.input);
     conv = make_unique<PacketConverter>(l2_type);
+    get_next_format = &Controller::get_next_pcap_format;
     util.dprint(F, "input type: PCAP");
     break;
   case ConverterType::LOG:
     conv = make_unique<LogConverter>();
+    get_next_format = &Controller::get_next_log_format;
     util.dprint(F, "input type: LOG");
     break;
   default:
   case ConverterType::NONE:
     conv = make_unique<NullConverter>();
+    get_next_format = &Controller::get_next_null_format;
     util.dprint(F, "input type: NONE");
   }
 
@@ -74,26 +87,32 @@ void Controller::run()
     break;
   }
 
-  report.start();
-
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
   int length = 0;
+  FileRead ret;
+
+  report.start();
   while (true) {
-    if (get_next_pcap_format(imessage, MESSAGE_SIZE)) {
-      length = conv->convert(imessage, MESSAGE_SIZE, omessage, MESSAGE_SIZE);
-    }
-    if (length > 0) {
-      // do nothing
-    } else if (length == static_cast<int>(ConverterResult::FAIL)) {
-      report.fail();
-      continue;
-    } else if (length == static_cast<int>(ConverterResult::NO_MORE)) {
+    length = MESSAGE_SIZE;
+    ret = (this->*get_next_format)(imessage, length);
+    if (ret == FileRead::SUCCESS) {
+      length = conv->convert(imessage, length, omessage, MESSAGE_SIZE);
+      if (length > 0) {
+        // do nothing
+      } else {
+        report.fail();
+        continue;
+      }
+    } else if (ret == FileRead::FAIL) {
+      // TODO: How to handle error
+      break;
+    } else if (ret == FileRead::NO_MORE) {
+      // TODO: How to handle error
       break;
     } else {
-      // can't get here
+      break;
     }
-
     prod->produce(omessage);
     util.mprint(omessage);
     report.process(length);
@@ -199,17 +218,17 @@ bool Controller::skip_pcap(size_t count_skip)
   return true;
 }
 
-int Controller::get_next_pcap_format(char* imessage, size_t imessage_len)
+FileRead Controller::get_next_pcap_format(char* imessage, size_t imessage_len)
 {
   size_t pp_len = sizeof(pcap_pkthdr);
   if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
-    return false;
+    return FileRead::NO_MORE;
   }
   auto* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
 
 #if 0
-  // we assume packet_len < PACKET_BUF_SIZE
-  if (packet_len >= PACKET_BUF_SIZE) {
+  // we assume packet length < buffer length
+  if (packet_len >= imessage_len) {
     throw runtime_error("Packet buffer too small");
   }
 #endif
@@ -221,9 +240,41 @@ int Controller::get_next_pcap_format(char* imessage, size_t imessage_len)
     read_len = pp->caplen;
   }
   if (fread(imessage + (int)pp_len, 1, read_len, pcapfile) != read_len) {
-    return false;
+    return FileRead::FAIL;
   }
+  imessage_len = read_len;
+  return FileRead::SUCCESS;
+}
 
+void Controller::open_log(const std::string& filename)
+{
+  logfile.open(filename.c_str(), fstream::in);
+  if (!logfile.is_open()) {
+    throw runtime_error("Failed to open input file: " + filename);
+  }
+}
+
+void Controller::close_log()
+{
+  if (logfile.is_open()) {
+    logfile.close();
+  }
+}
+
+bool Controller::skip_log(size_t count_skip)
+{
+  char buf[1];
+  size_t count = 0;
+  while (count < count_skip) {
+    if (!logfile.getline(buf, 1)) {
+      if (logfile.eof()) {
+        return false;
+      } else if (logfile.bad() || logfile.fail()) {
+        return false;
+      }
+    }
+    count++;
+  }
   return true;
 }
 
@@ -236,4 +287,22 @@ bool Controller::check_count(const size_t sent_count) const noexcept
   return true;
 }
 
+FileRead Controller::get_next_log_format(char* imessage, size_t imessage_len)
+{
+  string line;
+  if (!logfile.getline(imessage, imessage_len)) {
+    if (logfile.eof()) {
+      return FileRead::NO_MORE;
+    } else if (logfile.bad() || logfile.fail()) {
+      return FileRead::FAIL;
+    }
+  }
+  imessage_len = strlen(imessage);
+  return FileRead::SUCCESS;
+}
+
+FileRead Controller::get_next_null_format(char* imessage, size_t imessage_len)
+{
+  return FileRead::SUCCESS;
+}
 // vim: et:ts=2:sw=2

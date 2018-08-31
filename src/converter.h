@@ -19,8 +19,6 @@ enum class ConverterType {
   LOG,
 };
 
-enum class ConverterResult { FAIL = -2, NO_MORE = -1 };
-
 class Converter {
 public:
   virtual int convert(char* in, size_t in_len, char* out, size_t out_len) = 0;
@@ -101,13 +99,12 @@ public:
   LogConverter& operator=(const LogConverter&) = delete;
   LogConverter(LogConverter&&) noexcept;
   LogConverter& operator=(const LogConverter&&) = delete;
-  ~LogConverter();
+  ~LogConverter() = default;
   // bool skip(size_t count_skip) override;
   int convert(char* in, size_t in_len, char* out, size_t out_len) override;
 
 private:
   int conv_len = 0;
-  std::ifstream logfile;
 };
 
 /**

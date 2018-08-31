@@ -49,7 +49,7 @@ int PacketConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 
   if (!invoke(get_l2_process(), this,
               reinterpret_cast<unsigned char*>(in + sizeof(pcap_pkthdr)))) {
-    return static_cast<int>(ConverterResult::FAIL);
+    return 0;
   }
 
   // TODO: payload process
@@ -302,64 +302,13 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset)
   return true;
 }
 
-#if 0
-LogConverter::LogConverter(const std::string& filename)
-{
-  logfile.open(filename.c_str(), fstream::in);
-  if (!logfile.is_open()) {
-    throw runtime_error("Failed to open input file: " + filename);
-  }
-}
-#endif
-
-LogConverter::LogConverter(LogConverter&& other) noexcept
-{
-  if (logfile.is_open()) {
-    logfile.close();
-  }
-  logfile.swap(other.logfile);
-}
-
-LogConverter::~LogConverter()
-{
-  if (logfile.is_open()) {
-    logfile.close();
-  }
-}
-
-#if 0
-bool LogConverter::skip(size_t count_skip)
-{
-  char buf[1];
-  size_t count = 0;
-  while (count < count_skip) {
-    if (!logfile.getline(buf, 1)) {
-      if (logfile.eof()) {
-        return false;
-      } else if (logfile.bad() || logfile.fail()) {
-        return false;
-      }
-    }
-    count++;
-  }
-  return true;
-}
-#endif
-
 int LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
   conv_len = 0;
+  if (in == nullptr) {
+    return 0;
+  }
 
-  /* TODO(immediately): work in controller
-    string line;
-    if (!logfile.getline(message, size)) {
-      if (logfile.eof()) {
-        return static_cast<int>(ConverterResult::NO_MORE);
-      } else if (logfile.bad() || logfile.fail()) {
-        return static_cast<int>(ConverterResult::FAIL);
-      }
-    }
-  */
   if (in_len < out_len) {
     memcpy(in, out, in_len);
   } else {
