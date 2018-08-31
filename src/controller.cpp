@@ -74,11 +74,11 @@ void Controller::run()
   switch (get_producer_type()) {
   default:
   case ProducerType::KAFKA:
-    prod = make_unique<KafkaProducer>();
+    prod = make_unique<KafkaProducer>(conf, util);
     util.dprint(F, "output type: KAFKA");
     break;
   case ProducerType::FILE:
-    prod = make_unique<FileProducer>();
+    prod = make_unique<FileProducer>(conf, util);
     util.dprint(F, "output type: FILE");
     break;
   case ProducerType::NONE:
@@ -98,9 +98,7 @@ void Controller::run()
     ret = (this->*get_next_format)(imessage, length);
     if (ret == FileRead::SUCCESS) {
       length = conv->convert(imessage, length, omessage, MESSAGE_SIZE);
-      if (length > 0) {
-        // do nothing
-      } else {
+      if (length <= 0) {
         report.fail();
         continue;
       }
