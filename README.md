@@ -1,29 +1,35 @@
-# Header2log
+# Packetproducer
 
 ## Overview
 
 ### Introduction
 
-  Header2log is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
+  Packetproducer is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
 Packet translation is up to the transport layer, and the protocols currently supported are Ethernet, IP, ARP, TCP, UDP, and ICMP.
 
 ## Function Specification
 
-### Data entry
+* The program converts packets into log-type streams
+* The program performs a conversion that converts the log to a new format, and removes unnecessary elements or adds features
+* The program sends transformed streams via kafka platform
+
+### 1. Data entry
 
 Specify a single pcap file or network interface to be converted through the program's options.
 
-### Conversion
+### 2. Conversion
 
-header2log Converts the incoming packet to a stream format with space as delimiter, as in the following Conversion Format. The conversion starts with the sec value in the time_t structure representing the timestamp, and then converts from the lower layer to the higher layer of the protocol.
+Packetproducer Converts the incoming packet to a stream format with space as delimiter, as in the following Conversion Format. The conversion starts with the sec value in the time_t structure representing the timestamp, and then converts from the lower layer to the higher layer of the protocol.
 
 #### Conversion Example
 
 1531980829 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 56325 19069 64 127 7184 59.7.91.91 121.205.88.134 ip_opt TCP 3389 63044 1092178785 2869829243 20 AP 64032 5779 0
 
-### result
+\[Seconds of Timestamp\] \[Protocol Name\] \[Destination MAC Address\] \[Source MAC Address\] \[Protocol Name\] \[Version\] \[IHL\] \[ToS\] \[Total Length\] \[Identification\] \[Fragment Offset\] \[TTL\] \[Header Checksum\] \[Source IP Address\] \[Destination IP Address\] \[Presence of option field\] \[Protocol name\] \[Source Port Address\] \[Destination Port Address\] \[Squence Number\] \[Acknowledge Number\] \[Hlen\] \[Flags(UAPRSF)\] \[Window Size\] \[Checksum\] \[Urgent Pointer\]
 
-Header2log outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
+### 3. Output
+
+Packetproducer outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
 
 ### Conversion Format
 
@@ -122,7 +128,7 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 
 ### Program Usage  
 
-```./header2log [OPTIONS]```
+```./Packetproducer [OPTIONS]```
 
 ### OPTIONS
 
@@ -142,17 +148,18 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 
 ### Examples
 
-* Convert pcap file and send it to kafka server: ```./header2log -i [pcap file name] -b [kafka broker addr:port] -t [kafka topic]```
-* Output only debugging messages (conversion result) after converting pcap file: ```./header2log -i [pcap file name] -d -k```
-* Save result file after converting pcap file: ```./header2log -i [pcap file name] -o [output file]```
-* Skip packets and convert pcap file: ```./header2log -i [pcap file name] -s [skip packet count]```
+* Convert pcap file and send it to kafka server: ```./Packetproducer -i [pcap file name] -b [kafka broker addr:port] -t [kafka topic]```
+* Output only debugging messages (conversion result) after converting pcap file: ```./Packetproducer -i [pcap file name] -d -k```
+* Save result file after converting pcap file: ```./Packetproducer -i [pcap file name] -o [output file]```
+* Skip packets and convert pcap file: ```./Packetproducer -i [pcap file name] -s [skip packet count]```
 
 ## Performance
 
 ###Test environment
 
 * CPU : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
-* Memory : 62GB
+* Memory : 64GB
+* Cores(Utilization) : 1(100%)
 
 ###Result
 
