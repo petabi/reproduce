@@ -5,7 +5,6 @@
 
 using namespace std;
 
-static const char* program_name = "packetproducer";
 static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
 static constexpr size_t default_queue_size = 900000;
@@ -84,7 +83,8 @@ bool Config::set(int argc, char** argv) noexcept
 
 void Config::help() const noexcept
 {
-  cout << "[USAGE] " << program_name << " OPTIONS\n";
+  cout << PROGRAM_NAME << "-" << PROGRAM_VERSION << "\n";
+  cout << "[USAGE] " << PROGRAM_NAME << " [OPTIONS]\n";
   cout << "  -b: kafka broker"
        << " (default: " << default_broker << ")\n";
   cout << "  -c: send count\n";
