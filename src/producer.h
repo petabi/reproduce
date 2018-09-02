@@ -44,11 +44,11 @@ public:
 class KafkaProducer : public Producer {
 public:
   KafkaProducer() = delete;
-  KafkaProducer(const Config&, const Util&);
+  KafkaProducer(const Config&);
   KafkaProducer(const KafkaProducer&) = delete;
   KafkaProducer& operator=(const KafkaProducer&) = delete;
-  KafkaProducer(KafkaProducer&&) = default;
-  KafkaProducer& operator=(KafkaProducer&&) = default;
+  KafkaProducer(KafkaProducer&&) = delete;
+  KafkaProducer& operator=(KafkaProducer&&) = delete;
   ~KafkaProducer();
   bool produce(const std::string& message) noexcept override;
 
@@ -75,10 +75,10 @@ private:
 class FileProducer : public Producer {
 public:
   FileProducer() = delete;
-  FileProducer(const Config&, const Util&);
+  FileProducer(const Config&);
   FileProducer(const FileProducer&) = delete;
   FileProducer& operator=(const FileProducer&) = delete;
-  FileProducer(FileProducer&&) = default;
+  FileProducer(FileProducer&&) = delete;
   FileProducer& operator=(FileProducer&&) = delete;
   ~FileProducer();
   bool produce(const std::string& message) noexcept override;
@@ -96,13 +96,18 @@ private:
 
 class NullProducer : public Producer {
 public:
-  NullProducer() = default;
+  NullProducer() = delete;
+  NullProducer(const Config&);
   NullProducer(const NullProducer&) = delete;
   NullProducer& operator=(const NullProducer&) = delete;
-  NullProducer(NullProducer&&) = default;
+  NullProducer(NullProducer&&) = delete;
   NullProducer& operator=(NullProducer&&) = delete;
   ~NullProducer() = default;
   bool produce(const std::string& message) noexcept override;
+
+private:
+  Config conf;
+  Util util;
 };
 
 #endif

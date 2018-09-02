@@ -76,17 +76,14 @@ void RdEventCb::event_cb(RdKafka::Event& event)
   }
 }
 
-KafkaProducer::KafkaProducer(const Config& _conf, const Util& _util)
-    : conf(_conf), util(_util)
+KafkaProducer::KafkaProducer(const Config& _conf) : conf(_conf)
 {
   if (conf.broker.empty() || conf.topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
   }
 
-  // FIXME:
-  rd_dr_cb.util = _util;
+  util.set_debug(conf.mode_debug);
   rd_dr_cb.util.set_debug(conf.mode_debug);
-  rd_event_cb.util = _util;
   rd_event_cb.util.set_debug(conf.mode_debug);
 
   // Create configuration objects
@@ -248,9 +245,10 @@ KafkaProducer::~KafkaProducer()
  * FileProducer
  */
 
-FileProducer::FileProducer(const Config& _conf, const Util& _util)
-    : conf(_conf), util(_util)
+FileProducer::FileProducer(const Config& _conf) : conf(_conf)
 {
+  util.set_debug(conf.mode_debug);
+
   if (!conf.output.empty()) {
     if (!open()) {
       throw runtime_error("Failed to open output file: " + conf.output);
@@ -288,6 +286,11 @@ bool FileProducer::open() noexcept
 /**
  * NullProducer
  */
+
+NullProducer::NullProducer(const Config& _conf) : conf(_conf)
+{
+  util.set_debug(conf.mode_debug);
+}
 
 bool NullProducer::produce(const string& message) noexcept { return true; }
 
