@@ -71,15 +71,15 @@ void Controller::run()
   switch (get_producer_type()) {
   default:
   case ProducerType::KAFKA:
-    prod = make_unique<KafkaProducer>(conf, util);
+    prod = make_unique<KafkaProducer>(conf);
     util.dprint(F, "output type: KAFKA");
     break;
   case ProducerType::FILE:
-    prod = make_unique<FileProducer>(conf, util);
+    prod = make_unique<FileProducer>(conf);
     util.dprint(F, "output type: FILE");
     break;
   case ProducerType::NONE:
-    prod = make_unique<NullProducer>();
+    prod = make_unique<NullProducer>(conf);
     util.dprint(F, "output type: NONE");
     break;
   }
