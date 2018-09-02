@@ -87,7 +87,7 @@ void Controller::run()
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
   int length;
-  FileRead ret;
+  ControllerResult ret;
 
   if (conf.count_skip) {
     if (!(this->*skip_data)(conf.count_skip)) {
@@ -100,16 +100,16 @@ void Controller::run()
   while (true) {
     length = MESSAGE_SIZE;
     ret = (this->*get_next_data)(imessage, length);
-    if (ret == FileRead::SUCCESS) {
+    if (ret == ControllerResult::SUCCESS) {
       length = conv->convert(imessage, length, omessage, MESSAGE_SIZE);
       if (length <= 0) {
         report.fail();
         continue;
       }
-    } else if (ret == FileRead::FAIL) {
+    } else if (ret == ControllerResult::FAIL) {
       // TODO: How to handle error
       break;
-    } else if (ret == FileRead::NO_MORE) {
+    } else if (ret == ControllerResult::NO_MORE) {
       // TODO: How to handle error
       break;
     } else {
@@ -219,11 +219,11 @@ void Controller::close_log()
   }
 }
 
-FileRead Controller::get_next_pcap(char* imessage, size_t imessage_len)
+ControllerResult Controller::get_next_pcap(char* imessage, size_t imessage_len)
 {
   size_t pp_len = sizeof(pcap_pkthdr);
   if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
-    return FileRead::NO_MORE;
+    return ControllerResult::NO_MORE;
   }
   auto* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
 
@@ -242,29 +242,29 @@ FileRead Controller::get_next_pcap(char* imessage, size_t imessage_len)
   }
   if (fread(reinterpret_cast<char*>(imessage + static_cast<int>(pp_len)), 1,
             read_len, pcapfile) != read_len) {
-    return FileRead::FAIL;
+    return ControllerResult::FAIL;
   }
   imessage_len = read_len;
-  return FileRead::SUCCESS;
+  return ControllerResult::SUCCESS;
 }
 
-FileRead Controller::get_next_log(char* imessage, size_t imessage_len)
+ControllerResult Controller::get_next_log(char* imessage, size_t imessage_len)
 {
   string line;
   if (!logfile.getline(imessage, imessage_len)) {
     if (logfile.eof()) {
-      return FileRead::NO_MORE;
+      return ControllerResult::NO_MORE;
     } else if (logfile.bad() || logfile.fail()) {
-      return FileRead::FAIL;
+      return ControllerResult::FAIL;
     }
   }
   imessage_len = strlen(imessage);
-  return FileRead::SUCCESS;
+  return ControllerResult::SUCCESS;
 }
 
-FileRead Controller::get_next_null(char* imessage, size_t imessage_len)
+ControllerResult Controller::get_next_null(char* imessage, size_t imessage_len)
 {
-  return FileRead::SUCCESS;
+  return ControllerResult::SUCCESS;
 }
 
 bool Controller::skip_pcap(size_t count_skip)
