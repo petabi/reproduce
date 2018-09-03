@@ -55,11 +55,11 @@ struct pcap_pkthdr {
 
 class PacketConverter : public Converter {
 public:
+  PacketConverter() = delete;
   PacketConverter(uint32_t _l2_type) { l2_type = _l2_type; };
-  PacketConverter() = default;
   PacketConverter(const PacketConverter&) = delete;
   PacketConverter& operator=(const PacketConverter&) = delete;
-  PacketConverter(PacketConverter&&) noexcept;
+  PacketConverter(PacketConverter&&) = delete;
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter() = default;
   // bool skip(size_t size) override;
@@ -94,17 +94,13 @@ private:
 class LogConverter : public Converter {
 public:
   LogConverter() = default;
-  // TODO(immediately): LogConverter(const std::string&);
   LogConverter(const LogConverter&) = delete;
   LogConverter& operator=(const LogConverter&) = delete;
-  LogConverter(LogConverter&&) noexcept;
+  LogConverter(LogConverter&&) = delete;
   LogConverter& operator=(const LogConverter&&) = delete;
   ~LogConverter() = default;
   // bool skip(size_t count_skip) override;
   int convert(char* in, size_t in_len, char* out, size_t out_len) override;
-
-private:
-  int conv_len = 0;
 };
 
 /**
@@ -116,7 +112,7 @@ public:
   NullConverter() = default;
   NullConverter(const NullConverter&) = delete;
   NullConverter& operator=(const NullConverter&) = delete;
-  NullConverter(NullConverter&&) noexcept = default;
+  NullConverter(NullConverter&&) = delete;
   NullConverter& operator=(const NullConverter&&) = delete;
   ~NullConverter() = default;
   int convert(char* in, size_t in_len, char* out, size_t out_len) override;

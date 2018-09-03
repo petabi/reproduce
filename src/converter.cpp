@@ -302,9 +302,12 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset)
   return true;
 }
 
+/**
+ * LogConverter
+ */
+
 int LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
-  conv_len = 0;
   if (in == nullptr) {
     return 0;
   }
@@ -314,8 +317,8 @@ int LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
   } else {
     memcpy(in, out, out_len);
   }
-  conv_len = out_len;
-  return conv_len;
+
+  return out_len;
 }
 
 /**
