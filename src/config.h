@@ -18,7 +18,6 @@ public:
   std::string broker;     // kafka broker
   std::string topic;      // kafka topic
   Config() = default;
-  Config(const bool&);
   Config(const Config&) = default;
   Config& operator=(const Config&) = default;
   Config(Config&&) = default;

@@ -10,8 +10,6 @@ static const char* default_topic = "pcap";
 static constexpr size_t default_queue_size = 900000;
 static constexpr size_t default_count = 1000000;
 
-Config::Config(const bool& debug) {}
-
 void Config::help() const noexcept
 {
   cout << PROGRAM_NAME << "-" << PROGRAM_VERSION << "\n";
