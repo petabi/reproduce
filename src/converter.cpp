@@ -31,10 +31,12 @@ using namespace std;
   ptr += length;                                                               \
   conv_len += length;
 
-PacketConverter::PacketConverter(uint32_t _l2_type) : l2_type(_l2_type) {}
+PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
 
-int PacketConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
+size_t PacketConverter::convert(char* in, size_t in_len, char* out,
+                                size_t out_len)
 {
+  // TODO: How to check the bounds of the buffer?
   conv_len = 0;
   ptr = out;
   auto* pp = reinterpret_cast<pcap_pkthdr*>(in);
@@ -307,7 +309,7 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset)
  * LogConverter
  */
 
-int LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
+size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
   if (in == nullptr) {
     return 0;
@@ -326,7 +328,8 @@ int LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
  * NullConverter
  */
 
-int NullConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
+size_t NullConverter::convert(char* in, size_t in_len, char* out,
+                              size_t out_len)
 {
   static constexpr char sample_data[] =
       "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "

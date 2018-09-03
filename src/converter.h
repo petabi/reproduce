@@ -21,7 +21,8 @@ enum class ConverterType {
 
 class Converter {
 public:
-  virtual int convert(char* in, size_t in_len, char* out, size_t out_len) = 0;
+  virtual size_t convert(char* in, size_t in_len, char* out,
+                         size_t out_len) = 0;
 };
 
 /**
@@ -56,14 +57,13 @@ struct pcap_pkthdr {
 class PacketConverter : public Converter {
 public:
   PacketConverter() = delete;
-  PacketConverter(uint32_t _l2_type);
+  PacketConverter(const uint32_t _l2_type);
   PacketConverter(const PacketConverter&) = delete;
   PacketConverter& operator=(const PacketConverter&) = delete;
   PacketConverter(PacketConverter&&) = delete;
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter() = default;
-  // bool skip(size_t size) override;
-  int convert(char* in, size_t in_len, char* out, size_t out_len) override;
+  size_t convert(char* in, size_t in_len, char* out, size_t out_len) override;
 
 private:
   int conv_len = 0;
@@ -99,8 +99,7 @@ public:
   LogConverter(LogConverter&&) = delete;
   LogConverter& operator=(const LogConverter&&) = delete;
   ~LogConverter() = default;
-  // bool skip(size_t count_skip) override;
-  int convert(char* in, size_t in_len, char* out, size_t out_len) override;
+  size_t convert(char* in, size_t in_len, char* out, size_t out_len) override;
 };
 
 /**
@@ -115,7 +114,7 @@ public:
   NullConverter(NullConverter&&) = delete;
   NullConverter& operator=(const NullConverter&&) = delete;
   ~NullConverter() = default;
-  int convert(char* in, size_t in_len, char* out, size_t out_len) override;
+  size_t convert(char* in, size_t in_len, char* out, size_t out_len) override;
 };
 
 #endif

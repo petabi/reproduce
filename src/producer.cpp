@@ -261,7 +261,7 @@ FileProducer::~FileProducer()
 bool FileProducer::produce(const string& message) noexcept
 {
   file << message << "\n";
-
+  file.flush();
   // FIXME: check error?
 
   return true;

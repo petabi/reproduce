@@ -32,7 +32,7 @@ void Controller::run()
   Report report(conf);
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
-  int length;
+  size_t length;
   ControllerResult ret;
 
   if (conf.count_skip) {
@@ -218,7 +218,7 @@ void Controller::close_log()
   }
 }
 
-ControllerResult Controller::get_next_pcap(char* imessage, size_t imessage_len)
+ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 {
   size_t pp_len = sizeof(pcap_pkthdr);
   if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
@@ -248,7 +248,7 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t imessage_len)
   return ControllerResult::SUCCESS;
 }
 
-ControllerResult Controller::get_next_log(char* imessage, size_t imessage_len)
+ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
 {
   string line;
   if (!logfile.getline(imessage, imessage_len)) {
@@ -263,12 +263,12 @@ ControllerResult Controller::get_next_log(char* imessage, size_t imessage_len)
   return ControllerResult::SUCCESS;
 }
 
-ControllerResult Controller::get_next_null(char* imessage, size_t imessage_len)
+ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
 {
   return ControllerResult::SUCCESS;
 }
 
-bool Controller::skip_pcap(size_t count_skip)
+bool Controller::skip_pcap(const size_t count_skip)
 {
   struct pcap_pkthdr pp;
   size_t count = 0;
@@ -285,7 +285,7 @@ bool Controller::skip_pcap(size_t count_skip)
   return true;
 }
 
-bool Controller::skip_log(size_t count_skip)
+bool Controller::skip_log(const size_t count_skip)
 {
   char buf[1];
   size_t count = 0;
@@ -303,7 +303,7 @@ bool Controller::skip_log(size_t count_skip)
   return true;
 }
 
-bool Controller::skip_null(size_t count) { return true; }
+bool Controller::skip_null(const size_t count_skip) { return true; }
 
 bool Controller::check_count(const size_t sent_count) const noexcept
 {
