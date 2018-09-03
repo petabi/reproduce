@@ -21,9 +21,10 @@ void Config::help() const noexcept
   cout << "  -e: evaluation mode. report statistics\n";
   cout << "  -f: tcpdump filter (when input is PCAP or NIC)\n";
   cout << "  -h: help\n";
-  cout << "  -i: input [PCAPFILE/LOGFILE/NIC/none(no specification)])\n";
-  cout << "  -o: output [kafka(no specification)/TEXTFILE/none] (default: "
-          "kafka)\n";
+  cout << "  -i: input [PCAPFILE/LOGFILE/NIC]\n";
+  cout << "      If no 'i' option is given, sample data is converted\n";
+  cout << "  -o: output [TEXTFILE/none]\n";
+  cout << "      If no 'o' input is given, it will be sent via kafka\n";
   cout << "  -q: queue size in byte. how many bytes send once\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
