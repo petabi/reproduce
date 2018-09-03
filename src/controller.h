@@ -18,7 +18,7 @@ public:
   Controller(const Config&);
   Controller(const Controller&) = delete;
   Controller& operator=(const Controller&) = delete;
-  Controller(Controller&&) noexcept;
+  Controller(Controller&&) = delete;
   Controller& operator=(const Controller&&) = delete;
   ~Controller();
   void run();

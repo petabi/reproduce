@@ -11,29 +11,12 @@ static constexpr size_t MESSAGE_SIZE = 1024;
 Controller::Controller(const Config& _conf) : conf(_conf)
 {
   util.set_debug(conf.mode_debug);
+
   if (!set_converter()) {
     throw runtime_error("Failed to set the converter");
   }
   if (!set_producer()) {
     throw runtime_error("Failed to set the producer");
-  }
-}
-
-Controller::Controller(Controller&& other) noexcept
-{
-  if (other.pcapfile != nullptr) {
-    FILE* tmp = other.pcapfile;
-    other.pcapfile = nullptr;
-    if (pcapfile != nullptr) {
-      fclose(pcapfile);
-    }
-    pcapfile = tmp;
-  }
-  if (other.logfile.is_open()) {
-    if (logfile.is_open()) {
-      logfile.close();
-    }
-    logfile.swap(other.logfile);
   }
 }
 
@@ -46,9 +29,6 @@ Controller::~Controller()
 void Controller::run()
 {
   Report report(conf);
-
-  util.dprint(F, "start");
-
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
   int length;
@@ -60,6 +40,7 @@ void Controller::run()
     }
   }
 
+  util.dprint(F, "start");
   report.start();
 
   while (true) {
@@ -170,6 +151,7 @@ bool Controller::set_converter()
   default:
     return false;
   }
+
   return true;
 }
 
@@ -191,6 +173,7 @@ bool Controller::set_producer()
   default:
     return false;
   }
+
   return true;
 }
 uint32_t Controller::open_pcap(const string& filename)
@@ -240,7 +223,6 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t imessage_len)
   if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
     return ControllerResult::NO_MORE;
   }
-  auto* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
 
 #if 0
   // we assume packet length < buffer length
@@ -250,6 +232,7 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t imessage_len)
 #endif
 
   size_t read_len;
+  auto* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
   if (imessage_len < pp->caplen + pp_len) {
     read_len = imessage_len - pp_len - 1;
   } else {
@@ -260,6 +243,7 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t imessage_len)
     return ControllerResult::FAIL;
   }
   imessage_len = read_len;
+
   return ControllerResult::SUCCESS;
 }
 
@@ -274,6 +258,7 @@ ControllerResult Controller::get_next_log(char* imessage, size_t imessage_len)
     }
   }
   imessage_len = strlen(imessage);
+
   return ControllerResult::SUCCESS;
 }
 
@@ -313,6 +298,7 @@ bool Controller::skip_log(size_t count_skip)
     }
     count++;
   }
+
   return true;
 }
 
