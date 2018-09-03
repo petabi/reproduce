@@ -8,13 +8,13 @@ using namespace std;
 
 bool Util::debug = false;
 
-void Util::mprint(const char* message) noexcept
+void Util::mprint(const char* message, const size_t count) noexcept
 {
   if (!debug) {
     return;
   }
 
-  cout << message << "\n";
+  cout << "[" << count << "] " << message << "\n";
 }
 
 void Util::set_debug(const bool& _debug) { debug = _debug; }

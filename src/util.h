@@ -24,7 +24,7 @@ public:
   template <typename T> static void eprint(const char* name, T tail);
   template <typename T, typename... Ts>
   static void eprint(const char* name, T head, Ts... tail);
-  static void mprint(const char* message) noexcept;
+  static void mprint(const char* message, const size_t count) noexcept;
   static void set_debug(const bool& debug);
 
 private:
