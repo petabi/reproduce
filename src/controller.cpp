@@ -1,5 +1,6 @@
 #include <cstdarg>
 #include <cstring>
+#include <functional>
 
 #include "controller.h"
 #include "report.h"
@@ -35,7 +36,7 @@ void Controller::run()
   ControllerResult ret;
 
   if (conf.count_skip) {
-    if (!(this->*skip_data)(conf.count_skip)) {
+    if (!invoke(skip_data, this, conf.count_skip)) {
       Util::dprint(F, "failed to skip(%d)", conf.count_skip);
     }
   }
@@ -45,21 +46,21 @@ void Controller::run()
 
   while (true) {
     length = MESSAGE_SIZE;
-    ret = (this->*get_next_data)(imessage, length);
+    ret = invoke(get_next_data, this, imessage, length);
     if (ret == ControllerResult::SUCCESS) {
       length = conv->convert(imessage, length, omessage, MESSAGE_SIZE);
-      if (length <= 0) {
-        report.fail();
-        continue;
-      }
     } else if (ret == ControllerResult::FAIL) {
-      // TODO: How to handle error
+      Util::eprint(F, "Failed to convert the input data");
       break;
     } else if (ret == ControllerResult::NO_MORE) {
-      // TODO: How to handle error
       break;
     } else {
       break;
+    }
+
+    if (length <= 0) {
+      report.fail();
+      continue;
     }
 
     prod->produce(omessage);

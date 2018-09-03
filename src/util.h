@@ -10,15 +10,12 @@
 
 class Util {
 public:
-  /*
-    Util() = default;
-    Util(const bool);
-    Util(const Util&) = default;
-    Util& operator=(const Util&) = default;
-    Util(Util&&) = delete;
-    Util& operator=(Util&&) = delete;
-    ~Util() = default;
-  */
+  Util() = delete;
+  Util(const Util&) = delete;
+  Util& operator=(const Util&) = delete;
+  Util(Util&&) = delete;
+  Util& operator=(Util&&) = delete;
+  ~Util() = delete;
   template <typename T> static void print(T tail);
   template <typename T, typename... Ts> static void print(T head, Ts... tail);
   template <typename T> static void dprint(const char* name, T tail);

@@ -8,7 +8,7 @@ using namespace std;
 static const char* default_broker = "localhost:9092";
 static const char* default_topic = "pcap";
 static constexpr size_t default_queue_size = 900000;
-static constexpr size_t default_count = 1000000;
+// static constexpr size_t default_count = 1000000;
 
 void Config::help() const noexcept
 {
