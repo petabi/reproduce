@@ -19,7 +19,7 @@ public:
   std::string topic;      // kafka topic
   Config() = default;
   Config(const Config&) = default;
-  Config& operator=(const Config&) = default;
+  Config& operator=(const Config&) = delete;
   Config(Config&&) = default;
   Config& operator=(Config&&) = delete;
   ~Config() = default;
