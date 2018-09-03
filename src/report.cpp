@@ -47,12 +47,11 @@ void Report::end() const noexcept
     return;
   }
 
-  struct stat st;
-
   cout.precision(2);
   cout << fixed;
   cout << "--------------------------------------------------\n";
   // FIXME: input info: according to input type...
+  struct stat st;
   if (stat(conf.input.c_str(), &st) != -1) {
     cout << "Input       : " << conf.input << "(" << (double)st.st_size / MBYTE
          << "M)\n";
@@ -66,6 +65,7 @@ void Report::end() const noexcept
        << "M)\n";
   cout << "Fail Count  : " << fail_count << "(" << (double)fail_count / MPACKET
        << "M)\n";
+  // TODO: converted data info
   cout << "Elapsed Time: " << time_diff << "s\n";
   cout << "Performance : " << perf_kbps / KBYTE << "MBps/" << perf_kpps
        << "Kpps\n";

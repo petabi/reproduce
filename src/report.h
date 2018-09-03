@@ -21,6 +21,9 @@ public:
 private:
   Config conf;
   size_t sent_byte{0};
+  size_t sent_byte_min{0};
+  size_t sent_byte_max{0};
+  double sent_byte_avg{0.0};
   size_t sent_count{0};
   size_t fail_count{0};
   double perf_kbps{0.0};
