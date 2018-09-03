@@ -314,10 +314,10 @@ int LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
   }
 
   if (in_len < out_len) {
-    memcpy(in, out, in_len);
+    memcpy(out, in, in_len);
     return in_len;
   } else {
-    memcpy(in, out, out_len);
+    memcpy(out, in, out_len);
     return out_len;
   }
 }
