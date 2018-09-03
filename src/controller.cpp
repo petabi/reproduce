@@ -8,7 +8,7 @@ using namespace std;
 
 static constexpr size_t MESSAGE_SIZE = 1024;
 
-Controller::Controller(const Config& _conf) : conf(_conf)
+Controller::Controller(Config _conf) : conf(move(_conf))
 {
   Util::set_debug(conf.mode_debug);
 

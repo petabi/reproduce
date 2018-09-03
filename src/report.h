@@ -5,9 +5,8 @@
 
 class Report {
 public:
-  Config conf;
   Report() = delete;
-  Report(const Config&);
+  Report(Config);
   Report(const Report&) = delete;
   Report& operator=(const Report&) = delete;
   Report(Report&&) = delete;
@@ -20,10 +19,11 @@ public:
   size_t get_sent_count() const noexcept;
 
 private:
+  Config conf;
   size_t sent_byte{0};
   size_t sent_count{0};
   size_t fail_count{0};
-  double perf_kbps{0.0}; // kilo byte per sec
+  double perf_kbps{0.0};
   double perf_kpps{0.0};
   clock_t time_start{0};
   clock_t time_now{0};

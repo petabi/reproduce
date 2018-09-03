@@ -42,7 +42,7 @@ public:
 class KafkaProducer : public Producer {
 public:
   KafkaProducer() = delete;
-  KafkaProducer(const Config&);
+  KafkaProducer(Config);
   KafkaProducer(const KafkaProducer&) = delete;
   KafkaProducer& operator=(const KafkaProducer&) = delete;
   KafkaProducer(KafkaProducer&&) = delete;
@@ -72,7 +72,7 @@ private:
 class FileProducer : public Producer {
 public:
   FileProducer() = delete;
-  FileProducer(const Config&);
+  FileProducer(Config);
   FileProducer(const FileProducer&) = delete;
   FileProducer& operator=(const FileProducer&) = delete;
   FileProducer(FileProducer&&) = delete;
@@ -93,7 +93,7 @@ private:
 class NullProducer : public Producer {
 public:
   NullProducer() = delete;
-  NullProducer(const Config&);
+  NullProducer(Config);
   NullProducer(const NullProducer&) = delete;
   NullProducer& operator=(const NullProducer&) = delete;
   NullProducer(NullProducer&&) = delete;
