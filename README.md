@@ -133,25 +133,23 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 ### OPTIONS
 
 * b: kafka broker (default: localhost:9092)
-* c: send packet count
-* d: debug mode (print debug messages)
-* e: evaluation mode (report statistics)
-* f: tcpdump filter
+* c: send count
+* d: debug mode. print debug messages
+* e: evaluation mode. report statistics
+* f: tcpdump filter (when input is PCAP or NIC)
 * h: help
-* i: input pcapfile or nic
-* k: do not send data to kafka
-* o: output file
-* p: do not parse packet (send hardcoded sample data. with -c option)
-* q: queue packet bytes (how many bytes send once)
-* s: skip packet count
+* i: input [PCAPFILE/LOGFILE/NIC/none(no specification)])
+* o: output [kafka(no specification)/TEXTFILE/none] (default: kafka)
+* q: queue size in byte. how many bytes send once
+* s: skip count
 * t: kafka topic (default: pcap)
 
 ### Examples
 
-* Convert pcap file and send it to kafka server: ```./Packetproducer -i [pcap file name] -b [kafka broker addr:port] -t [kafka topic]```
-* Output only debugging messages (conversion result) after converting pcap file: ```./Packetproducer -i [pcap file name] -d -k```
-* Save result file after converting pcap file: ```./Packetproducer -i [pcap file name] -o [output file]```
-* Skip packets and convert pcap file: ```./Packetproducer -i [pcap file name] -s [skip packet count]```
+* Convert pcap file and send it to kafka server: ```./packetproducer -i [pcap file name] -o kafka -b [kafka broker addr:port] -t [kafka topic]```
+* Output only debugging messages (conversion result) after converting pcap file: ```./packetproducer -i [pcap file name] -o none -d```
+* Save result file after converting pcap file: ```./packetproducer -i [pcap file name] -o [output file]```
+* Skip packets and convert pcap file: ```./packetproducer -i [pcap file name] -s [skip packet count]```
 
 ## Performance
 
