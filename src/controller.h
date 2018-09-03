@@ -25,7 +25,6 @@ public:
 
 private:
   Config conf;
-  Util util;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
   FILE* pcapfile{nullptr};

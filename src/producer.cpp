@@ -46,11 +46,11 @@ static const array<KafkaConf, 4> kafka_conf = {{
 
 void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
 {
-  util.eprint(F, "message delivery(", message.len(),
-              " bytes): ", message.errstr());
+  Util::eprint(F, "message delivery(", message.len(),
+               " bytes): ", message.errstr());
 
   if (message.key()) {
-    util.eprint(F, "key: ", *(message.key()));
+    Util::eprint(F, "key: ", *(message.key()));
   }
 }
 
@@ -58,20 +58,21 @@ void RdEventCb::event_cb(RdKafka::Event& event)
 {
   switch (event.type()) {
   case RdKafka::Event::EVENT_ERROR:
-    util.eprint(F, RdKafka::err2str(event.err()), ": ", event.str());
+    Util::eprint(F, RdKafka::err2str(event.err()), ": ", event.str());
     if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) {
       // FIXME: what do we do?
     }
     break;
   case RdKafka::Event::EVENT_STATS:
-    util.dprint(F, "STAT: ", event.str());
+    Util::dprint(F, "STAT: ", event.str());
     break;
   case RdKafka::Event::EVENT_LOG:
-    util.dprint(F, "LOG-", event.severity(), "-", event.fac(), ": ",
-                event.str());
+    Util::dprint(F, "LOG-", event.severity(), "-", event.fac(), ": ",
+                 event.str());
     break;
   default:
-    util.eprint(F, "EVENT: ", RdKafka::err2str(event.err()), ": ", event.str());
+    Util::eprint(F, "EVENT: ", RdKafka::err2str(event.err()), ": ",
+                 event.str());
     break;
   }
 }
@@ -81,10 +82,6 @@ KafkaProducer::KafkaProducer(const Config& _conf) : conf(_conf)
   if (conf.broker.empty() || conf.topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
   }
-
-  util.set_debug(conf.mode_debug);
-  rd_dr_cb.util.set_debug(conf.mode_debug);
-  rd_event_cb.util.set_debug(conf.mode_debug);
 
   // Create configuration objects
   kafka_gconf.reset(RdKafka::Conf::create(RdKafka::Conf::CONF_GLOBAL));
@@ -133,10 +130,10 @@ void KafkaProducer::set_kafka_conf()
     throw runtime_error("Failed to set config: dr_cb: " + errstr);
   }
 
-  // Set configuration properties: utilional features
+  // Set configuration properties: optional features
   for (const auto& entry : kafka_conf) {
-    util.dprint(F, "kafka_conf: ", entry.key, "=", entry.value, " (", entry.min,
-                "~", entry.max, ", ", entry.base, ")");
+    Util::dprint(F, "kafka_conf: ", entry.key, "=", entry.value, " (",
+                 entry.min, "~", entry.max, ", ", entry.base, ")");
     switch (entry.type) {
     case KafkaConfType::GLOBAL:
       if (kafka_gconf->set(entry.key, entry.value, errstr) !=
@@ -153,8 +150,8 @@ void KafkaProducer::set_kafka_conf()
       }
       break;
     default:
-      util.eprint(F,
-                  "unknown kafka config type: ", static_cast<int>(entry.type));
+      Util::eprint(F,
+                   "unknown kafka config type: ", static_cast<int>(entry.type));
       break;
     }
   }
@@ -169,15 +166,15 @@ void KafkaProducer::show_kafka_conf() const
       list<string>* dump;
       if (pass == 0) {
         dump = kafka_gconf->dump();
-        util.dprint(F, "### Global Config");
+        Util::dprint(F, "### Global Config");
       } else {
         dump = kafka_tconf->dump();
-        util.dprint(F, "### Topic Config");
+        Util::dprint(F, "### Topic Config");
       }
       for (auto it = dump->cbegin(); it != dump->cend();) {
         string key = *it++;
         string value = *it++;
-        util.dprint(F, key, "=", value);
+        Util::dprint(F, key, "=", value);
       }
     }
   }
@@ -186,7 +183,7 @@ void KafkaProducer::show_kafka_conf() const
 void KafkaProducer::wait_queue(const int count) noexcept
 {
   while (kafka_producer->outq_len() > count) {
-    util.dprint(F, "waiting for ", kafka_producer->outq_len());
+    Util::dprint(F, "waiting for ", kafka_producer->outq_len());
 
     // FIXME: test effects of timeout (original 1000)
     kafka_producer->poll(100);
@@ -202,11 +199,11 @@ bool KafkaProducer::produce_core(const string& message) noexcept
       const_cast<char*>(message.c_str()), message.size(), nullptr, nullptr);
 
   if (resp != RdKafka::ERR_NO_ERROR) {
-    util.eprint(F, "produce failed: ", RdKafka::err2str(resp));
+    Util::eprint(F, "produce failed: ", RdKafka::err2str(resp));
     return false;
   }
 
-  util.dprint(F, "produced message: ", message.size(), " bytes");
+  Util::dprint(F, "produced message: ", message.size(), " bytes");
 
   kafka_producer->poll(0);
 
@@ -230,7 +227,7 @@ bool KafkaProducer::produce(const string& message) noexcept
 
 KafkaProducer::~KafkaProducer()
 {
-  util.dprint(F, "last queued data: ", queue_data.size());
+  Util::dprint(F, "last queued data: ", queue_data.size());
 
   if (queue_data.size()) {
     produce_core(queue_data);
@@ -247,8 +244,6 @@ KafkaProducer::~KafkaProducer()
 
 FileProducer::FileProducer(const Config& _conf) : conf(_conf)
 {
-  util.set_debug(conf.mode_debug);
-
   if (!conf.output.empty()) {
     if (!open()) {
       throw runtime_error("Failed to open output file: " + conf.output);
@@ -276,7 +271,7 @@ bool FileProducer::open() noexcept
 {
   file.open(conf.output, ios::out);
   if (!file.is_open()) {
-    util.eprint(F, "Failed to open file: ", conf.output);
+    Util::eprint(F, "Failed to open file: ", conf.output);
     return false;
   }
 
@@ -287,10 +282,7 @@ bool FileProducer::open() noexcept
  * NullProducer
  */
 
-NullProducer::NullProducer(const Config& _conf) : conf(_conf)
-{
-  util.set_debug(conf.mode_debug);
-}
+NullProducer::NullProducer(const Config& _conf) : conf(_conf) {}
 
 bool NullProducer::produce(const string& message) noexcept { return true; }
 

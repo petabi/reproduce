@@ -10,7 +10,7 @@ static constexpr size_t MESSAGE_SIZE = 1024;
 
 Controller::Controller(const Config& _conf) : conf(_conf)
 {
-  util.set_debug(conf.mode_debug);
+  Util::set_debug(conf.mode_debug);
 
   if (!set_converter()) {
     throw runtime_error("Failed to set the converter");
@@ -36,11 +36,11 @@ void Controller::run()
 
   if (conf.count_skip) {
     if (!(this->*skip_data)(conf.count_skip)) {
-      util.dprint(F, "failed to skip(%d)", conf.count_skip);
+      Util::dprint(F, "failed to skip(%d)", conf.count_skip);
     }
   }
 
-  util.dprint(F, "start");
+  Util::dprint(F, "start");
   report.start();
 
   while (true) {
@@ -63,7 +63,7 @@ void Controller::run()
     }
 
     prod->produce(omessage);
-    util.mprint(omessage);
+    Util::mprint(omessage);
     report.process(length);
 
     if (check_count(report.get_sent_count())) {
@@ -72,7 +72,7 @@ void Controller::run()
   }
 
   report.end();
-  util.dprint(F, "end");
+  Util::dprint(F, "end");
 }
 
 ConverterType Controller::get_converter_type() const
@@ -133,20 +133,20 @@ bool Controller::set_converter()
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_pcap;
     skip_data = &Controller::skip_pcap;
-    util.dprint(F, "input type: PCAP");
+    Util::dprint(F, "input type: PCAP");
     break;
   case ConverterType::LOG:
     open_log(conf.input);
     conv = make_unique<LogConverter>();
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
-    util.dprint(F, "input type: LOG");
+    Util::dprint(F, "input type: LOG");
     break;
   case ConverterType::NONE:
     conv = make_unique<NullConverter>();
     get_next_data = &Controller::get_next_null;
     skip_data = &Controller::skip_null;
-    util.dprint(F, "input type: NONE");
+    Util::dprint(F, "input type: NONE");
     break;
   default:
     return false;
@@ -160,15 +160,15 @@ bool Controller::set_producer()
   switch (get_producer_type()) {
   case ProducerType::KAFKA:
     prod = make_unique<KafkaProducer>(conf);
-    util.dprint(F, "output type: KAFKA");
+    Util::dprint(F, "output type: KAFKA");
     break;
   case ProducerType::FILE:
     prod = make_unique<FileProducer>(conf);
-    util.dprint(F, "output type: FILE");
+    Util::dprint(F, "output type: FILE");
     break;
   case ProducerType::NONE:
     prod = make_unique<NullProducer>(conf);
-    util.dprint(F, "output type: NONE");
+    Util::dprint(F, "output type: NONE");
     break;
   default:
     return false;

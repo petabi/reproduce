@@ -31,13 +31,11 @@ public:
 
 class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
 public:
-  Util util;
   void dr_cb(RdKafka::Message&) override;
 };
 
 class RdEventCb : public RdKafka::EventCb {
 public:
-  Util util;
   void event_cb(RdKafka::Event&) override;
 };
 
@@ -54,7 +52,6 @@ public:
 
 private:
   Config conf;
-  Util util;
   std::unique_ptr<RdKafka::Conf> kafka_gconf;
   std::unique_ptr<RdKafka::Conf> kafka_tconf;
   std::unique_ptr<RdKafka::Topic> kafka_topic;
@@ -85,7 +82,6 @@ public:
 
 private:
   Config conf;
-  Util util;
   std::ofstream file;
   bool open() noexcept;
 };
@@ -107,7 +103,6 @@ public:
 
 private:
   Config conf;
-  Util util;
 };
 
 #endif

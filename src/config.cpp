@@ -10,7 +10,7 @@ static const char* default_topic = "pcap";
 static constexpr size_t default_queue_size = 900000;
 static constexpr size_t default_count = 1000000;
 
-Config::Config(const bool& debug) { util.set_debug(debug); }
+Config::Config(const bool& debug) {}
 
 void Config::help() const noexcept
 {
@@ -77,7 +77,6 @@ bool Config::set(int argc, char** argv)
     }
   }
 
-  util.set_debug(mode_debug);
   set_default();
   show();
   check();
@@ -87,7 +86,7 @@ bool Config::set(int argc, char** argv)
 
 void Config::set_default() noexcept
 {
-  util.dprint(F, "set default config");
+  Util::dprint(F, "set default config");
 
   if (broker.empty()) {
     broker = default_broker;
@@ -104,7 +103,7 @@ void Config::set_default() noexcept
 
 void Config::check() const
 {
-  util.dprint(F, "check config");
+  Util::dprint(F, "check config");
 
   // TODO: add config restriction
 #if 0
@@ -116,16 +115,16 @@ void Config::check() const
 
 void Config::show() const noexcept
 {
-  util.dprint(F, "mode_debug=", mode_debug);
-  util.dprint(F, "mode_eval=", mode_eval);
-  util.dprint(F, "count_send=", count_send);
-  util.dprint(F, "count_skip=", count_skip);
-  util.dprint(F, "queue_size=", queue_size);
-  util.dprint(F, "input=", input);
-  util.dprint(F, "output=", output);
-  util.dprint(F, "filter=", filter);
-  util.dprint(F, "broker=", broker);
-  util.dprint(F, "topic=", topic);
+  Util::dprint(F, "mode_debug=", mode_debug);
+  Util::dprint(F, "mode_eval=", mode_eval);
+  Util::dprint(F, "count_send=", count_send);
+  Util::dprint(F, "count_skip=", count_skip);
+  Util::dprint(F, "queue_size=", queue_size);
+  Util::dprint(F, "input=", input);
+  Util::dprint(F, "output=", output);
+  Util::dprint(F, "filter=", filter);
+  Util::dprint(F, "broker=", broker);
+  Util::dprint(F, "topic=", topic);
 }
 
 // vim: et:ts=2:sw=2

@@ -6,9 +6,9 @@
 
 using namespace std;
 
-Util::Util(const bool _debug) : debug(_debug) {}
+bool Util::debug = false;
 
-void Util::mprint(const char* message) const noexcept
+void Util::mprint(const char* message) noexcept
 {
   if (!debug) {
     return;
