@@ -31,6 +31,67 @@ Packetproducer Converts the incoming packet to a stream format with space as del
 
 Packetproducer outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
 
+## Usage
+
+### Program Usage  
+
+```./Packetproducer [OPTIONS]```
+
+### OPTIONS
+
+```
+  -b: kafka broker (default: localhost:9092)
+  -c: send count
+  -d: debug mode. print debug messages
+  -e: evaluation mode. report statistics
+  -f: tcpdump filter (when input is PCAP or NIC)
+  -h: help
+  -i: input [PCAPFILE/LOGFILE/NIC]
+      If no 'i' option is given, sample data is converted
+  -o: output [TEXTFILE/none]
+      If no 'o' input is given, it will be sent via kafka
+  -q: queue size in byte. how many bytes send once
+  -s: skip count
+  -t: kafka topic (default: pcap)
+```
+
+### Examples
+
+* Convert pcap file and send it to kafka server:
+    * ```./packetproducer -i test.pcap -b 192.168.10.1:9092 -t sample_topic```
+* Output only debugging messages (conversion result) after converting pcap file:
+    * ```./packetproducer -i test.pcap -o none -d```
+* Save result file after converting pcap file:
+    * ```./packetproducer -i test.pcap -o result.txt```
+* Skip 10000 packets and convert 1000 packets in pcap file and evaluate performance:
+    * ```./packetproducer -i test.pcap -s 10000 -c 1000 -o none -e```
+
+## Performance
+
+###Test environment
+
+* CPU : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
+* Memory : 64GB
+* Cores(Utilization) : 1(100%)
+
+###Result
+
+| Contents | Speed |
+|:-----------------------|:-----------------------|
+| Packet Conversion Only | 68.75MBps / 410.39Kpps |
+| Kafka Transmission Only | 270.82MBps / 1622.70Kpps |
+| Packet Conversion + Kafka Transmission | 62.47MBps / 372.89Kpps |
+
+## Issue
+
+## To do
+
+* Real-time conversion of sending and receiving packets in network interface (related option: i)
+* Add packet filtering function
+* Support More protocols
+
+## Appendix
+
 ### Conversion Format
 
 #### Ethernet
@@ -123,62 +184,3 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 |   3   | Decimal | Destination Port Address | 53      |
 |   4   | Decimal | Length                   | 1048    |
 |   5   | Decimal | Checksum                 | 30584   |
-
-## Usage
-
-### Program Usage  
-
-```./Packetproducer [OPTIONS]```
-
-### OPTIONS
-
-```
-  -b: kafka broker (default: localhost:9092)
-  -c: send count
-  -d: debug mode. print debug messages
-  -e: evaluation mode. report statistics
-  -f: tcpdump filter (when input is PCAP or NIC)
-  -h: help
-  -i: input [PCAPFILE/LOGFILE/NIC]
-      If no 'i' option is given, sample data is converted
-  -o: output [TEXTFILE/none]
-      If no 'o' input is given, it will be sent via kafka
-  -q: queue size in byte. how many bytes send once
-  -s: skip count
-  -t: kafka topic (default: pcap)
-```
-
-### Examples
-
-* Convert pcap file and send it to kafka server:
-    * ```./packetproducer -i test.pcap -o kafka -b 192.168.10.1:9092 -t sample_topic```
-* Output only debugging messages (conversion result) after converting pcap file:
-    * ```./packetproducer -i test.pcap -o none -d```
-* Save result file after converting pcap file:
-    * ```./packetproducer -i test.pcap -o result.txt```
-* Skip 10000 packets and convert 1000 packets in pcap file and evaluate performance:
-    * ```./packetproducer -i test.pcap -s 10000 -c 1000 -o none -e```
-
-## Performance
-
-###Test environment
-
-* CPU : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
-* Memory : 64GB
-* Cores(Utilization) : 1(100%)
-
-###Result
-
-| Contents | Speed |
-|:-----------------------|:-----------------------|
-| Packet Conversion Only | 68.75MBps / 410.39Kpps |
-| Kafka Transmission Only | 270.82MBps / 1622.70Kpps |
-| Packet Conversion + Kafka Transmission | 62.47MBps / 372.89Kpps |
-
-## Issue
-
-## To do
-
-* Real-time conversion of sending and receiving packets in network interface (related option: i)
-* Add packet filtering function
-* Support More protocols
