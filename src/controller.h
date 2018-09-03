@@ -25,13 +25,18 @@ public:
 
 private:
   Config conf;
-  ConverterType get_converter_type() const;
-  ProducerType get_producer_type() const;
+  Util util;
+  std::unique_ptr<Converter> conv;
+  std::unique_ptr<Producer> prod;
+  FILE* pcapfile;
+  std::ifstream logfile;
   ControllerResult (Controller::*get_next_data)(char* imessage,
                                                 size_t imessage_len);
   bool (Controller::*skip_data)(size_t count);
-  FILE* pcapfile;
-  std::ifstream logfile;
+  ConverterType get_converter_type() const;
+  ProducerType get_producer_type() const;
+  bool set_converter();
+  bool set_producer();
   uint32_t open_pcap(const std::string& filename);
   void close_pcap();
   void open_log(const std::string& filename);

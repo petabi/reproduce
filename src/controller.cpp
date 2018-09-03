@@ -8,7 +8,16 @@ using namespace std;
 
 static constexpr size_t MESSAGE_SIZE = 1024;
 
-Controller::Controller(const Config& _conf) : conf(_conf) {}
+Controller::Controller(const Config& _conf) : conf(_conf)
+{
+  util.set_debug(conf.mode_debug);
+  if (!set_converter()) {
+    throw runtime_error("Failed to set the converter");
+  }
+  if (!set_producer()) {
+    throw runtime_error("Failed to set the producer");
+  }
+}
 
 Controller::Controller(Controller&& other) noexcept
 {
@@ -36,53 +45,9 @@ Controller::~Controller()
 
 void Controller::run()
 {
-  Util util(conf.mode_debug);
   Report report(conf);
 
   util.dprint(F, "start");
-
-  unique_ptr<Converter> conv = nullptr;
-  switch (get_converter_type()) {
-  default:
-  case ConverterType::PCAP:
-    uint32_t l2_type;
-    l2_type = open_pcap(conf.input);
-    conv = make_unique<PacketConverter>(l2_type);
-    get_next_data = &Controller::get_next_pcap;
-    skip_data = &Controller::skip_pcap;
-    util.dprint(F, "input type: PCAP");
-    break;
-  case ConverterType::LOG:
-    open_log(conf.input);
-    conv = make_unique<LogConverter>();
-    get_next_data = &Controller::get_next_log;
-    skip_data = &Controller::skip_log;
-    util.dprint(F, "input type: LOG");
-    break;
-  case ConverterType::NONE:
-    conv = make_unique<NullConverter>();
-    get_next_data = &Controller::get_next_null;
-    skip_data = &Controller::skip_null;
-    util.dprint(F, "input type: NONE");
-    break;
-  }
-
-  unique_ptr<Producer> prod = nullptr;
-  switch (get_producer_type()) {
-  default:
-  case ProducerType::KAFKA:
-    prod = make_unique<KafkaProducer>(conf);
-    util.dprint(F, "output type: KAFKA");
-    break;
-  case ProducerType::FILE:
-    prod = make_unique<FileProducer>(conf);
-    util.dprint(F, "output type: FILE");
-    break;
-  case ProducerType::NONE:
-    prod = make_unique<NullProducer>(conf);
-    util.dprint(F, "output type: NONE");
-    break;
-  }
 
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
@@ -178,6 +143,56 @@ ProducerType Controller::get_producer_type() const
   return ProducerType::FILE;
 }
 
+bool Controller::set_converter()
+{
+  switch (get_converter_type()) {
+  case ConverterType::PCAP:
+    uint32_t l2_type;
+    l2_type = open_pcap(conf.input);
+    conv = make_unique<PacketConverter>(l2_type);
+    get_next_data = &Controller::get_next_pcap;
+    skip_data = &Controller::skip_pcap;
+    util.dprint(F, "input type: PCAP");
+    break;
+  case ConverterType::LOG:
+    open_log(conf.input);
+    conv = make_unique<LogConverter>();
+    get_next_data = &Controller::get_next_log;
+    skip_data = &Controller::skip_log;
+    util.dprint(F, "input type: LOG");
+    break;
+  case ConverterType::NONE:
+    conv = make_unique<NullConverter>();
+    get_next_data = &Controller::get_next_null;
+    skip_data = &Controller::skip_null;
+    util.dprint(F, "input type: NONE");
+    break;
+  default:
+    return false;
+  }
+  return true;
+}
+
+bool Controller::set_producer()
+{
+  switch (get_producer_type()) {
+  case ProducerType::KAFKA:
+    prod = make_unique<KafkaProducer>(conf);
+    util.dprint(F, "output type: KAFKA");
+    break;
+  case ProducerType::FILE:
+    prod = make_unique<FileProducer>(conf);
+    util.dprint(F, "output type: FILE");
+    break;
+  case ProducerType::NONE:
+    prod = make_unique<NullProducer>(conf);
+    util.dprint(F, "output type: NONE");
+    break;
+  default:
+    return false;
+  }
+  return true;
+}
 uint32_t Controller::open_pcap(const string& filename)
 {
   pcapfile = fopen(filename.c_str(), "r");
