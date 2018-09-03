@@ -28,7 +28,7 @@ private:
   Util util;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
-  FILE* pcapfile;
+  FILE* pcapfile{nullptr};
   std::ifstream logfile;
   ControllerResult (Controller::*get_next_data)(char* imessage,
                                                 size_t imessage_len);
