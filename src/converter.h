@@ -56,7 +56,7 @@ struct pcap_pkthdr {
 class PacketConverter : public Converter {
 public:
   PacketConverter() = delete;
-  PacketConverter(uint32_t _l2_type) { l2_type = _l2_type; };
+  PacketConverter(uint32_t _l2_type);
   PacketConverter(const PacketConverter&) = delete;
   PacketConverter& operator=(const PacketConverter&) = delete;
   PacketConverter(PacketConverter&&) = delete;

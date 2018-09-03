@@ -31,6 +31,8 @@ using namespace std;
   ptr += length;                                                               \
   conv_len += length;
 
+PacketConverter::PacketConverter(uint32_t _l2_type) : l2_type(_l2_type) {}
+
 int PacketConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
   conv_len = 0;
@@ -313,11 +315,11 @@ int LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 
   if (in_len < out_len) {
     memcpy(in, out, in_len);
+    return in_len;
   } else {
     memcpy(in, out, out_len);
+    return out_len;
   }
-
-  return out_len;
 }
 
 /**
