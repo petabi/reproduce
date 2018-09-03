@@ -132,24 +132,32 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 
 ### OPTIONS
 
-* b: kafka broker (default: localhost:9092)
-* c: send count
-* d: debug mode. print debug messages
-* e: evaluation mode. report statistics
-* f: tcpdump filter (when input is PCAP or NIC)
-* h: help
-* i: input [PCAPFILE/LOGFILE/NIC/none(no specification)])
-* o: output [kafka(no specification)/TEXTFILE/none] (default: kafka)
-* q: queue size in byte. how many bytes send once
-* s: skip count
-* t: kafka topic (default: pcap)
+```
+  -b: kafka broker (default: localhost:9092)
+  -c: send count
+  -d: debug mode. print debug messages
+  -e: evaluation mode. report statistics
+  -f: tcpdump filter (when input is PCAP or NIC)
+  -h: help
+  -i: input [PCAPFILE/LOGFILE/NIC]
+      If no 'i' option is given, sample data is converted
+  -o: output [TEXTFILE/none]
+      If no 'o' input is given, it will be sent via kafka
+  -q: queue size in byte. how many bytes send once
+  -s: skip count
+  -t: kafka topic (default: pcap)
+```
 
 ### Examples
 
-* Convert pcap file and send it to kafka server: ```./packetproducer -i [pcap file name] -o kafka -b [kafka broker addr:port] -t [kafka topic]```
-* Output only debugging messages (conversion result) after converting pcap file: ```./packetproducer -i [pcap file name] -o none -d```
-* Save result file after converting pcap file: ```./packetproducer -i [pcap file name] -o [output file]```
-* Skip packets and convert pcap file: ```./packetproducer -i [pcap file name] -s [skip packet count]```
+* Convert pcap file and send it to kafka server:
+    * ```./packetproducer -i test.pcap -o kafka -b 192.168.10.1:9092 -t sample_topic```
+* Output only debugging messages (conversion result) after converting pcap file:
+    * ```./packetproducer -i test.pcap -o none -d```
+* Save result file after converting pcap file:
+    * ```./packetproducer -i test.pcap -o result.txt```
+* Skip 10000 packets and convert 1000 packets in pcap file and evaluate performance:
+    * ```./packetproducer -i test.pcap -s 10000 -c 1000 -o none -e```
 
 ## Performance
 
