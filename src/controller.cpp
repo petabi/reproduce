@@ -3,13 +3,12 @@
 #include <functional>
 
 #include "controller.h"
-#include "report.h"
 
 using namespace std;
 
 static constexpr size_t MESSAGE_SIZE = 1024;
 
-Controller::Controller(Config _conf) : conf(move(_conf))
+Controller::Controller(const Config& _conf) : conf(_conf)
 {
   Util::set_debug(conf.mode_debug);
 
@@ -19,6 +18,7 @@ Controller::Controller(Config _conf) : conf(move(_conf))
   if (!set_producer()) {
     throw runtime_error("Failed to set the producer");
   }
+  report.conf = conf;
 }
 
 Controller::~Controller()
@@ -29,7 +29,6 @@ Controller::~Controller()
 
 void Controller::run()
 {
-  Report report(conf);
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
   size_t length;
@@ -79,7 +78,7 @@ void Controller::run()
   Util::dprint(F, "end");
 }
 
-ConverterType Controller::get_converter_type() const
+InputType Controller::get_input_type() const
 {
   const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
   const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
@@ -91,9 +90,13 @@ ConverterType Controller::get_converter_type() const
   // TODO: Check whether input is a network interface
   // return NIC;
 
+  if (conf.input.empty()) {
+    return InputType::NONE;
+  }
+
   ifstream ifs(conf.input, ios::binary);
   if (!ifs.is_open()) {
-    return ConverterType::NONE;
+    throw runtime_error("Failed to open input file: " + conf.input);
   }
 
   ifs.seekg(0, ios::beg);
@@ -104,34 +107,33 @@ ConverterType Controller::get_converter_type() const
       memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
       memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
       memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
-    return ConverterType::PCAP;
+    return InputType::PCAP;
   } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
              memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
-    return ConverterType::PCAPNG;
-  } else {
-    return ConverterType::LOG;
+    return InputType::PCAPNG;
   }
 
-  return ConverterType::NONE;
+  return InputType::LOG;
 }
 
-ProducerType Controller::get_producer_type() const
+OutputType Controller::get_output_type() const
 {
   if (conf.output.empty()) {
-    return ProducerType::KAFKA;
+    return OutputType::KAFKA;
   }
 
   if (conf.output == "none") {
-    return ProducerType::NONE;
+    return OutputType::NONE;
   }
 
-  return ProducerType::FILE;
+  return OutputType::FILE;
 }
 
 bool Controller::set_converter()
 {
-  switch (get_converter_type()) {
-  case ConverterType::PCAP:
+  conf.input_type = get_input_type();
+  switch (conf.input_type) {
+  case InputType::PCAP:
     uint32_t l2_type;
     l2_type = open_pcap(conf.input);
     conv = make_unique<PacketConverter>(l2_type);
@@ -139,14 +141,14 @@ bool Controller::set_converter()
     skip_data = &Controller::skip_pcap;
     Util::dprint(F, "input type: PCAP");
     break;
-  case ConverterType::LOG:
+  case InputType::LOG:
     open_log(conf.input);
     conv = make_unique<LogConverter>();
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
     Util::dprint(F, "input type: LOG");
     break;
-  case ConverterType::NONE:
+  case InputType::NONE:
     conv = make_unique<NullConverter>();
     get_next_data = &Controller::get_next_null;
     skip_data = &Controller::skip_null;
@@ -161,16 +163,17 @@ bool Controller::set_converter()
 
 bool Controller::set_producer()
 {
-  switch (get_producer_type()) {
-  case ProducerType::KAFKA:
+  conf.output_type = get_output_type();
+  switch (conf.output_type) {
+  case OutputType::KAFKA:
     prod = make_unique<KafkaProducer>(conf);
     Util::dprint(F, "output type: KAFKA");
     break;
-  case ProducerType::FILE:
+  case OutputType::FILE:
     prod = make_unique<FileProducer>(conf);
     Util::dprint(F, "output type: FILE");
     break;
-  case ProducerType::NONE:
+  case OutputType::NONE:
     prod = make_unique<NullProducer>(conf);
     Util::dprint(F, "output type: NONE");
     break;

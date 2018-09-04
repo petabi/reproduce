@@ -8,6 +8,7 @@
 
 #include "converter.h"
 #include "producer.h"
+#include "report.h"
 #include "util.h"
 
 enum class ControllerResult { FAIL = -2, NO_MORE = -1, SUCCESS = 0 };
@@ -15,7 +16,7 @@ enum class ControllerResult { FAIL = -2, NO_MORE = -1, SUCCESS = 0 };
 class Controller {
 public:
   Controller() = delete;
-  Controller(Config);
+  Controller(const Config&);
   Controller(const Controller&) = delete;
   Controller& operator=(const Controller&) = delete;
   Controller(Controller&&) = delete;
@@ -25,6 +26,7 @@ public:
 
 private:
   Config conf;
+  Report report;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
   FILE* pcapfile{nullptr};
@@ -32,8 +34,8 @@ private:
   ControllerResult (Controller::*get_next_data)(char* imessage,
                                                 size_t& imessage_len);
   bool (Controller::*skip_data)(const size_t count_skip);
-  ConverterType get_converter_type() const;
-  ProducerType get_producer_type() const;
+  InputType get_input_type() const;
+  OutputType get_output_type() const;
   bool set_converter();
   bool set_producer();
   uint32_t open_pcap(const std::string& filename);

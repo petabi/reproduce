@@ -5,8 +5,8 @@
 
 class Report {
 public:
-  Report() = delete;
-  Report(Config);
+  Report() = default;
+  // Report(Config);
   Report(const Report&) = delete;
   Report& operator=(const Report&) = delete;
   Report(Report&&) = delete;
@@ -17,9 +17,9 @@ public:
   void end() const noexcept;
   void fail() noexcept;
   size_t get_sent_count() const noexcept;
+  Config conf;
 
 private:
-  Config conf;
   size_t sent_byte{0};
   size_t sent_byte_min{0};
   size_t sent_byte_max{0};
@@ -31,6 +31,8 @@ private:
   clock_t time_start{0};
   clock_t time_now{0};
   double time_diff{0.0};
+  InputType input_type{InputType::NONE};
+  OutputType output_type{InputType::NONE};
 };
 
 #endif

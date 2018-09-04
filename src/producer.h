@@ -14,12 +14,6 @@
  * Producer
  */
 
-enum class ProducerType {
-  NONE,
-  KAFKA,
-  FILE,
-};
-
 class Producer {
 public:
   virtual bool produce(const std::string& message) = 0;
