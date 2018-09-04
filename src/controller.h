@@ -16,7 +16,7 @@ enum class ControllerResult { FAIL = -2, NO_MORE = -1, SUCCESS = 0 };
 class Controller {
 public:
   Controller() = delete;
-  Controller(const Config&);
+  Controller(Config);
   Controller(const Controller&) = delete;
   Controller& operator=(const Controller&) = delete;
   Controller(Controller&&) = delete;

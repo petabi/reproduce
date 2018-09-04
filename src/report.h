@@ -6,7 +6,6 @@
 class Report {
 public:
   Report() = default;
-  // Report(Config);
   Report(const Report&) = delete;
   Report& operator=(const Report&) = delete;
   Report(Report&&) = delete;
@@ -31,8 +30,6 @@ private:
   clock_t time_start{0};
   clock_t time_now{0};
   double time_diff{0.0};
-  InputType input_type{InputType::NONE};
-  OutputType output_type{InputType::NONE};
 };
 
 #endif
