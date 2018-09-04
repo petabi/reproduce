@@ -11,8 +11,6 @@ static constexpr size_t MESSAGE_SIZE = 1024;
 
 Controller::Controller(Config _conf) : conf(move(_conf))
 {
-  Util::set_debug(conf.mode_debug);
-
   if (!set_converter()) {
     throw runtime_error("Failed to set the converter");
   }
