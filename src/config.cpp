@@ -25,7 +25,8 @@ void Config::help() const noexcept
   cout << "      If no 'i' option is given, sample data is converted\n";
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' input is given, it will be sent via kafka\n";
-  cout << "  -q: queue size in byte. how many bytes send once\n";
+  cout << "  -q: queue size in byte. how many bytes send once"
+       << " (default: " << default_queue_size << ")\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
        << " (default: " << default_topic << ")\n";
@@ -75,6 +76,8 @@ bool Config::set(int argc, char** argv)
       break;
     }
   }
+
+  Util::set_debug(mode_debug);
 
   set_default();
   show();

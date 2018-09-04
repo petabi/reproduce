@@ -101,14 +101,14 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
   // Create producer handle
   kafka_producer.reset(RdKafka::Producer::create(kafka_gconf.get(), errstr));
   if (!kafka_producer) {
-    throw runtime_error("Failed to create kafka producer: " + errstr);
+    throw runtime_error("Failed to create kafka producer handle: " + errstr);
   }
 
   // Create topic handle
   kafka_topic.reset(RdKafka::Topic::create(kafka_producer.get(), conf.topic,
                                            kafka_tconf.get(), errstr));
   if (!kafka_topic) {
-    throw runtime_error("Failed to create kafka topic: " + errstr);
+    throw runtime_error("Failed to create kafka topic handle: " + errstr);
   }
 }
 
@@ -132,8 +132,8 @@ void KafkaProducer::set_kafka_conf()
 
   // Set configuration properties: optional features
   for (const auto& entry : kafka_conf) {
-    Util::dprint(F, "kafka_conf: ", entry.key, "=", entry.value, " (",
-                 entry.min, "~", entry.max, ", ", entry.base, ")");
+    Util::dprint(F, entry.key, "=", entry.value, " (", entry.min, "~",
+                 entry.max, ", ", entry.base, ")");
     switch (entry.type) {
     case KafkaConfType::GLOBAL:
       if (kafka_gconf->set(entry.key, entry.value, errstr) !=
