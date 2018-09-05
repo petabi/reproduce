@@ -107,8 +107,8 @@ void Config::check() const
 {
   Util::dprint(F, "check config");
 
-  if (input.empty() && output.empty()) {
-    throw runtime_error("You must specify input(-i) or output(-o)");
+  if (input.empty() && output == "none") {
+    throw runtime_error("You must specify input(-i) or output(-o) is not none");
   }
 
   // and so on...
