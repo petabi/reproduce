@@ -270,6 +270,14 @@ ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
 
 ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
 {
+  static constexpr char sample_data[] =
+      "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "
+      "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "
+      "86734452 2522990538 20 A 16425 7168 0";
+
+  memcpy(imessage, sample_data, strlen(sample_data) + 1);
+  imessage_len = strlen(imessage);
+
   return ControllerResult::SUCCESS;
 }
 
