@@ -21,13 +21,30 @@ void Report::start() noexcept
   time_start = clock();
 }
 
-void Report::process(int length) noexcept
+void Report::process(const size_t orig_length,
+                     const size_t sent_length) noexcept
 {
-  if (length > 0) {
-    sent_byte += length;
+  if (orig_length > orig_byte_max) {
+    orig_byte_max = orig_length;
+  } else if (orig_length < orig_byte_min || orig_byte_min == 0) {
+    orig_byte_min = orig_length;
+  } else {
   }
-  sent_count++;
+  orig_byte += orig_length;
 
+  if (sent_length > sent_byte_max) {
+    sent_byte_max = sent_length;
+  } else if (sent_length < sent_byte_min || sent_byte_min == 0) {
+    sent_byte_min = sent_length;
+  } else {
+  }
+  sent_byte += sent_length;
+
+  process_count++;
+}
+
+void Report::end() noexcept
+{
   if (!conf.mode_eval) {
     return;
   }
@@ -37,15 +54,10 @@ void Report::process(int length) noexcept
 
   if (time_diff) {
     perf_kbps = (double)sent_byte / KBYTE / time_diff;
-    perf_kpps = (double)sent_count / KPACKET / time_diff;
+    perf_kpps = (double)process_count / KPACKET / time_diff;
   }
-}
-
-void Report::end() const noexcept
-{
-  if (!conf.mode_eval) {
-    return;
-  }
+  orig_byte_avg = (double)orig_byte / process_count;
+  sent_byte_avg = (double)sent_byte / process_count;
 
   cout.precision(2);
   cout << fixed;
@@ -74,7 +86,8 @@ void Report::end() const noexcept
   default:
     break;
   }
-
+  cout << "Input Length\t: " << orig_byte_min << "/" << orig_byte_max << "/"
+       << orig_byte_avg << "(Min/Max/Avg)\n";
   switch (conf.output_type) {
   case OutputType::FILE:
     cout << "Output(FILE)\t: " << conf.output;
@@ -91,13 +104,14 @@ void Report::end() const noexcept
     cout << "Output(NONE)\t: \n";
     break;
   }
+  cout << "Output Length\t: " << sent_byte_min << "/" << sent_byte_max << "/"
+       << sent_byte_avg << "(Min/Max/Avg)\n";
   cout << "Sent Bytes\t: " << sent_byte << "(" << (double)sent_byte / MBYTE
        << "M)\n";
-  cout << "Sent Count\t: " << sent_count << "(" << (double)sent_count / MPACKET
-       << "M)\n";
+  cout << "Sent Count\t: " << process_count << "("
+       << (double)process_count / MPACKET << "M)\n";
   cout << "Fail Count\t: " << fail_count << "(" << (double)fail_count / MPACKET
        << "M)\n";
-  // TODO: converted data info
   cout << "Elapsed Time\t: " << time_diff << "s\n";
   cout << "Performance\t: " << perf_kbps / KBYTE << "MBps/" << perf_kpps
        << "Kpps\n";
@@ -106,6 +120,6 @@ void Report::end() const noexcept
 
 void Report::fail() noexcept { fail_count++; }
 
-size_t Report::get_sent_count() const noexcept { return sent_count; }
+size_t Report::get_process_count() const noexcept { return process_count; }
 
 // vim: et:ts=2:sw=2

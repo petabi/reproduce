@@ -29,7 +29,7 @@ void Controller::run()
 {
   char imessage[MESSAGE_SIZE];
   char omessage[MESSAGE_SIZE];
-  size_t length;
+  size_t imessage_len = 0, omessage_len = 0;
   ControllerResult ret;
   size_t sent_count;
 
@@ -43,10 +43,11 @@ void Controller::run()
   report.start();
 
   while (true) {
-    length = MESSAGE_SIZE;
-    ret = invoke(get_next_data, this, imessage, length);
+    imessage_len = MESSAGE_SIZE;
+    ret = invoke(get_next_data, this, imessage, imessage_len);
     if (ret == ControllerResult::SUCCESS) {
-      length = conv->convert(imessage, length, omessage, MESSAGE_SIZE);
+      omessage_len =
+          conv->convert(imessage, imessage_len, omessage, MESSAGE_SIZE);
     } else if (ret == ControllerResult::FAIL) {
       Util::eprint(F, "Failed to convert input data");
       break;
@@ -56,15 +57,15 @@ void Controller::run()
       break;
     }
 
-    if (length <= 0) {
+    if (omessage_len <= 0) {
       report.fail();
       continue;
     }
 
     prod->produce(omessage);
-    report.process(length);
+    report.process(imessage_len, omessage_len);
 
-    sent_count = report.get_sent_count();
+    sent_count = report.get_process_count();
     Util::mprint(omessage, sent_count);
 
     if (check_count(sent_count)) {
