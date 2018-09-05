@@ -96,7 +96,8 @@ void Report::end() noexcept
     }
     break;
   case OutputType::KAFKA:
-    cout << "Output(KAFKA)\t: " << conf.broker << "(" << conf.topic << ")\n";
+    cout << "Output(KAFKA)\t: " << conf.kafka_broker << "(" << conf.kafka_topic
+         << ")\n";
     break;
   case OutputType::NONE:
     cout << "Output(NONE)\t: \n";

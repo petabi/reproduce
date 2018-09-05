@@ -7,16 +7,17 @@ using namespace std;
 
 static constexpr char PROGRAM_NAME[] = "packetproducer";
 static constexpr char PROGRAM_VERSION[] = "0.1.0";
-static constexpr char default_broker[] = "localhost:9092";
-static constexpr char default_topic[] = "pcap";
+static constexpr char default_kafka_broker[] = "localhost:9092";
+static constexpr char default_kafka_topic[] = "pcap";
+static constexpr char default_kafka_conf[] = "kafka.conf";
 static constexpr size_t default_queue_size = 900000;
 
 void Config::help() const noexcept
 {
   cout << PROGRAM_NAME << "-" << PROGRAM_VERSION << "\n";
   cout << "[USAGE] " << PROGRAM_NAME << " [OPTIONS]\n";
-  cout << "  -b: kafka broker"
-       << " (default: " << default_broker << ")\n";
+  cout << "  -b: kafka broker list"
+       << " (default: " << default_kafka_broker << ")\n";
   cout << "  -c: send count\n";
   cout << "  -d: debug mode. print debug messages\n";
   cout << "  -e: evaluation mode. report statistics\n";
@@ -24,22 +25,24 @@ void Config::help() const noexcept
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/NIC]\n";
   cout << "      If no 'i' option is given, sample data is converted\n";
+  cout << "  -k: kafka config file"
+       << " (default: " << default_kafka_conf << ")\n";
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' option is given, it will be sent via kafka\n";
   cout << "  -q: queue size in byte. how many bytes send once"
        << " (default: " << default_queue_size << ")\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
-       << " (default: " << default_topic << ")\n";
+       << " (default: " << default_kafka_topic << ")\n";
 }
 
 bool Config::set(int argc, char** argv)
 {
   int o;
-  while ((o = getopt(argc, argv, "b:c:defhi:o:q:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:defhi:k:o:q:s:t:")) != -1) {
     switch (o) {
     case 'b':
-      broker = optarg;
+      kafka_broker = optarg;
       break;
     case 'c':
       count_send = strtoul(optarg, nullptr, 0);
@@ -52,7 +55,7 @@ bool Config::set(int argc, char** argv)
       break;
     case 'f':
       // TODO: not implemented yet
-      filter = optarg;
+      packet_filter = optarg;
       break;
     case 'h':
       help();
@@ -60,6 +63,9 @@ bool Config::set(int argc, char** argv)
     case 'i':
       // TODO: nic
       input = optarg;
+      break;
+    case 'k':
+      kafka_conf = optarg;
       break;
     case 'o':
       output = optarg;
@@ -71,7 +77,7 @@ bool Config::set(int argc, char** argv)
       count_skip = strtoul(optarg, nullptr, 0);
       break;
     case 't':
-      topic = optarg;
+      kafka_topic = optarg;
       break;
     default:
       break;
@@ -91,12 +97,16 @@ void Config::set_default() noexcept
 {
   Util::dprint(F, "set default config");
 
-  if (broker.empty()) {
-    broker = default_broker;
+  if (kafka_broker.empty()) {
+    kafka_broker = default_kafka_broker;
   }
 
-  if (topic.empty()) {
-    topic = default_topic;
+  if (kafka_topic.empty()) {
+    kafka_topic = default_kafka_topic;
+  }
+
+  if (kafka_conf.empty()) {
+    kafka_conf = default_kafka_conf;
   }
 
   if (queue_size == 0) {
@@ -124,9 +134,10 @@ void Config::show() const noexcept
   Util::dprint(F, "queue_size=", queue_size);
   Util::dprint(F, "input=", input);
   Util::dprint(F, "output=", output);
-  Util::dprint(F, "filter=", filter);
-  Util::dprint(F, "broker=", broker);
-  Util::dprint(F, "topic=", topic);
+  Util::dprint(F, "packet_filter=", packet_filter);
+  Util::dprint(F, "kafka_broker=", kafka_broker);
+  Util::dprint(F, "kafka_topic=", kafka_topic);
+  Util::dprint(F, "kafka_conf=", kafka_conf);
 }
 
 // vim: et:ts=2:sw=2

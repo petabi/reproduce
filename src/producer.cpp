@@ -79,7 +79,7 @@ void RdEventCb::event_cb(RdKafka::Event& event)
 
 KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
 {
-  if (conf.broker.empty() || conf.topic.empty()) {
+  if (conf.kafka_broker.empty() || conf.kafka_topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
   }
 
@@ -105,8 +105,8 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
   }
 
   // Create topic handle
-  kafka_topic.reset(RdKafka::Topic::create(kafka_producer.get(), conf.topic,
-                                           kafka_tconf.get(), errstr));
+  kafka_topic.reset(RdKafka::Topic::create(
+      kafka_producer.get(), conf.kafka_topic, kafka_tconf.get(), errstr));
   if (!kafka_topic) {
     throw runtime_error("Failed to create kafka topic handle: " + errstr);
   }
@@ -117,7 +117,7 @@ void KafkaProducer::set_kafka_conf()
   string errstr;
 
   // Set configuration properties
-  if (kafka_gconf->set("metadata.broker.list", conf.broker, errstr) !=
+  if (kafka_gconf->set("metadata.broker.list", conf.kafka_broker, errstr) !=
       RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: metadata.broker.list: " +
                         errstr);
