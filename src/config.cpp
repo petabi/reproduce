@@ -107,12 +107,11 @@ void Config::check() const
 {
   Util::dprint(F, "check config");
 
-  // TODO: add config restriction
-#if 0
   if (input.empty() && output.empty()) {
     throw runtime_error("You must specify input(-i) or output(-o)");
   }
-#endif
+
+  // and so on...
 }
 
 void Config::show() const noexcept
