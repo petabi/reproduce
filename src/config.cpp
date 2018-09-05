@@ -5,10 +5,11 @@
 
 using namespace std;
 
-static const char* default_broker = "localhost:9092";
-static const char* default_topic = "pcap";
+static constexpr char PROGRAM_NAME[] = "packetproducer";
+static constexpr char PROGRAM_VERSION[] = "0.1.0";
+static constexpr char default_broker[] = "localhost:9092";
+static constexpr char default_topic[] = "pcap";
 static constexpr size_t default_queue_size = 900000;
-// static constexpr size_t default_count = 1000000;
 
 void Config::help() const noexcept
 {
@@ -24,8 +25,8 @@ void Config::help() const noexcept
   cout << "  -i: input [PCAPFILE/LOGFILE/NIC]\n";
   cout << "      If no 'i' option is given, sample data is converted\n";
   cout << "  -o: output [TEXTFILE/none]\n";
-  cout << "      If no 'o' input is given, it will be sent via kafka\n";
-  cout << "  -q: queue size in byte. how many bytes send once"
+  cout << "      If no 'o' option is given, it will be sent via kafka\n";
+  cout << "  -q: queue size in byte. how many bytes send once\n";
        << " (default: " << default_queue_size << ")\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
