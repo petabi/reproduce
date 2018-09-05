@@ -15,7 +15,7 @@ public:
   void process(const size_t orig_length, const size_t sent_length) noexcept;
   void end() noexcept;
   void fail() noexcept;
-  size_t get_process_count() const noexcept;
+  size_t get_sent_count() const noexcept;
   Config conf;
 
 private:
@@ -27,7 +27,7 @@ private:
   size_t sent_byte_min{0};
   size_t sent_byte_max{0};
   double sent_byte_avg{0.0};
-  size_t process_count{0};
+  size_t sent_count{0};
   size_t fail_count{0};
   double perf_kbps{0.0};
   double perf_kpps{0.0};

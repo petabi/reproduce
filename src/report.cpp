@@ -10,8 +10,6 @@ static constexpr double MBYTE = KBYTE * KBYTE;
 static constexpr double KPACKET = 1000.0;
 static constexpr double MPACKET = KPACKET * KPACKET;
 
-// Report::Report(Config _conf) : conf(_conf) {}
-
 void Report::start() noexcept
 {
   if (!conf.mode_eval) {
@@ -40,7 +38,7 @@ void Report::process(const size_t orig_length,
   }
   sent_byte += sent_length;
 
-  process_count++;
+  sent_count++;
 }
 
 void Report::end() noexcept
@@ -54,10 +52,10 @@ void Report::end() noexcept
 
   if (time_diff) {
     perf_kbps = (double)sent_byte / KBYTE / time_diff;
-    perf_kpps = (double)process_count / KPACKET / time_diff;
+    perf_kpps = (double)sent_count / KPACKET / time_diff;
   }
-  orig_byte_avg = (double)orig_byte / process_count;
-  sent_byte_avg = (double)sent_byte / process_count;
+  orig_byte_avg = (double)orig_byte / sent_count;
+  sent_byte_avg = (double)sent_byte / sent_count;
 
   cout.precision(2);
   cout << fixed;
@@ -108,8 +106,8 @@ void Report::end() noexcept
        << sent_byte_avg << "(Min/Max/Avg)\n";
   cout << "Sent Bytes\t: " << sent_byte << "(" << (double)sent_byte / MBYTE
        << "M)\n";
-  cout << "Sent Count\t: " << process_count << "("
-       << (double)process_count / MPACKET << "M)\n";
+  cout << "Sent Count\t: " << sent_count << "(" << (double)sent_count / MPACKET
+       << "M)\n";
   cout << "Fail Count\t: " << fail_count << "(" << (double)fail_count / MPACKET
        << "M)\n";
   cout << "Elapsed Time\t: " << time_diff << "s\n";
@@ -120,6 +118,6 @@ void Report::end() noexcept
 
 void Report::fail() noexcept { fail_count++; }
 
-size_t Report::get_process_count() const noexcept { return process_count; }
+size_t Report::get_sent_count() const noexcept { return sent_count; }
 
 // vim: et:ts=2:sw=2

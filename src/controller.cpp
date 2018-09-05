@@ -65,7 +65,7 @@ void Controller::run()
     prod->produce(omessage);
     report.process(imessage_len, omessage_len);
 
-    sent_count = report.get_process_count();
+    sent_count = report.get_sent_count();
     Util::mprint(omessage, sent_count);
 
     if (check_count(sent_count)) {
