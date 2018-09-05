@@ -19,6 +19,9 @@ public:
   Config conf;
 
 private:
+  size_t input_byte_min{0};
+  size_t input_byte_max{0};
+  double input_byte_avg{0.0};
   size_t sent_byte{0};
   size_t sent_byte_min{0};
   size_t sent_byte_max{0};
