@@ -5,7 +5,7 @@
 ### Introduction
 
   Packetproducer is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
-Packet translation is up to the transport layer, and the protocols currently supported are Ethernet, IP, ARP, TCP, UDP, and ICMP.
+Packet translation is up to the transport layer, and the protocols currently supported are Ethernet, IP, ARP, TCP, UDP, and ICMP. Also, logs and plain text files are converted to a new type of log stream by adding or removing information according to their attributes.
 
 ## Function Specification
 
@@ -15,17 +15,21 @@ Packet translation is up to the transport layer, and the protocols currently sup
 
 ### 1. Data entry
 
-Specify a single pcap file or network interface to be converted through the program's options.
+Specify a single pcap file or network interface or plain text file such as log to be converted through the program's options.
 
 ### 2. Conversion
 
-Packetproducer Converts the incoming packet to a stream format with space as delimiter, as in the following Conversion Format. The conversion starts with the sec value in the time_t structure representing the timestamp, and then converts from the lower layer to the higher layer of the protocol.
+Packetproducer converts the incoming packet or pcap file, log to a stream format with space as delimiter, as in the following Conversion Format. The conversion of packet starts with the sec value in the time_t structure representing the timestamp, and then converts from the lower layer to the higher layer of the protocol.
 
 #### Conversion Example
 
+##### Packet
 1531980829 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 56325 19069 64 127 7184 59.7.91.91 121.205.88.134 ip_opt TCP 3389 63044 1092178785 2869829243 20 AP 64032 5779 0
 
 \[Seconds of Timestamp\] \[Protocol Name\] \[Destination MAC Address\] \[Source MAC Address\] \[Protocol Name\] \[Version\] \[IHL\] \[ToS\] \[Total Length\] \[Identification\] \[Fragment Offset\] \[TTL\] \[Header Checksum\] \[Source IP Address\] \[Destination IP Address\] \[Presence of option field\] \[Protocol name\] \[Source Port Address\] \[Destination Port Address\] \[Squence Number\] \[Acknowledge Number\] \[Hlen\] \[Flags(UAPRSF)\] \[Window Size\] \[Checksum\] \[Urgent Pointer\]
+
+##### Log
+20180906 e1000 enp0s3 N Link Up 1000Mbps Full Duplex Flow Control: RX
 
 See more details in appendix.
 
@@ -61,6 +65,8 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 
 * Convert pcap file and send it to kafka server:
     * ```./packetproducer -i test.pcap -b 192.168.10.1:9092 -t sample_topic```
+* Convert log file and send it to kafka server:
+    * ```./packetproducer -i LOG_20180906 -b 192.168.10.1:9092 -t sample_topic```
 * Output only debugging messages (conversion result) after converting pcap file:
     * ```./packetproducer -i test.pcap -o none -d```
 * Save result file after converting pcap file:
@@ -91,6 +97,7 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 * Real-time conversion of sending and receiving packets in network interface (related option: i)
 * Add packet filtering function
 * Support More protocols
+* Define the conversion of log and Implement it
 
 ## Appendix
 
