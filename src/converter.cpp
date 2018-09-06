@@ -1,5 +1,4 @@
 #include <arpa/inet.h>
-
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -17,150 +16,30 @@
 #include "tcp.h"
 #include "udp.h"
 
-#include "header2log.h"
-#include "rdkafka_producer.h"
+#include "converter.h"
+
+using namespace std;
+
+/**
+ * PacketConverter
+ */
 
 #define ADD_STREAM(args...)                                                    \
   if ((length = sprintf(ptr, ##args)) < 0) {                                   \
     return false;                                                              \
   }                                                                            \
   ptr += length;                                                               \
-  stream_length += length;
+  conv_len += length;
 
-using namespace std;
+PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
 
-Pcap::Pcap(const string& filename)
+size_t PacketConverter::convert(char* in, size_t in_len, char* out,
+                                size_t out_len)
 {
-  pcapfile = fopen(filename.c_str(), "r");
-  if (pcapfile == nullptr) {
-    throw runtime_error("Failed to open input file: " + filename);
-  }
-
-  struct pcap_file_header pfh;
-  size_t pfh_len = sizeof(pfh);
-  if (fread(&pfh, 1, pfh_len, pcapfile) != pfh_len) {
-    throw runtime_error("Invalid input pcap file: " + filename);
-  }
-  if (pfh.magic != 0xa1b2c3d4) {
-    throw runtime_error("Invalid input pcap file: " + filename);
-  }
-
-  l2_type = pfh.linktype;
-}
-
-Pcap::Pcap(Pcap&& other) noexcept
-{
-  FILE* tmp = other.pcapfile;
-  other.pcapfile = nullptr;
-  if (pcapfile != nullptr) {
-    fclose(pcapfile);
-  }
-  pcapfile = tmp;
-}
-
-Pcap::~Pcap()
-{
-  if (pcapfile != nullptr) {
-    fclose(pcapfile);
-  }
-}
-
-bool Pcap::skip(size_t count_skip)
-{
-  struct pcap_pkthdr pp;
-  size_t count = 0;
-  size_t pp_len = sizeof(pp);
-
-  while (count < count_skip) {
-    if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
-      return false;
-    }
-    fseek(pcapfile, pp.caplen, SEEK_CUR);
-    count++;
-  }
-
-  return true;
-}
-
-int Pcap::get_next_stream(char* message, size_t size)
-{
-  stream_length = 0;
-  ptr = message;
-
-  int ret = pcap_header_process();
-  if (ret <= 0) {
-    return ret;
-  }
-
-#if 0
-  // we assume packet_len < PACKET_BUF_SIZE
-  if (packet_len >= PACKET_BUF_SIZE) {
-    throw runtime_error("Packet buffer too small");
-  }
-#endif
-
-  if (fread(packet_buf, 1, pcap_length, pcapfile) != pcap_length) {
-    return static_cast<int>(ConvResult::NO_MORE);
-  }
-
-  if (!invoke(get_l2_process(), this, packet_buf)) {
-    return static_cast<int>(ConvResult::FAIL);
-  }
-
-  // TODO: payload process
-
-  return stream_length;
-}
-
-bool (Pcap::*Pcap::get_l2_process())(unsigned char* offset)
-{
-  switch (l2_type) {
-  case 1:
-    return &Pcap::l2_ethernet_process;
-  default:
-    break;
-  }
-
-  return &Pcap::l2_null_process;
-}
-
-bool (Pcap::*Pcap::get_l3_process())(unsigned char* offset)
-{
-  switch (l3_type) {
-  case ETHERTYPE_IP:
-    return &Pcap::l3_ipv4_process;
-  case ETHERTYPE_ARP:
-    return &Pcap::l3_arp_process;
-  default:
-    break;
-  }
-
-  return &Pcap::l3_null_process;
-}
-
-bool (Pcap::*Pcap::get_l4_process())(unsigned char* offset)
-{
-  switch (l4_type) {
-  case IPPROTO_ICMP:
-    return &Pcap::l4_icmp_process;
-  case IPPROTO_TCP:
-    return &Pcap::l4_tcp_process;
-  case IPPROTO_UDP:
-    return &Pcap::l4_udp_process;
-  default:
-    break;
-  }
-
-  return &Pcap::l4_null_process;
-}
-
-int Pcap::pcap_header_process()
-{
-  struct pcap_pkthdr pp;
-  size_t pp_len = sizeof(pp);
-  if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
-    return static_cast<int>(ConvResult::NO_MORE);
-  }
+  // TODO: How to check the bounds of the buffer?
+  conv_len = 0;
+  ptr = out;
+  auto* pp = reinterpret_cast<pcap_pkthdr*>(in);
 
 #if 0
   // TODO: Fix to enhance performance
@@ -169,18 +48,64 @@ int Pcap::pcap_header_process()
   cap_time[strlen(cap_time) - 1] = '\0';
 #endif
 
-  length = sprintf(ptr, "%d ", pp.ts.tv_sec);
-  if (length < 0) {
-    return static_cast<int>(ConvResult::FAIL);
+  ADD_STREAM("%d ", pp->ts.tv_sec);
+
+  if (!invoke(get_l2_process(), this,
+              reinterpret_cast<unsigned char*>(in + sizeof(pcap_pkthdr)))) {
+    return 0;
   }
-  add_stream_length();
 
-  pcap_length = pp.caplen;
+  // TODO: payload process
 
-  return 1;
+  return conv_len;
 }
 
-bool Pcap::l2_ethernet_process(unsigned char* offset)
+bool (PacketConverter::*PacketConverter::get_l2_process())(
+    unsigned char* offset)
+{
+  switch (l2_type) {
+  case 1:
+    return &PacketConverter::l2_ethernet_process;
+  default:
+    break;
+  }
+
+  return &PacketConverter::l2_null_process;
+}
+
+bool (PacketConverter::*PacketConverter::get_l3_process())(
+    unsigned char* offset)
+{
+  switch (l3_type) {
+  case ETHERTYPE_IP:
+    return &PacketConverter::l3_ipv4_process;
+  case ETHERTYPE_ARP:
+    return &PacketConverter::l3_arp_process;
+  default:
+    break;
+  }
+
+  return &PacketConverter::l3_null_process;
+}
+
+bool (PacketConverter::*PacketConverter::get_l4_process())(
+    unsigned char* offset)
+{
+  switch (l4_type) {
+  case IPPROTO_ICMP:
+    return &PacketConverter::l4_icmp_process;
+  case IPPROTO_TCP:
+    return &PacketConverter::l4_tcp_process;
+  case IPPROTO_UDP:
+    return &PacketConverter::l4_udp_process;
+  default:
+    break;
+  }
+
+  return &PacketConverter::l4_null_process;
+}
+
+bool PacketConverter::l2_ethernet_process(unsigned char* offset)
 {
   auto eh = reinterpret_cast<ether_header*>(offset);
 
@@ -201,7 +126,7 @@ bool Pcap::l2_ethernet_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l3_ipv4_process(unsigned char* offset)
+bool PacketConverter::l3_ipv4_process(unsigned char* offset)
 {
   auto iph = reinterpret_cast<ip*>(offset);
   size_t opt = 0;
@@ -227,7 +152,7 @@ bool Pcap::l3_ipv4_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l3_arp_process(unsigned char* offset)
+bool PacketConverter::l3_arp_process(unsigned char* offset)
 {
   auto arph = reinterpret_cast<arp_pkthdr*>(offset);
   uint16_t hrd = 0, pro = 0;
@@ -294,28 +219,28 @@ bool Pcap::l3_arp_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l2_null_process(unsigned char* offset)
+bool PacketConverter::l2_null_process(unsigned char* offset)
 {
   ADD_STREAM("Unknown_L2(%d) ", l2_type);
 
   return true;
 }
 
-bool Pcap::l3_null_process(unsigned char* offset)
+bool PacketConverter::l3_null_process(unsigned char* offset)
 {
   ADD_STREAM("Unknown_L3(%d) ", l3_type);
 
   return true;
 }
 
-bool Pcap::l4_null_process(unsigned char* offset)
+bool PacketConverter::l4_null_process(unsigned char* offset)
 {
   ADD_STREAM("Unknown_L4(%d) ", l4_type);
 
   return true;
 }
 
-bool Pcap::l4_tcp_process(unsigned char* offset)
+bool PacketConverter::l4_tcp_process(unsigned char* offset)
 {
   auto tcph = reinterpret_cast<tcphdr*>(offset);
 
@@ -345,7 +270,7 @@ bool Pcap::l4_tcp_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l4_udp_process(unsigned char* offset)
+bool PacketConverter::l4_udp_process(unsigned char* offset)
 {
   auto udph = reinterpret_cast<udphdr*>(offset);
 
@@ -360,7 +285,7 @@ bool Pcap::l4_udp_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::l4_icmp_process(unsigned char* offset)
+bool PacketConverter::l4_icmp_process(unsigned char* offset)
 {
   auto icmph = reinterpret_cast<icmp*>(offset);
 
@@ -380,16 +305,40 @@ bool Pcap::l4_icmp_process(unsigned char* offset)
   return true;
 }
 
-bool Pcap::add_stream_length()
+/**
+ * LogConverter
+ */
+
+size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
 {
-  if (length < 0) {
-    return false;
+  if (in == nullptr) {
+    return 0;
   }
 
-  ptr += length;
-  stream_length += length;
+  if (in_len < out_len) {
+    memcpy(out, in, in_len);
+    return in_len;
+  } else {
+    memcpy(out, in, out_len);
+    return out_len;
+  }
+}
 
-  return true;
+/**
+ * NullConverter
+ */
+
+size_t NullConverter::convert(char* in, size_t in_len, char* out,
+                              size_t out_len)
+{
+  static constexpr char sample_data[] =
+      "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "
+      "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "
+      "86734452 2522990538 20 A 16425 7168 0";
+
+  strncpy(out, sample_data, out_len);
+
+  return strlen(sample_data);
 }
 
 // vim: et:ts=2:sw=2
