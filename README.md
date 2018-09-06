@@ -27,6 +27,8 @@ Packetproducer Converts the incoming packet to a stream format with space as del
 
 \[Seconds of Timestamp\] \[Protocol Name\] \[Destination MAC Address\] \[Source MAC Address\] \[Protocol Name\] \[Version\] \[IHL\] \[ToS\] \[Total Length\] \[Identification\] \[Fragment Offset\] \[TTL\] \[Header Checksum\] \[Source IP Address\] \[Destination IP Address\] \[Presence of option field\] \[Protocol name\] \[Source Port Address\] \[Destination Port Address\] \[Squence Number\] \[Acknowledge Number\] \[Hlen\] \[Flags(UAPRSF)\] \[Window Size\] \[Checksum\] \[Urgent Pointer\]
 
+See more details in appendix.
+
 ### 3. Output
 
 Packetproducer outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
