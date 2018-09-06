@@ -74,6 +74,23 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 * Skip 10000 packets and convert 1000 packets in pcap file and evaluate performance:
     * ```./packetproducer -i test.pcap -s 10000 -c 1000 -o none -e```
 
+### Report Example
+
+```
+root@bada-unbuntu:~/packetproducer# ./packetproducer -i test.pcap -e -c 10000000
+--------------------------------------------------
+Input(PCAP)     : test.pcap(976.56M)
+Output(KAFKA)   : localhost:9092(pcap)
+Input Length    : 42/60/59.14(Min/Max/Avg)
+Output Length   : 107/187/175.66(Min/Max/Avg)
+Sent Bytes      : 1756646132(1675.27M)
+Sent Count      : 10000000(10.00M)
+Fail Count      : 0(0.00M)
+Elapsed Time    : 23.86s
+Performance     : 70.22MBps/419.14Kpps
+--------------------------------------------------
+```
+
 ## Performance
 
 ###Test environment
