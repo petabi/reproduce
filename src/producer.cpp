@@ -96,7 +96,7 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
 
   set_kafka_conf();
   if (!conf.kafka_conf.empty()) {
-    set_kafka_conf_from_file(conf.kafka_conf);
+    set_kafka_conf_file(conf.kafka_conf);
   }
 
   show_kafka_conf();
@@ -162,7 +162,7 @@ void KafkaProducer::set_kafka_conf()
   }
 }
 
-void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
+void KafkaProducer::set_kafka_conf_file(const string& conf_file)
 {
   constexpr char global_section[] = "[global]";
   constexpr char topic_section[] = "[topic]";
@@ -179,7 +179,7 @@ void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
   while (getline(conf_stream, line)) {
     line_num++;
     Util::trim(line);
-    if (line.find("#") == 0) {
+    if (line.find('#') == 0) {
       continue;
     }
     if (line.find(global_section) != string::npos) {
@@ -212,6 +212,7 @@ void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
                               .append(to_string(line_num))
                               .append(" line)"));
     }
+    Util::dprint(F, Util::trim(option), "=", Util::trim(value));
   }
 
   conf_stream.close();
