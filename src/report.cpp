@@ -84,8 +84,6 @@ void Report::end() noexcept
   default:
     break;
   }
-  cout << "Input Length\t: " << orig_byte_min << "/" << orig_byte_max << "/"
-       << orig_byte_avg << "(Min/Max/Avg)\n";
   switch (conf.output_type) {
   case OutputType::FILE:
     cout << "Output(FILE)\t: " << conf.output;
@@ -103,6 +101,8 @@ void Report::end() noexcept
     cout << "Output(NONE)\t: \n";
     break;
   }
+  cout << "Input Length\t: " << orig_byte_min << "/" << orig_byte_max << "/"
+       << orig_byte_avg << "(Min/Max/Avg)\n";
   cout << "Output Length\t: " << sent_byte_min << "/" << sent_byte_max << "/"
        << sent_byte_avg << "(Min/Max/Avg)\n";
   cout << "Sent Bytes\t: " << sent_byte << "(" << (double)sent_byte / MBYTE
