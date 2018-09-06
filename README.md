@@ -101,11 +101,11 @@ Performance     : 70.22MBps/419.14Kpps
 
 ###Result
 
-| Contents | Speed |
-|:-----------------------|:-----------------------|
-| Packet Conversion Only | 68.75MBps / 410.39Kpps |
-| Kafka Transmission Only | 270.82MBps / 1622.70Kpps |
-| Packet Conversion + Kafka Transmission | 62.47MBps / 372.89Kpps |
+| Contents                               | Speed                    |
+|:---------------------------------------|:-------------------------|
+| Packet Conversion Only                 | 80.07MBps / 477.94Kpps   |
+| Kafka Transmission Only                | 770.97MBps / 4619.52Kpps |
+| Packet Conversion + Kafka Transmission | 71.63MBps / 427.58Kpps   |
 
 ## Issue
 
