@@ -25,7 +25,8 @@ void Config::help() const noexcept
   cout << "      If no 'i' option is given, sample data is converted\n";
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' option is given, it will be sent via kafka\n";
-  cout << "  -q: queue size in byte. how many bytes send once\n";
+  cout << "  -q: queue size in byte. how many bytes send once"
+       << " (default: " << default_queue_size << ")\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
        << " (default: " << default_topic << ")\n";
@@ -76,6 +77,8 @@ bool Config::set(int argc, char** argv)
     }
   }
 
+  Util::set_debug(mode_debug);
+
   set_default();
   show();
   check();
@@ -104,12 +107,11 @@ void Config::check() const
 {
   Util::dprint(F, "check config");
 
-  // TODO: add config restriction
-#if 0
-  if (input.empty() && output.empty()) {
-    throw runtime_error("You must specify input(-i) or output(-o)");
+  if (input.empty() && output == "none") {
+    throw runtime_error("You must specify input(-i) or output(-o) is not none");
   }
-#endif
+
+  // and so on...
 }
 
 void Config::show() const noexcept

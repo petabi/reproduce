@@ -5,22 +5,28 @@
 
 class Report {
 public:
-  Report() = delete;
-  Report(Config);
+  Report() = default;
   Report(const Report&) = delete;
   Report& operator=(const Report&) = delete;
   Report(Report&&) = delete;
   Report& operator=(Report&&) = delete;
   ~Report() = default;
   void start() noexcept;
-  void process(const int length) noexcept;
-  void end() const noexcept;
+  void process(const size_t orig_length, const size_t sent_length) noexcept;
+  void end() noexcept;
   void fail() noexcept;
   size_t get_sent_count() const noexcept;
+  Config conf;
 
 private:
-  Config conf;
+  size_t orig_byte{0};
+  size_t orig_byte_min{0};
+  size_t orig_byte_max{0};
+  double orig_byte_avg{0.0};
   size_t sent_byte{0};
+  size_t sent_byte_min{0};
+  size_t sent_byte_max{0};
+  double sent_byte_avg{0.0};
   size_t sent_count{0};
   size_t fail_count{0};
   double perf_kbps{0.0};

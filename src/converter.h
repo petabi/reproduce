@@ -11,14 +11,6 @@
  * Converter
  */
 
-enum class ConverterType {
-  NONE,
-  PCAP,
-  PCAPNG,
-  NIC,
-  LOG,
-};
-
 class Converter {
 public:
   virtual size_t convert(char* in, size_t in_len, char* out,

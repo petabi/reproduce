@@ -5,6 +5,20 @@
 
 #include "util.h"
 
+enum class InputType {
+  NONE,
+  PCAP,
+  PCAPNG,
+  NIC,
+  LOG,
+};
+
+enum class OutputType {
+  NONE,
+  KAFKA,
+  FILE,
+};
+
 class Config {
 public:
   bool mode_debug{false}; // print debug messages
@@ -13,13 +27,15 @@ public:
   size_t count_skip{0};   // count to skip
   size_t queue_size{0};   // how many bytes send once
   std::string input;      // input: packet/log/none
-  std::string output;     // output: kafka/file/none
-  std::string filter;     // tcpdump filter string
-  std::string broker;     // kafka broker
-  std::string topic;      // kafka topic
+  InputType input_type;
+  std::string output; // output: kafka/file/none
+  OutputType output_type;
+  std::string filter; // tcpdump filter string
+  std::string broker; // kafka broker
+  std::string topic;  // kafka topic
   Config() = default;
   Config(const Config&) = default;
-  Config& operator=(const Config&) = delete;
+  Config& operator=(const Config&) = default;
   Config(Config&&) = default;
   Config& operator=(Config&&) = delete;
   ~Config() = default;
