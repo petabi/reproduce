@@ -8,7 +8,6 @@ using namespace std;
 
 static constexpr char default_kafka_broker[] = "localhost:9092";
 static constexpr char default_kafka_topic[] = "pcap";
-static constexpr char default_kafka_conf[] = "kafka.conf";
 static constexpr size_t default_queue_size = 900000;
 
 void Config::help() const noexcept
@@ -24,8 +23,7 @@ void Config::help() const noexcept
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/NIC]\n";
   cout << "      If no 'i' option is given, sample data is converted\n";
-  cout << "  -k: kafka config file"
-       << " (default: " << default_kafka_conf << ")\n";
+  cout << "  -k: kafka config file (Ex: kafka.conf)\n";
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' option is given, it will be sent via kafka\n";
   cout << "  -q: queue size in byte. how many bytes send once"
@@ -102,10 +100,6 @@ void Config::set_default() noexcept
 
   if (kafka_topic.empty()) {
     kafka_topic = default_kafka_topic;
-  }
-
-  if (kafka_conf.empty()) {
-    kafka_conf = default_kafka_conf;
   }
 
   if (queue_size == 0) {
