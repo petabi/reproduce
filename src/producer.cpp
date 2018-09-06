@@ -164,44 +164,42 @@ void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
   constexpr char global_section[] = "global";
   constexpr char topic_section[] = "topic";
   RdKafka::Conf* kafka_conf_ptr = nullptr;
-  std::string line, option, value;
+  string line, option, value;
   size_t line_num = 0, offset = 0;
   string errstr;
-  std::ifstream conf(conf_file);
-  if (conf.is_open()) {
-    while (std::getline(conf, line)) {
-      line_num++;
-      if (line.find(global_section) != std::string::npos) {
-        kafka_conf_ptr = kafka_gconf.get();
-        continue;
-      } else if (line.find(topic_section) != std::string::npos) {
-        kafka_conf_ptr = kafka_tconf.get();
-        continue;
-      } else {
-        if (kafka_conf_ptr == nullptr) {
-          continue;
-        }
-        offset = line.find_first_of(":=");
-        option = line.substr(0, offset);
-        value = line.substr(offset + 1, line.length());
-        if (offset != std::string::npos) {
-          if (kafka_conf_ptr->set(Util::del_space(option),
-                                  Util::del_space(value),
-                                  errstr) != RdKafka::Conf::CONF_OK) {
-
-            throw runtime_error(std::string("Failed to set kafka config: ") +
-                                errstr + std::string("\n") + line +
-                                std::string("(") + std::to_string(line_num) +
-                                std::string(" line): "));
-          }
-        }
-      }
-    }
-    conf.close();
-  } else {
-    throw runtime_error(std::string("Failed to open kafka config file: ") +
-                        conf_file);
+  ifstream conf_stream(conf_file);
+  if (!conf_stream.is_open()) {
+    throw runtime_error("Failed to open kafka config file: " + conf_file);
   }
+  while (getline(conf_stream, line)) {
+    line_num++;
+    offset = line.find("//");
+    line = line.substr(0, offset);
+    if (line.find(global_section) != string::npos) {
+      kafka_conf_ptr = kafka_gconf.get();
+      continue;
+    }
+    if (line.find(topic_section) != string::npos) {
+      kafka_conf_ptr = kafka_tconf.get();
+      continue;
+    }
+    if (kafka_conf_ptr == nullptr) {
+      continue;
+    }
+    offset = line.find_first_of(":=");
+    option = line.substr(0, offset);
+    value = line.substr(offset + 1, line.length());
+    if (offset == string::npos) {
+      continue;
+    }
+    if (kafka_conf_ptr->set(Util::del_space(option), Util::del_space(value),
+                            errstr) != RdKafka::Conf::CONF_OK) {
+
+      throw runtime_error("Failed to set kafka config: " + errstr + "\n" +
+                          line + "(" + to_string(line_num) + " line): ");
+    }
+  }
+  conf_stream.close();
 }
 
 void KafkaProducer::show_kafka_conf() const
