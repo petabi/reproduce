@@ -1,29 +1,122 @@
-# Header2log
+# Packetproducer
 
 ## Overview
 
 ### Introduction
 
-  Header2log is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
-Packet translation is up to the transport layer, and the protocols currently supported are Ethernet, IP, ARP, TCP, UDP, and ICMP.
+  Packetproducer is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
+Packet translation is up to the transport layer, and the protocols currently supported are Ethernet, IP, ARP, TCP, UDP, and ICMP. Also, logs and plain text files are converted to a new type of log stream by adding or removing information according to their attributes.
 
 ## Function Specification
 
-### Data entry
+* The program converts packets into log-type streams
+* The program performs a conversion that converts the log to a new format, and removes unnecessary elements or adds features
+* The program sends transformed streams via kafka platform
 
-Specify a single pcap file or network interface to be converted through the program's options.
+### 1. Data entry
 
-### Conversion
+Specify a single pcap file or network interface or plain text file such as log to be converted through the program's options.
 
-header2log Converts the incoming packet to a stream format with space as delimiter, as in the following Conversion Format. The conversion starts with the sec value in the time_t structure representing the timestamp, and then converts from the lower layer to the higher layer of the protocol.
+### 2. Conversion
+
+Packetproducer converts the incoming packet or pcap file, log to a stream format with space as delimiter, as in the following Conversion Format. The conversion of packet starts with the sec value in the time_t structure representing the timestamp, and then converts from the lower layer to the higher layer of the protocol.
 
 #### Conversion Example
 
+##### Packet
 1531980829 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 56325 19069 64 127 7184 59.7.91.91 121.205.88.134 ip_opt TCP 3389 63044 1092178785 2869829243 20 AP 64032 5779 0
 
-### result
+\[Seconds of Timestamp\] \[Protocol Name\] \[Destination MAC Address\] \[Source MAC Address\] \[Protocol Name\] \[Version\] \[IHL\] \[ToS\] \[Total Length\] \[Identification\] \[Fragment Offset\] \[TTL\] \[Header Checksum\] \[Source IP Address\] \[Destination IP Address\] \[Presence of option field\] \[Protocol name\] \[Source Port Address\] \[Destination Port Address\] \[Squence Number\] \[Acknowledge Number\] \[Hlen\] \[Flags(UAPRSF)\] \[Window Size\] \[Checksum\] \[Urgent Pointer\]
 
-Header2log outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
+##### Log
+20180906 e1000 enp0s3 N Link Up 1000Mbps Full Duplex Flow Control: RX
+
+See more details in appendix.
+
+### 3. Output
+
+Packetproducer outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
+
+## Usage
+
+### Program Usage  
+
+```./Packetproducer [OPTIONS]```
+
+### OPTIONS
+
+```
+  -b: kafka broker (default: localhost:9092)
+  -c: send count
+  -d: debug mode. print debug messages
+  -e: evaluation mode. report statistics
+  -f: tcpdump filter (when input is PCAP or NIC)
+  -h: help
+  -i: input [PCAPFILE/LOGFILE/NIC]
+      If no 'i' option is given, sample data is converted
+  -o: output [TEXTFILE/none]
+      If no 'o' input is given, it will be sent via kafka
+  -q: queue size in byte. how many bytes send once
+  -s: skip count
+  -t: kafka topic (default: pcap)
+```
+
+### Examples
+
+* Convert pcap file and send it to kafka server:
+    * ```./packetproducer -i test.pcap -b 192.168.10.1:9092 -t sample_topic```
+* Convert log file and send it to kafka server:
+    * ```./packetproducer -i LOG_20180906 -b 192.168.10.1:9092 -t sample_topic```
+* Output only debugging messages (conversion result) after converting pcap file:
+    * ```./packetproducer -i test.pcap -o none -d```
+* Save result file after converting pcap file:
+    * ```./packetproducer -i test.pcap -o result.txt```
+* Skip 10000 packets and convert 1000 packets in pcap file and evaluate performance:
+    * ```./packetproducer -i test.pcap -s 10000 -c 1000 -o none -e```
+
+### Report Example
+
+```
+root@bada-unbuntu:~/packetproducer# ./packetproducer -i test.pcap -e -c 10000000
+--------------------------------------------------
+Input(PCAP)     : test.pcap(976.56M)
+Output(KAFKA)   : localhost:9092(pcap)
+Input Length    : 42/60/59.14(Min/Max/Avg)
+Output Length   : 107/187/175.66(Min/Max/Avg)
+Sent Bytes      : 1756646132(1675.27M)
+Sent Count      : 10000000(10.00M)
+Fail Count      : 0(0.00M)
+Elapsed Time    : 23.86s
+Performance     : 70.22MBps/419.14Kpps
+--------------------------------------------------
+```
+
+## Performance
+
+###Test environment
+
+* CPU : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
+* Memory : 64GB
+* Cores(Utilization) : 1(100%)
+
+###Result
+
+| Contents                               | Speed                    |
+|:---------------------------------------|:-------------------------|
+| Packet Conversion Only                 | 80.07MBps / 477.94Kpps   |
+| Kafka Transmission Only                | 770.97MBps / 4619.52Kpps |
+| Packet Conversion + Kafka Transmission | 71.63MBps / 427.58Kpps   |
+
+## Issue
+
+## To do
+
+* Real-time conversion of sending and receiving packets in network interface (related option: i)
+* Add packet filtering function
+* Support More protocols
+* Define the conversion of log and Implement it
+
+## Appendix
 
 ### Conversion Format
 
@@ -117,55 +210,3 @@ Header2log outputs the converted result in a form specified by the user(Stdout, 
 |   3   | Decimal | Destination Port Address | 53      |
 |   4   | Decimal | Length                   | 1048    |
 |   5   | Decimal | Checksum                 | 30584   |
-
-## Usage
-
-### Program Usage  
-
-```./header2log [OPTIONS]```
-
-### OPTIONS
-
-* b: kafka broker (default: localhost:9092)
-* c: send packet count
-* d: debug mode (print debug messages)
-* e: evaluation mode (report statistics)
-* f: tcpdump filter
-* h: help
-* i: input pcapfile or nic
-* k: do not send data to kafka
-* o: output file
-* p: do not parse packet (send hardcoded sample data. with -c option)
-* q: queue packet bytes (how many bytes send once)
-* s: skip packet count
-* t: kafka topic (default: pcap)
-
-### Examples
-
-* Convert pcap file and send it to kafka server: ```./header2log -i [pcap file name] -b [kafka broker addr:port] -t [kafka topic]```
-* Output only debugging messages (conversion result) after converting pcap file: ```./header2log -i [pcap file name] -d -k```
-* Save result file after converting pcap file: ```./header2log -i [pcap file name] -o [output file]```
-* Skip packets and convert pcap file: ```./header2log -i [pcap file name] -s [skip packet count]```
-
-## Performance
-
-###Test environment
-
-* CPU : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
-* Memory : 62GB
-
-###Result
-
-| Contents | Speed |
-|:-----------------------|:-----------------------|
-| Packet Conversion Only | 68.75MBps / 410.39Kpps |
-| Kafka Transmission Only | 270.82MBps / 1622.70Kpps |
-| Packet Conversion + Kafka Transmission | 62.47MBps / 372.89Kpps |
-
-## Issue
-
-## To do
-
-* Real-time conversion of sending and receiving packets in network interface (related option: i)
-* Add packet filtering function
-* Support More protocols
