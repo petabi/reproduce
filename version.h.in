@@ -1,0 +1,7 @@
+#ifndef PACKETPRODUCER_VERSION_H
+#define PACKETPRODUCER_VERSION_H
+
+constexpr char PROGRAM_NAME[] = "@PROJECT_NAME@";
+constexpr char PROGRAM_VERSION[] = "@PROJECT_VERSION@";
+
+#endif
