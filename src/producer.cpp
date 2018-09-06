@@ -1,4 +1,5 @@
 #include <array>
+#include <map>
 
 #include "producer.h"
 
@@ -94,6 +95,7 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
   }
 
   set_kafka_conf();
+  set_kafka_conf_from_file(conf.kafka_conf);
   show_kafka_conf();
 
   string errstr;
@@ -154,6 +156,51 @@ void KafkaProducer::set_kafka_conf()
                    "unknown kafka config type: ", static_cast<int>(entry.type));
       break;
     }
+  }
+}
+
+void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
+{
+  constexpr char global_section[] = "global";
+  constexpr char topic_section[] = "topic";
+  RdKafka::Conf* kafka_conf_ptr = nullptr;
+  std::string line, option, value;
+  size_t line_num = 0, offset = 0;
+  string errstr;
+  std::ifstream conf(conf_file);
+  if (conf.is_open()) {
+    while (std::getline(conf, line)) {
+      line_num++;
+      if (line.find(global_section) != std::string::npos) {
+        kafka_conf_ptr = kafka_gconf.get();
+        continue;
+      } else if (line.find(topic_section) != std::string::npos) {
+        kafka_conf_ptr = kafka_tconf.get();
+        continue;
+      } else {
+        if (kafka_conf_ptr == nullptr) {
+          continue;
+        }
+        offset = line.find_first_of(":=");
+        option = line.substr(0, offset);
+        value = line.substr(offset + 1, line.length());
+        if (offset != std::string::npos) {
+          if (kafka_conf_ptr->set(Util::del_space(option),
+                                  Util::del_space(value),
+                                  errstr) != RdKafka::Conf::CONF_OK) {
+
+            throw runtime_error(std::string("Failed to set kafka config: ") +
+                                errstr + std::string("\n") + line +
+                                std::string("(") + std::to_string(line_num) +
+                                std::string(" line): "));
+          }
+        }
+      }
+    }
+    conf.close();
+  } else {
+    throw runtime_error(std::string("Failed to open kafka config file: ") +
+                        conf_file);
   }
 }
 

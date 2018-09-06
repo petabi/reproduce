@@ -56,6 +56,7 @@ private:
   bool produce_core(const std::string& message) noexcept;
   void wait_queue(const int count) noexcept;
   void set_kafka_conf();
+  void set_kafka_conf_from_file(const std::string& conf_file);
   void show_kafka_conf() const;
 };
 

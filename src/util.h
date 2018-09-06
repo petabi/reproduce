@@ -26,6 +26,7 @@ public:
   static void eprint(const char* name, T head, Ts... tail);
   static void mprint(const char* message, const size_t count) noexcept;
   static void set_debug(const bool& debug);
+  static std::string del_space(std::string& str);
 
 private:
   static bool debug;
