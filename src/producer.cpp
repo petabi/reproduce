@@ -40,7 +40,7 @@ static const array<KafkaConf, 4> kafka_conf = {{
 
 #if 0
     // it will reduce performance
-    {KafkaConfType::TOPIC, "compression.codec", "l24", "none", "none", "none",
+    {KafkaConfType::TOPIC, "compression.codec", "lz4", "none", "none", "none",
      "none/gzip/snappy/lz4"},
 #endif
 }};
@@ -95,7 +95,10 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
   }
 
   set_kafka_conf();
-  set_kafka_conf_from_file(conf.kafka_conf);
+  if (!conf.kafka_conf.empty()) {
+    set_kafka_conf_from_file(conf.kafka_conf);
+  }
+
   show_kafka_conf();
 
   string errstr;
@@ -175,8 +178,10 @@ void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
 
   while (getline(conf_stream, line)) {
     line_num++;
-    offset = line.find("//");
-    line = line.substr(0, offset);
+    Util::trim(line);
+    if (line.find("#") == 0) {
+      continue;
+    }
     if (line.find(global_section) != string::npos) {
       kafka_conf_ptr = kafka_gconf.get();
       continue;
@@ -197,8 +202,8 @@ void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
       continue;
     }
 
-    if (kafka_conf_ptr->set(Util::del_space(option), Util::del_space(value),
-                            errstr) != RdKafka::Conf::CONF_OK) {
+    if (kafka_conf_ptr->set(Util::trim(option), Util::trim(value), errstr) !=
+        RdKafka::Conf::CONF_OK) {
       throw runtime_error(string("Failed to set kafka config: ")
                               .append(errstr)
                               .append(": ")
