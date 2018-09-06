@@ -161,16 +161,18 @@ void KafkaProducer::set_kafka_conf()
 
 void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
 {
-  constexpr char global_section[] = "global";
-  constexpr char topic_section[] = "topic";
+  constexpr char global_section[] = "[global]";
+  constexpr char topic_section[] = "[topic]";
   RdKafka::Conf* kafka_conf_ptr = nullptr;
   string line, option, value;
   size_t line_num = 0, offset = 0;
   string errstr;
   ifstream conf_stream(conf_file);
+
   if (!conf_stream.is_open()) {
     throw runtime_error("Failed to open kafka config file: " + conf_file);
   }
+
   while (getline(conf_stream, line)) {
     line_num++;
     offset = line.find("//");
@@ -186,41 +188,45 @@ void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
     if (kafka_conf_ptr == nullptr) {
       continue;
     }
+
     offset = line.find_first_of(":=");
     option = line.substr(0, offset);
     value = line.substr(offset + 1, line.length());
+
     if (offset == string::npos) {
       continue;
     }
+
     if (kafka_conf_ptr->set(Util::del_space(option), Util::del_space(value),
                             errstr) != RdKafka::Conf::CONF_OK) {
-
       throw runtime_error("Failed to set kafka config: " + errstr + "\n" +
                           line + "(" + to_string(line_num) + " line): ");
     }
   }
+
   conf_stream.close();
 }
 
 void KafkaProducer::show_kafka_conf() const
 {
-  // show kafka producer config
   if (conf.mode_debug) {
-    int pass;
-    for (pass = 0; pass < 2; pass++) {
-      list<string>* dump;
-      if (pass == 0) {
-        dump = kafka_gconf->dump();
-        Util::dprint(F, "### Global Config");
-      } else {
-        dump = kafka_tconf->dump();
-        Util::dprint(F, "### Topic Config");
-      }
-      for (auto it = dump->cbegin(); it != dump->cend();) {
-        string key = *it++;
-        string value = *it++;
-        Util::dprint(F, key, "=", value);
-      }
+    return;
+  }
+
+  // show kafka producer config
+  for (int pass = 0; pass < 2; pass++) {
+    list<string>* dump;
+    if (pass == 0) {
+      dump = kafka_gconf->dump();
+      Util::dprint(F, "### Global Config");
+    } else {
+      dump = kafka_tconf->dump();
+      Util::dprint(F, "### Topic Config");
+    }
+    for (auto it = dump->cbegin(); it != dump->cend();) {
+      string key = *it++;
+      string value = *it++;
+      Util::dprint(F, key, "=", value);
     }
   }
 }
