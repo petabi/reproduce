@@ -219,7 +219,7 @@ void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
 
 void KafkaProducer::show_kafka_conf() const
 {
-  if (conf.mode_debug) {
+  if (!conf.mode_debug) {
     return;
   }
 
