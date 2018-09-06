@@ -2,13 +2,12 @@
 #include <unistd.h>
 
 #include "config.h"
+#include "version.h"
 
 using namespace std;
 
-static constexpr char PROGRAM_NAME[] = "packetproducer";
-static constexpr char PROGRAM_VERSION[] = "0.1.0";
-static constexpr char default_kafka_broker[] = "localhost:9092";
-static constexpr char default_kafka_topic[] = "pcap";
+static constexpr char default_broker[] = "localhost:9092";
+static constexpr char default_topic[] = "pcap";
 static constexpr char default_kafka_conf[] = "kafka.conf";
 static constexpr size_t default_queue_size = 900000;
 
