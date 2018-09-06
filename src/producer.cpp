@@ -199,8 +199,13 @@ void KafkaProducer::set_kafka_conf_from_file(const string& conf_file)
 
     if (kafka_conf_ptr->set(Util::del_space(option), Util::del_space(value),
                             errstr) != RdKafka::Conf::CONF_OK) {
-      throw runtime_error("Failed to set kafka config: " + errstr + "\n" +
-                          line + "(" + to_string(line_num) + " line): ");
+      throw runtime_error(string("Failed to set kafka config: ")
+                              .append(errstr)
+                              .append(": ")
+                              .append(line)
+                              .append("(")
+                              .append(to_string(line_num))
+                              .append(" line)"));
     }
   }
 
