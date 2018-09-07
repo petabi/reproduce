@@ -1,6 +1,8 @@
 #include <iostream>
 #include <unistd.h>
 
+#include "librdkafka/rdkafkacpp.h"
+
 #include "config.h"
 #include "version.h"
 
@@ -12,7 +14,8 @@ static constexpr size_t default_queue_size = 900000;
 
 void Config::help() const noexcept
 {
-  cout << PROGRAM_NAME << "-" << PROGRAM_VERSION << "\n";
+  cout << PROGRAM_NAME << "-" << PROGRAM_VERSION << " (librdkafka++-"
+       << RdKafka::version_str() << ")\n";
   cout << "[USAGE] " << PROGRAM_NAME << " [OPTIONS]\n";
   cout << "  -b: kafka broker list"
        << " (default: " << default_kafka_broker << ")\n";
