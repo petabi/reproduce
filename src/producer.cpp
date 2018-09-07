@@ -59,20 +59,23 @@ void RdEventCb::event_cb(RdKafka::Event& event)
 {
   switch (event.type()) {
   case RdKafka::Event::EVENT_ERROR:
-    Util::eprint(F, RdKafka::err2str(event.err()), ": ", event.str());
+    Util::eprint(F, "KAFKA ERR: ", RdKafka::err2str(event.err()), ": ",
+                 event.str());
+    // FIXME: error handling
+#if 0
     if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) {
-      // FIXME: what do we do?
     }
+#endif
     break;
   case RdKafka::Event::EVENT_STATS:
-    Util::dprint(F, "STAT: ", event.str());
+    Util::dprint(F, "KAFKA STAT: ", event.str());
     break;
   case RdKafka::Event::EVENT_LOG:
-    Util::dprint(F, "LOG-", event.severity(), "-", event.fac(), ": ",
+    Util::dprint(F, "KAFKA LOG-", event.severity(), "-", event.fac(), ": ",
                  event.str());
     break;
   default:
-    Util::eprint(F, "EVENT: ", RdKafka::err2str(event.err()), ": ",
+    Util::eprint(F, "KAFKA EVENT: ", RdKafka::err2str(event.err()), ": ",
                  event.str());
     break;
   }
