@@ -62,6 +62,29 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
   -t: kafka topic (default: pcap)
 ```
 
+### Kafka Config
+
+When transferring the converted result via kafka, various options can be set through the file specified with the 'k' option.
+The configuration consists of two sections: global settings and topic settings. Each section consists of properties and values.
+An example of a configuration file is following.
+
+#### Kafka Config File Format
+
+```
+[global]
+client.id=rdkafka
+message.max.bytes=1000000
+message.copy.max.bytes=65535
+
+[topic]
+request.required.acks=1
+message.timeout.ms=300000
+offset.store.method=broker
+```
+
+For a detailed description of the property, see the following URL:
+https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
+
 ### Examples
 
 * Convert pcap file and send it to kafka server:
@@ -211,37 +234,3 @@ Performance     : 70.22MBps/419.14Kpps
 |   3   | Decimal | Destination Port Address | 53      |
 |   4   | Decimal | Length                   | 1048    |
 |   5   | Decimal | Checksum                 | 30584   |
-
-### Kafka Config
-
-When transferring the converted result via kafka, various options can be set through the file specified with the 'k' option.
-The configuration consists of two sections: global settings and topic settings. Each section consists of properties and values.
-An example of a configuration file is following.
-
-#### Kafka Config File Example
-
-```
-[global]
-builtin.features=gzip
-client.id=rdkafka
-message.max.bytes=1000000
-message.copy.max.bytes=65535
-receive.message.max.bytes=100000000
-max.in.flight.requests.per.connection=1000000
-metadata.request.timeout.ms=60000
-topic.metadata.refresh.interval.ms=300000
-
-[topic]
-request.required.acks=1
-request.timeout.ms=5000
-message.timeout.ms=300000
-queuing.strategy=fifo
-produce.offset.report=false
-partitioner=consistent_random
-offset.store.sync.interval.ms=-1
-offset.store.method=broker
-consume.callback.max.messages=0
-```
-
-For a detailed description of the property, see the following URL:
-https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
