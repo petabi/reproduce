@@ -35,7 +35,7 @@ void Controller::run()
 
   if (conf.count_skip) {
     if (!invoke(skip_data, this, conf.count_skip)) {
-      Util::dprint(F, "failed to skip(%d)", conf.count_skip);
+      Util::dprint(F, "failed to skip(", conf.count_skip, ")");
     }
   }
 

@@ -39,7 +39,7 @@ static const array<KafkaConf, 4> kafka_conf = {{
 
 #if 0
     // it will reduce performance
-    {KafkaConfType::TOPIC, "compression.codec", "l24", "none", "none", "none",
+    {KafkaConfType::TOPIC, "compression.codec", "lz4", "none", "none", "none",
      "none/gzip/snappy/lz4"},
 #endif
 }};
@@ -58,20 +58,23 @@ void RdEventCb::event_cb(RdKafka::Event& event)
 {
   switch (event.type()) {
   case RdKafka::Event::EVENT_ERROR:
-    Util::eprint(F, RdKafka::err2str(event.err()), ": ", event.str());
+    Util::eprint(F, "KAFKA ERR: ", RdKafka::err2str(event.err()), ": ",
+                 event.str());
+    // FIXME: error handling
+#if 0
     if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) {
-      // FIXME: what do we do?
     }
+#endif
     break;
   case RdKafka::Event::EVENT_STATS:
-    Util::dprint(F, "STAT: ", event.str());
+    Util::dprint(F, "KAFKA STAT: ", event.str());
     break;
   case RdKafka::Event::EVENT_LOG:
-    Util::dprint(F, "LOG-", event.severity(), "-", event.fac(), ": ",
+    Util::dprint(F, "KAFKA LOG-", event.severity(), "-", event.fac(), ": ",
                  event.str());
     break;
   default:
-    Util::eprint(F, "EVENT: ", RdKafka::err2str(event.err()), ": ",
+    Util::eprint(F, "KAFKA EVENT: ", RdKafka::err2str(event.err()), ": ",
                  event.str());
     break;
   }
@@ -79,7 +82,7 @@ void RdEventCb::event_cb(RdKafka::Event& event)
 
 KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
 {
-  if (conf.broker.empty() || conf.topic.empty()) {
+  if (conf.kafka_broker.empty() || conf.kafka_topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
   }
 
@@ -94,6 +97,10 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
   }
 
   set_kafka_conf();
+  if (!conf.kafka_conf.empty()) {
+    set_kafka_conf_file(conf.kafka_conf);
+  }
+
   show_kafka_conf();
 
   string errstr;
@@ -105,8 +112,8 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
   }
 
   // Create topic handle
-  kafka_topic.reset(RdKafka::Topic::create(kafka_producer.get(), conf.topic,
-                                           kafka_tconf.get(), errstr));
+  kafka_topic.reset(RdKafka::Topic::create(
+      kafka_producer.get(), conf.kafka_topic, kafka_tconf.get(), errstr));
   if (!kafka_topic) {
     throw runtime_error("Failed to create kafka topic handle: " + errstr);
   }
@@ -117,7 +124,7 @@ void KafkaProducer::set_kafka_conf()
   string errstr;
 
   // Set configuration properties
-  if (kafka_gconf->set("metadata.broker.list", conf.broker, errstr) !=
+  if (kafka_gconf->set("metadata.broker.list", conf.kafka_broker, errstr) !=
       RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: metadata.broker.list: " +
                         errstr);
@@ -157,25 +164,82 @@ void KafkaProducer::set_kafka_conf()
   }
 }
 
+void KafkaProducer::set_kafka_conf_file(const string& conf_file)
+{
+  constexpr char global_section[] = "[global]";
+  constexpr char topic_section[] = "[topic]";
+  RdKafka::Conf* kafka_conf_ptr = nullptr;
+  string line, option, value;
+  size_t line_num = 0, offset = 0;
+  string errstr;
+  ifstream conf_stream(conf_file);
+
+  if (!conf_stream.is_open()) {
+    throw runtime_error("Failed to open kafka config file: " + conf_file);
+  }
+
+  while (getline(conf_stream, line)) {
+    line_num++;
+    Util::trim(line);
+    if (line.find('#') == 0) {
+      continue;
+    }
+    if (line.find(global_section) != string::npos) {
+      kafka_conf_ptr = kafka_gconf.get();
+      continue;
+    }
+    if (line.find(topic_section) != string::npos) {
+      kafka_conf_ptr = kafka_tconf.get();
+      continue;
+    }
+    if (kafka_conf_ptr == nullptr) {
+      continue;
+    }
+
+    offset = line.find_first_of(":=");
+    option = line.substr(0, offset);
+    value = line.substr(offset + 1, line.length());
+
+    if (offset == string::npos) {
+      continue;
+    }
+
+    if (kafka_conf_ptr->set(Util::trim(option), Util::trim(value), errstr) !=
+        RdKafka::Conf::CONF_OK) {
+      throw runtime_error(string("Failed to set kafka config: ")
+                              .append(errstr)
+                              .append(": ")
+                              .append(line)
+                              .append("(")
+                              .append(to_string(line_num))
+                              .append(" line)"));
+    }
+    Util::dprint(F, Util::trim(option), "=", Util::trim(value));
+  }
+
+  conf_stream.close();
+}
+
 void KafkaProducer::show_kafka_conf() const
 {
+  if (!conf.mode_debug) {
+    return;
+  }
+
   // show kafka producer config
-  if (conf.mode_debug) {
-    int pass;
-    for (pass = 0; pass < 2; pass++) {
-      list<string>* dump;
-      if (pass == 0) {
-        dump = kafka_gconf->dump();
-        Util::dprint(F, "### Global Config");
-      } else {
-        dump = kafka_tconf->dump();
-        Util::dprint(F, "### Topic Config");
-      }
-      for (auto it = dump->cbegin(); it != dump->cend();) {
-        string key = *it++;
-        string value = *it++;
-        Util::dprint(F, key, "=", value);
-      }
+  for (int pass = 0; pass < 2; pass++) {
+    list<string>* dump;
+    if (pass == 0) {
+      dump = kafka_gconf->dump();
+      Util::dprint(F, "### Global Config");
+    } else {
+      dump = kafka_tconf->dump();
+      Util::dprint(F, "### Topic Config");
+    }
+    for (auto it = dump->cbegin(); it != dump->cend();) {
+      string key = *it++;
+      string value = *it++;
+      Util::dprint(F, key, "=", value);
     }
   }
 }

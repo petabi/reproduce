@@ -26,6 +26,9 @@ public:
   static void eprint(const char* name, T head, Ts... tail);
   static void mprint(const char* message, const size_t count) noexcept;
   static void set_debug(const bool& debug);
+  static std::string& ltrim(std::string& str);
+  static std::string& rtrim(std::string& str);
+  static std::string& trim(std::string& str);
 
 private:
   static bool debug;

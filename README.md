@@ -39,7 +39,7 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 
 ## Usage
 
-### Program Usage  
+### Program Usage
 
 ```./Packetproducer [OPTIONS]```
 
@@ -54,12 +54,36 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
   -h: help
   -i: input [PCAPFILE/LOGFILE/NIC]
       If no 'i' option is given, sample data is converted
+  -k: kafka config file (Ex: kafka.conf)
   -o: output [TEXTFILE/none]
       If no 'o' input is given, it will be sent via kafka
   -q: queue size in byte. how many bytes send once
   -s: skip count
   -t: kafka topic (default: pcap)
 ```
+
+### Kafka Config
+
+When transferring the converted result via kafka, various options can be set through the file specified with the 'k' option.
+The configuration consists of two sections: global settings and topic settings. Each section consists of properties and values.
+An example of a configuration file is following.
+
+#### Kafka Config File Format
+
+```
+[global]
+client.id=rdkafka
+message.max.bytes=1000000
+message.copy.max.bytes=65535
+
+[topic]
+request.required.acks=1
+message.timeout.ms=300000
+offset.store.method=broker
+```
+
+For a detailed description of the property, see the following URL:
+https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 
 ### Examples
 
@@ -93,13 +117,13 @@ Performance     : 70.22MBps/419.14Kpps
 
 ## Performance
 
-###Test environment
+### Test environment
 
 * CPU : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
 * Memory : 64GB
 * Cores(Utilization) : 1(100%)
 
-###Result
+### Result
 
 | Contents                               | Speed                    |
 |:---------------------------------------|:-------------------------|

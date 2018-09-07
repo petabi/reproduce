@@ -316,11 +316,12 @@ size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
   }
 
   if (in_len < out_len) {
-    memcpy(out, in, in_len);
+    memcpy(out, in, in_len + 1);
     return in_len;
   } else {
-    memcpy(out, in, out_len);
-    return out_len;
+    memcpy(out, in, out_len - 1);
+    out[out_len - 1] = '\0';
+    return out_len - 1;
   }
 }
 
