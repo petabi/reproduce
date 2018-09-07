@@ -39,7 +39,7 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 
 ## Usage
 
-### Program Usage
+### Program Usage  
 
 ```./Packetproducer [OPTIONS]```
 
@@ -54,7 +54,6 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
   -h: help
   -i: input [PCAPFILE/LOGFILE/NIC]
       If no 'i' option is given, sample data is converted
-  -k: kafka config file (Ex: kafka.conf)
   -o: output [TEXTFILE/none]
       If no 'o' input is given, it will be sent via kafka
   -q: queue size in byte. how many bytes send once
@@ -94,13 +93,13 @@ Performance     : 70.22MBps/419.14Kpps
 
 ## Performance
 
-### Test environment
+###Test environment
 
 * CPU : Intel(R) Xeon(R) CPU E5-2620 v4 @ 2.10GHz
 * Memory : 64GB
 * Cores(Utilization) : 1(100%)
 
-### Result
+###Result
 
 | Contents                               | Speed                    |
 |:---------------------------------------|:-------------------------|
@@ -211,37 +210,3 @@ Performance     : 70.22MBps/419.14Kpps
 |   3   | Decimal | Destination Port Address | 53      |
 |   4   | Decimal | Length                   | 1048    |
 |   5   | Decimal | Checksum                 | 30584   |
-
-### Kafka Config
-
-When transferring the converted result via kafka, various options can be set through the file specified with the 'k' option.
-The configuration consists of two sections: global settings and topic settings. Each section consists of properties and values.
-An example of a configuration file is following.
-
-#### Kafka Config File Example
-
-```
-[global]
-builtin.features=gzip
-client.id=rdkafka
-message.max.bytes=1000000
-message.copy.max.bytes=65535
-receive.message.max.bytes=100000000
-max.in.flight.requests.per.connection=1000000
-metadata.request.timeout.ms=60000
-topic.metadata.refresh.interval.ms=300000
-
-[topic]
-request.required.acks=1
-request.timeout.ms=5000
-message.timeout.ms=300000
-queuing.strategy=fifo
-produce.offset.report=false
-partitioner=consistent_random
-offset.store.sync.interval.ms=-1
-offset.store.method=broker
-consume.callback.max.messages=0
-```
-
-For a detailed description of the property, see the following URL:
-https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
