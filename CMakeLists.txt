@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(packetproducer VERSION 0.2.1 LANGUAGES CXX)
+project(packetproducer VERSION 0.3.0 LANGUAGES CXX)
 
 message("== Project Name: ${PROJECT_NAME}")
 message("== Project Version: ${PROJECT_VERSION}")
