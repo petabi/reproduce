@@ -53,10 +53,12 @@ private:
   RdDeliveryReportCb rd_dr_cb;
   RdEventCb rd_event_cb;
   std::string queue_data;
+  size_t convert_queue_threshold{0};
   bool produce_core(const std::string& message) noexcept;
   void wait_queue(const int count) noexcept;
   void set_kafka_conf();
   void set_kafka_conf_file(const std::string& conf_file);
+  void set_kafka_threshold() noexcept;
   void show_kafka_conf() const;
 };
 

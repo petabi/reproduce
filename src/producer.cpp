@@ -101,6 +101,8 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
     set_kafka_conf_file(conf.kafka_conf);
   }
 
+  set_kafka_threshold();
+
   show_kafka_conf();
 
   string errstr;
@@ -220,6 +222,17 @@ void KafkaProducer::set_kafka_conf_file(const string& conf_file)
   conf_stream.close();
 }
 
+void KafkaProducer::set_kafka_threshold() noexcept
+{
+  const size_t redundancy = conf.queue_size;
+  string queue_buffering_max_kbytes;
+
+  kafka_gconf->get("queue.buffering.max.kbytes", queue_buffering_max_kbytes);
+  convert_queue_threshold =
+      (stoi(queue_buffering_max_kbytes) * 1024 - redundancy) / conf.queue_size;
+  Util::dprint(F, "convert.queue.threshold", "=", convert_queue_threshold);
+}
+
 void KafkaProducer::show_kafka_conf() const
 {
   if (!conf.mode_debug) {
@@ -277,12 +290,12 @@ bool KafkaProducer::produce_core(const string& message) noexcept
 bool KafkaProducer::produce(const string& message) noexcept
 {
   if (queue_data.length() + message.length() >= conf.queue_size) {
-    if (!produce_core(queue_data)) {
+    while (!produce_core(queue_data)) {
       // FIXME: error handling
     }
     queue_data.clear();
 
-    wait_queue(99999);
+    wait_queue(convert_queue_threshold);
   }
   queue_data += message + '\n';
 
