@@ -222,14 +222,29 @@ void KafkaProducer::set_kafka_conf_file(const string& conf_file)
   conf_stream.close();
 }
 
-void KafkaProducer::set_kafka_threshold() noexcept
+void KafkaProducer::set_kafka_threshold()
 {
-  const size_t redundancy = conf.queue_size;
-  string queue_buffering_max_kbytes;
+  const size_t redundancy_kbytes = conf.queue_size;
+  const size_t redundancy_counts = 1;
+  string queue_buffering_max_kbytes, queue_buffering_max_messages,
+      message_max_bytes;
 
   kafka_gconf->get("queue.buffering.max.kbytes", queue_buffering_max_kbytes);
+  kafka_gconf->get("queue.buffering.max.messages",
+                   queue_buffering_max_messages);
+  kafka_gconf->get("message.max.bytes", message_max_bytes);
+  if (conf.queue_size > stoul(message_max_bytes)) {
+    throw runtime_error("Queue size too large. Increase message.max.bytes "
+                        "value in the config file or lower queue value: " +
+                        to_string(conf.queue_size));
+  }
   convert_queue_threshold =
-      (stoi(queue_buffering_max_kbytes) * 1024 - redundancy) / conf.queue_size;
+      (stoul(queue_buffering_max_kbytes) * 1024 - redundancy_kbytes) /
+      conf.queue_size;
+  if (convert_queue_threshold > stoul(queue_buffering_max_messages)) {
+    convert_queue_threshold =
+        stoul(queue_buffering_max_messages) - redundancy_counts;
+  }
   Util::dprint(F, "convert.queue.threshold", "=", convert_queue_threshold);
 }
 

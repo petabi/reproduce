@@ -58,7 +58,7 @@ private:
   void wait_queue(const int count) noexcept;
   void set_kafka_conf();
   void set_kafka_conf_file(const std::string& conf_file);
-  void set_kafka_threshold() noexcept;
+  void set_kafka_threshold();
   void show_kafka_conf() const;
 };
 
