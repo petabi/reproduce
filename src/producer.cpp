@@ -222,6 +222,7 @@ void KafkaProducer::set_kafka_conf_file(const string& conf_file)
 
 void KafkaProducer::set_kafka_threshold()
 {
+  // TODO: optimize redundancy_kbytes, redundancy_counts
   const size_t redundancy_kbytes = conf.queue_size;
   const size_t redundancy_counts = 1;
   string queue_buffering_max_kbytes, queue_buffering_max_messages,
@@ -236,14 +237,13 @@ void KafkaProducer::set_kafka_threshold()
                         "value in the config file or lower queue value: " +
                         to_string(conf.queue_size));
   }
-  convert_queue_threshold =
+  queue_threshold =
       (stoul(queue_buffering_max_kbytes) * 1024 - redundancy_kbytes) /
       conf.queue_size;
-  if (convert_queue_threshold > stoul(queue_buffering_max_messages)) {
-    convert_queue_threshold =
-        stoul(queue_buffering_max_messages) - redundancy_counts;
+  if (queue_threshold > stoul(queue_buffering_max_messages)) {
+    queue_threshold = stoul(queue_buffering_max_messages) - redundancy_counts;
   }
-  Util::dprint(F, "convert.queue.threshold", "=", convert_queue_threshold);
+  Util::dprint(F, "queue_threshold=", queue_threshold);
 }
 
 void KafkaProducer::show_kafka_conf() const
@@ -308,7 +308,7 @@ bool KafkaProducer::produce(const string& message) noexcept
     }
     queue_data.clear();
 
-    wait_queue(convert_queue_threshold);
+    wait_queue(queue_threshold);
   }
   queue_data += message + '\n';
 
