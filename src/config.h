@@ -23,6 +23,7 @@ class Config {
 public:
   bool mode_debug{false}; // print debug messages
   bool mode_eval{false};  // report statistics
+  bool mode_grow{false};  // convert while tracking the growing file
   size_t count_send{0};   // count to send
   size_t count_skip{0};   // count to skip
   size_t queue_size{0};   // how many bytes send once

@@ -52,6 +52,9 @@ void Controller::run()
       Util::eprint(F, "Failed to convert input data");
       break;
     } else if (ret == ControllerResult::NO_MORE) {
+      if (conf.mode_grow) {
+        continue;
+      }
       break;
     } else {
       break;
@@ -225,30 +228,35 @@ void Controller::close_log()
 
 ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 {
+  size_t offset = ftell(pcapfile);
   size_t pp_len = sizeof(pcap_pkthdr);
   if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
+    fseek(pcapfile, offset, SEEK_SET);
     return ControllerResult::NO_MORE;
   }
 
-#if 0
-  // we assume packet length < buffer length
-  if (packet_len >= imessage_len) {
-    throw runtime_error("Packet buffer too small");
-  }
-#endif
-
-  size_t read_len;
+  size_t read_len = 0, remain_len = 0;
   auto* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
   if (imessage_len < pp->caplen + pp_len) {
+    if (pp->caplen < 0 || pp->caplen > imessage_len * 1000) {
+      Util::dprint(
+          F, "The captured packet size is abnormally large: ", pp->caplen);
+      return ControllerResult::FAIL;
+    }
     read_len = imessage_len - pp_len - 1;
+    remain_len = pp->caplen - read_len;
   } else {
     read_len = pp->caplen;
+    remain_len = 0;
   }
+
   if (fread(reinterpret_cast<char*>(imessage + static_cast<int>(pp_len)), 1,
             read_len, pcapfile) != read_len) {
-    return ControllerResult::FAIL;
+    fseek(pcapfile, offset, SEEK_SET);
+    return ControllerResult::NO_MORE;
   }
   imessage_len = read_len;
+  fseek(pcapfile, remain_len, SEEK_CUR);
 
   return ControllerResult::SUCCESS;
 }
@@ -258,6 +266,7 @@ ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
   string line;
   if (!logfile.getline(imessage, imessage_len)) {
     if (logfile.eof()) {
+      logfile.clear();
       return ControllerResult::NO_MORE;
     } else if (logfile.bad() || logfile.fail()) {
       return ControllerResult::FAIL;

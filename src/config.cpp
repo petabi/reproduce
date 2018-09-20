@@ -23,6 +23,7 @@ void Config::help() const noexcept
   cout << "  -d: debug mode. print debug messages\n";
   cout << "  -e: evaluation mode. report statistics\n";
   cout << "  -f: tcpdump filter (when input is PCAP or NIC)\n";
+  cout << "  -g: track the growing input file\n";
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/NIC]\n";
   cout << "      If no 'i' option is given, sample data is converted\n";
@@ -39,7 +40,7 @@ void Config::help() const noexcept
 bool Config::set(int argc, char** argv)
 {
   int o;
-  while ((o = getopt(argc, argv, "b:c:defhi:k:o:q:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:defghi:k:o:q:s:t:")) != -1) {
     switch (o) {
     case 'b':
       kafka_broker = optarg;
@@ -56,6 +57,9 @@ bool Config::set(int argc, char** argv)
     case 'f':
       // TODO: not implemented yet
       packet_filter = optarg;
+      break;
+    case 'g':
+      mode_grow = true;
       break;
     case 'h':
       help();
