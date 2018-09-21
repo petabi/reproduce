@@ -23,7 +23,7 @@ void Config::help() const noexcept
   cout << "  -d: debug mode. print debug messages\n";
   cout << "  -e: evaluation mode. report statistics\n";
   cout << "  -f: tcpdump filter (when input is PCAP or NIC)\n";
-  cout << "  -g: track the growing input file\n";
+  cout << "  -g: follow the growing input file\n";
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/NIC]\n";
   cout << "      If no 'i' option is given, sample data is converted\n";

@@ -1,12 +1,16 @@
+#include <chrono>
+#include <csignal>
 #include <cstdarg>
 #include <cstring>
 #include <functional>
+#include <thread>
 
 #include "controller.h"
 
 using namespace std;
 
-static constexpr size_t MESSAGE_SIZE = 1024;
+static constexpr size_t MESSAGE_SIZE = 4096;
+volatile sig_atomic_t stop = 0;
 
 Controller::Controller(Config _conf) : conf(move(_conf))
 {
@@ -33,6 +37,12 @@ void Controller::run()
   ControllerResult ret;
   size_t sent_count;
 
+  if (signal(SIGINT, signal_handler) == SIG_ERR ||
+      signal(SIGTERM, signal_handler) == SIG_ERR) {
+    Util::eprint(F, "Failed to register signal");
+    return;
+  }
+
   if (conf.count_skip) {
     if (!invoke(skip_data, this, conf.count_skip)) {
       Util::dprint(F, "failed to skip(", conf.count_skip, ")");
@@ -42,7 +52,7 @@ void Controller::run()
   Util::dprint(F, "start");
   report.start();
 
-  while (true) {
+  while (!stop) {
     imessage_len = MESSAGE_SIZE;
     ret = invoke(get_next_data, this, imessage, imessage_len);
     if (ret == ControllerResult::SUCCESS) {
@@ -53,6 +63,8 @@ void Controller::run()
       break;
     } else if (ret == ControllerResult::NO_MORE) {
       if (conf.mode_grow) {
+        // TODO: optimize time interval
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         continue;
       }
       break;
@@ -263,16 +275,33 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 
 ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
 {
+  static size_t count = 0;
+  static bool trunc = false;
   string line;
+
+  count++;
   if (!logfile.getline(imessage, imessage_len)) {
     if (logfile.eof()) {
       logfile.clear();
       return ControllerResult::NO_MORE;
-    } else if (logfile.bad() || logfile.fail()) {
+    }
+    if (logfile.bad()) {
       return ControllerResult::FAIL;
     }
+    if (logfile.fail()) {
+      Util::eprint(F, "The message is truncated [", count, " line(",
+                   imessage_len, " bytes)]");
+      trunc = true;
+      logfile.clear();
+    }
+  } else {
+    imessage_len = strlen(imessage);
+    if (trunc == true) {
+      Util::eprint(F, "The message is truncated [", count, " line(",
+                   imessage_len, " bytes)]");
+      trunc = false;
+    }
   }
-  imessage_len = strlen(imessage);
 
   return ControllerResult::SUCCESS;
 }
@@ -335,5 +364,7 @@ bool Controller::check_count(const size_t sent_count) const noexcept
 
   return true;
 }
+
+void Controller::signal_handler(int signal) { stop = 1; }
 
 // vim: et:ts=2:sw=2
