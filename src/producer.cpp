@@ -26,14 +26,12 @@ struct KafkaConf {
 static const array<KafkaConf, 4> kafka_conf = {{
     {KafkaConfType::GLOBAL, "delivery.report.only.error", "true", "false",
      "true", "false", "Only provide delivery reports for failed messages"},
-
-    // FIXME: we need test
     {KafkaConfType::GLOBAL, "message.max.bytes", "1000000", "1000",
      "1000000000", "1000000", "Maximum Kafka protocol request message size"},
-    {KafkaConfType::GLOBAL, "queue.buffering.max.messages", "100000", "1",
+    {KafkaConfType::GLOBAL, "queue.buffering.max.messages", "10000000", "1",
      "10000000", "100000",
      "Maximum number of messages allowed on the producer queue"},
-    {KafkaConfType::GLOBAL, "queue.buffering.max.kbytes", "1048576", "1",
+    {KafkaConfType::GLOBAL, "queue.buffering.max.kbytes", "2097151", "1",
      "2097151", "1048576",
      "Maximum total message size sum allowed on the producer queue"},
 
@@ -100,6 +98,8 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
   if (!conf.kafka_conf.empty()) {
     set_kafka_conf_file(conf.kafka_conf);
   }
+
+  set_kafka_threshold();
 
   show_kafka_conf();
 
@@ -220,6 +220,32 @@ void KafkaProducer::set_kafka_conf_file(const string& conf_file)
   conf_stream.close();
 }
 
+void KafkaProducer::set_kafka_threshold()
+{
+  // TODO: optimize redundancy_kbytes, redundancy_counts
+  const size_t redundancy_kbytes = conf.queue_size;
+  const size_t redundancy_counts = 1;
+  string queue_buffering_max_kbytes, queue_buffering_max_messages,
+      message_max_bytes;
+
+  kafka_gconf->get("queue.buffering.max.kbytes", queue_buffering_max_kbytes);
+  kafka_gconf->get("queue.buffering.max.messages",
+                   queue_buffering_max_messages);
+  kafka_gconf->get("message.max.bytes", message_max_bytes);
+  if (conf.queue_size > stoul(message_max_bytes)) {
+    throw runtime_error("Queue size too large. Increase message.max.bytes "
+                        "value in the config file or lower queue value: " +
+                        to_string(conf.queue_size));
+  }
+  queue_threshold =
+      (stoul(queue_buffering_max_kbytes) * 1024 - redundancy_kbytes) /
+      conf.queue_size;
+  if (queue_threshold > stoul(queue_buffering_max_messages)) {
+    queue_threshold = stoul(queue_buffering_max_messages) - redundancy_counts;
+  }
+  Util::dprint(F, "queue_threshold=", queue_threshold);
+}
+
 void KafkaProducer::show_kafka_conf() const
 {
   if (!conf.mode_debug) {
@@ -277,12 +303,12 @@ bool KafkaProducer::produce_core(const string& message) noexcept
 bool KafkaProducer::produce(const string& message) noexcept
 {
   if (queue_data.length() + message.length() >= conf.queue_size) {
-    if (!produce_core(queue_data)) {
+    while (!produce_core(queue_data)) {
       // FIXME: error handling
     }
     queue_data.clear();
 
-    wait_queue(99999);
+    wait_queue(queue_threshold);
   }
   queue_data += message + '\n';
 
