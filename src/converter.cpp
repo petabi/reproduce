@@ -138,7 +138,7 @@ bool PacketConverter::l3_ipv4_process(unsigned char* offset)
              iph->ip_src[1], iph->ip_src[2], iph->ip_src[3], iph->ip_dst[0],
              iph->ip_dst[1], iph->ip_dst[2], iph->ip_dst[3]);
 
-  opt = IP_HL(iph->ip_vhl) * 4 - sizeof(IP_MINLEN);
+  opt = IP_HL(iph->ip_vhl) * 4 - IP_MINLEN;
   if (opt != 0) {
     offset += opt;
     ADD_STREAM("%s ", "ip_opt");

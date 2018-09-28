@@ -9,7 +9,9 @@
 
 using namespace std;
 
-static constexpr size_t MESSAGE_SIZE = 4096;
+static constexpr size_t MAX_PACKET_LENGTH = 65535;
+static constexpr size_t MESSAGE_SIZE =
+    MAX_PACKET_LENGTH + sizeof(pcap_pkthdr) + 1;
 volatile sig_atomic_t stop = 0;
 
 Controller::Controller(Config _conf) : conf(move(_conf))
@@ -240,35 +242,29 @@ void Controller::close_log()
 
 ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 {
-  size_t offset = ftell(pcapfile);
+  size_t offset = 0;
   size_t pp_len = sizeof(pcap_pkthdr);
-  if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
-    fseek(pcapfile, offset, SEEK_SET);
+
+  offset = fread(imessage, 1, pp_len, pcapfile);
+  if (offset != pp_len) {
+    fseek(pcapfile, -offset, SEEK_CUR);
     return ControllerResult::NO_MORE;
   }
 
-  size_t read_len = 0, remain_len = 0;
   auto* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
-  if (imessage_len < pp->caplen + pp_len) {
-    if (pp->caplen < 0 || pp->caplen > imessage_len * 1000) {
-      Util::dprint(
-          F, "The captured packet size is abnormally large: ", pp->caplen);
-      return ControllerResult::FAIL;
-    }
-    read_len = imessage_len - pp_len - 1;
-    remain_len = pp->caplen - read_len;
-  } else {
-    read_len = pp->caplen;
-    remain_len = 0;
+  if (pp->caplen > MAX_PACKET_LENGTH) {
+    Util::dprint(F,
+                 "The captured packet size is abnormally large: ", pp->caplen);
+    return ControllerResult::FAIL;
   }
 
-  if (fread(reinterpret_cast<char*>(imessage + static_cast<int>(pp_len)), 1,
-            read_len, pcapfile) != read_len) {
-    fseek(pcapfile, offset, SEEK_SET);
+  offset = fread(reinterpret_cast<char*>(imessage + static_cast<int>(pp_len)),
+                 1, pp->caplen, pcapfile);
+  if (offset != pp->caplen) {
+    fseek(pcapfile, -(offset + pp_len), SEEK_CUR);
     return ControllerResult::NO_MORE;
   }
-  imessage_len = read_len;
-  fseek(pcapfile, remain_len, SEEK_CUR);
+  imessage_len = pp->caplen;
 
   return ControllerResult::SUCCESS;
 }
