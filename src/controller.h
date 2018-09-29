@@ -49,6 +49,7 @@ private:
   bool skip_log(const size_t count_skip);
   bool skip_null(const size_t count_skip);
   bool check_count(const size_t sent_count) const noexcept;
+  static void signal_handler(int signal);
 };
 
 #endif

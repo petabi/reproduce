@@ -51,6 +51,7 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
   -d: debug mode. print debug messages
   -e: evaluation mode. report statistics
   -f: tcpdump filter (when input is PCAP or NIC)
+  -g: follow the growing input file
   -h: help
   -i: input [PCAPFILE/LOGFILE/NIC]
       If no 'i' option is given, sample data is converted
@@ -97,6 +98,8 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
     * ```./packetproducer -i test.pcap -o result.txt```
 * Skip 10000 packets and convert 1000 packets in pcap file and evaluate performance:
     * ```./packetproducer -i test.pcap -s 10000 -c 1000 -o none -e```
+* Convert it while following, If the content of the input file continue to grow
+    * ```./packetproducer -i test.pcap -g```
 
 ### Report Example
 

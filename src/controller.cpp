@@ -1,12 +1,18 @@
+#include <chrono>
+#include <csignal>
 #include <cstdarg>
 #include <cstring>
 #include <functional>
+#include <thread>
 
 #include "controller.h"
 
 using namespace std;
 
-static constexpr size_t MESSAGE_SIZE = 1024;
+static constexpr size_t MAX_PACKET_LENGTH = 65535;
+static constexpr size_t MESSAGE_SIZE =
+    MAX_PACKET_LENGTH + sizeof(pcap_pkthdr) + 1;
+volatile sig_atomic_t stop = 0;
 
 Controller::Controller(Config _conf) : conf(move(_conf))
 {
@@ -33,6 +39,12 @@ void Controller::run()
   ControllerResult ret;
   size_t sent_count;
 
+  if (signal(SIGINT, signal_handler) == SIG_ERR ||
+      signal(SIGTERM, signal_handler) == SIG_ERR) {
+    Util::eprint(F, "Failed to register signal");
+    return;
+  }
+
   if (conf.count_skip) {
     if (!invoke(skip_data, this, conf.count_skip)) {
       Util::dprint(F, "failed to skip(", conf.count_skip, ")");
@@ -42,7 +54,7 @@ void Controller::run()
   Util::dprint(F, "start");
   report.start();
 
-  while (true) {
+  while (!stop) {
     imessage_len = MESSAGE_SIZE;
     ret = invoke(get_next_data, this, imessage, imessage_len);
     if (ret == ControllerResult::SUCCESS) {
@@ -52,6 +64,11 @@ void Controller::run()
       Util::eprint(F, "Failed to convert input data");
       break;
     } else if (ret == ControllerResult::NO_MORE) {
+      if (conf.mode_grow) {
+        // TODO: optimize time interval
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        continue;
+      }
       break;
     } else {
       break;
@@ -225,45 +242,62 @@ void Controller::close_log()
 
 ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 {
+  size_t offset = 0;
   size_t pp_len = sizeof(pcap_pkthdr);
-  if (fread(imessage, 1, pp_len, pcapfile) != pp_len) {
+
+  offset = fread(imessage, 1, pp_len, pcapfile);
+  if (offset != pp_len) {
+    fseek(pcapfile, -offset, SEEK_CUR);
     return ControllerResult::NO_MORE;
   }
 
-#if 0
-  // we assume packet length < buffer length
-  if (packet_len >= imessage_len) {
-    throw runtime_error("Packet buffer too small");
-  }
-#endif
-
-  size_t read_len;
   auto* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
-  if (imessage_len < pp->caplen + pp_len) {
-    read_len = imessage_len - pp_len - 1;
-  } else {
-    read_len = pp->caplen;
-  }
-  if (fread(reinterpret_cast<char*>(imessage + static_cast<int>(pp_len)), 1,
-            read_len, pcapfile) != read_len) {
+  if (pp->caplen > MAX_PACKET_LENGTH) {
+    Util::dprint(F,
+                 "The captured packet size is abnormally large: ", pp->caplen);
     return ControllerResult::FAIL;
   }
-  imessage_len = read_len;
+
+  offset = fread(reinterpret_cast<char*>(imessage + static_cast<int>(pp_len)),
+                 1, pp->caplen, pcapfile);
+  if (offset != pp->caplen) {
+    fseek(pcapfile, -(offset + pp_len), SEEK_CUR);
+    return ControllerResult::NO_MORE;
+  }
+  imessage_len = pp->caplen;
 
   return ControllerResult::SUCCESS;
 }
 
 ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
 {
+  static size_t count = 0;
+  static bool trunc = false;
   string line;
+
+  count++;
   if (!logfile.getline(imessage, imessage_len)) {
     if (logfile.eof()) {
+      logfile.clear();
       return ControllerResult::NO_MORE;
-    } else if (logfile.bad() || logfile.fail()) {
+    }
+    if (logfile.bad()) {
       return ControllerResult::FAIL;
     }
+    if (logfile.fail()) {
+      Util::eprint(F, "The message is truncated [", count, " line(",
+                   imessage_len, " bytes)]");
+      trunc = true;
+      logfile.clear();
+    }
+  } else {
+    imessage_len = strlen(imessage);
+    if (trunc == true) {
+      Util::eprint(F, "The message is truncated [", count, " line(",
+                   imessage_len, " bytes)]");
+      trunc = false;
+    }
   }
-  imessage_len = strlen(imessage);
 
   return ControllerResult::SUCCESS;
 }
@@ -326,5 +360,7 @@ bool Controller::check_count(const size_t sent_count) const noexcept
 
   return true;
 }
+
+void Controller::signal_handler(int signal) { stop = 1; }
 
 // vim: et:ts=2:sw=2
