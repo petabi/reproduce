@@ -25,6 +25,7 @@ using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
 using u_short = unsigned short;
 
+#if 0
 struct pcap_file_header {
   bpf_u_int32 magic;
   u_short version_major;
@@ -34,16 +35,17 @@ struct pcap_file_header {
   bpf_u_int32 snaplen;  /* max length saved portion of each pkt */
   bpf_u_int32 linktype; /* data link type (LINKTYPE_*) */
 };
+#endif
 
-struct pcap_timeval {
+struct pcap_timeval_ {
   bpf_int32 tv_sec;  /* seconds */
   bpf_int32 tv_usec; /* microseconds */
 };
 
-struct pcap_pkthdr {
-  struct pcap_timeval ts; /* time stamp */
-  bpf_u_int32 caplen;     /* length of portion present */
-  bpf_u_int32 len;        /* length this packet (off wire) */
+struct pcap_pkthdr_ {
+  struct pcap_timeval_ ts; /* time stamp */
+  bpf_u_int32 caplen;      /* length of portion present */
+  bpf_u_int32 len;         /* length this packet (off wire) */
 };
 
 class PacketConverter : public Converter {
