@@ -118,7 +118,7 @@ InputType Controller::get_input_type() const
     pcap_t* pcd_chk;
     char errbuf[PCAP_ERRBUF_SIZE];
     pcd_chk = pcap_open_live(conf.input.c_str(), BUFSIZ, 0, -1, errbuf);
-    if (pcd_chk != NULL) {
+    if (pcd_chk != nullptr) {
       pcap_close(pcd_chk);
       return InputType::NIC;
     } else {
@@ -285,7 +285,7 @@ ControllerResult Controller::get_next_pcap_nic(char* imessage,
   pcap_pkthdr_ myhdr;
   const u_char* pkt_data;
   size_t pp_len = sizeof(pcap_pkthdr_);
-  u_char* ptr = reinterpret_cast<u_char*>(imessage);
+  auto ptr = reinterpret_cast<u_char*>(imessage);
   int res = 0;
 
   while (res == 0) {
