@@ -22,7 +22,6 @@ Controller::Controller(Config _conf) : conf(move(_conf))
   if (!set_producer()) {
     throw runtime_error("Failed to set the producer");
   }
-  report.conf = conf;
 }
 
 Controller::~Controller()
@@ -38,6 +37,7 @@ void Controller::run()
   size_t imessage_len = 0, omessage_len = 0;
   ControllerResult ret;
   size_t sent_count;
+  Report report(&conf);
 
   if (signal(SIGINT, signal_handler) == SIG_ERR ||
       signal(SIGTERM, signal_handler) == SIG_ERR) {
@@ -182,15 +182,15 @@ bool Controller::set_producer()
   conf.output_type = get_output_type();
   switch (conf.output_type) {
   case OutputType::KAFKA:
-    prod = make_unique<KafkaProducer>(conf);
+    prod = make_unique<KafkaProducer>(&conf);
     Util::dprint(F, "output type: KAFKA");
     break;
   case OutputType::FILE:
-    prod = make_unique<FileProducer>(conf);
+    prod = make_unique<FileProducer>(&conf);
     Util::dprint(F, "output type: FILE");
     break;
   case OutputType::NONE:
-    prod = make_unique<NullProducer>(conf);
+    prod = make_unique<NullProducer>(&conf);
     Util::dprint(F, "output type: NONE");
     break;
   default:

@@ -10,13 +10,35 @@ static constexpr double MBYTE = KBYTE * KBYTE;
 static constexpr double KPACKET = 1000.0;
 static constexpr double MPACKET = KPACKET * KPACKET;
 
+Report::Report(Config* _conf) { conf = _conf; }
+
 void Report::start() noexcept
 {
-  if (!conf.mode_eval) {
+  if (!conf->mode_eval) {
     return;
   }
 
   time_start = clock();
+}
+
+void Report::calculate() noexcept
+{
+  time_now = clock();
+  time_diff = (double)(time_now - time_start) / CLOCKS_PER_SEC;
+
+  if (time_diff) {
+    perf_kbps = (double)sent_byte / KBYTE / time_diff;
+    perf_kpps = (double)sent_count / KPACKET / time_diff;
+  }
+  orig_byte_avg = (double)orig_byte / sent_count;
+  sent_byte_avg = (double)sent_byte / sent_count;
+
+  conf->queue_size = static_cast<int>(perf_kbps);
+  if (conf->queue_size < queue_size_min) {
+    conf->queue_size = queue_size_min;
+  } else if (conf->queue_size > queue_size_max) {
+    conf->queue_size = queue_size_max;
+  }
 }
 
 void Report::process(const size_t orig_length,
@@ -39,40 +61,36 @@ void Report::process(const size_t orig_length,
   sent_byte += sent_length;
 
   sent_count++;
+
+  if (conf->mode_auto_queue) {
+    calculate();
+  }
 }
 
 void Report::end() noexcept
 {
-  if (!conf.mode_eval) {
+  if (!conf->mode_eval) {
     return;
   }
 
-  time_now = clock();
-  time_diff = (double)(time_now - time_start) / CLOCKS_PER_SEC;
-
-  if (time_diff) {
-    perf_kbps = (double)sent_byte / KBYTE / time_diff;
-    perf_kpps = (double)sent_count / KPACKET / time_diff;
-  }
-  orig_byte_avg = (double)orig_byte / sent_count;
-  sent_byte_avg = (double)sent_byte / sent_count;
+  calculate();
 
   cout.precision(2);
   cout << fixed;
   cout << "--------------------------------------------------\n";
   struct stat st;
-  switch (conf.input_type) {
+  switch (conf->input_type) {
   case InputType::PCAP:
-    cout << "Input(PCAP)\t: " << conf.input;
-    if (stat(conf.input.c_str(), &st) != -1) {
+    cout << "Input(PCAP)\t: " << conf->input;
+    if (stat(conf->input.c_str(), &st) != -1) {
       cout << "(" << (double)st.st_size / MBYTE << "M)\n";
     } else {
       cout << '\n';
     }
     break;
   case InputType::LOG:
-    cout << "Input(LOG)\t: " << conf.input;
-    if (stat(conf.input.c_str(), &st) != -1) {
+    cout << "Input(LOG)\t: " << conf->input;
+    if (stat(conf->input.c_str(), &st) != -1) {
       cout << "(" << (double)st.st_size / MBYTE << "M)\n";
     } else {
       cout << '\n';
@@ -84,18 +102,18 @@ void Report::end() noexcept
   default:
     break;
   }
-  switch (conf.output_type) {
+  switch (conf->output_type) {
   case OutputType::FILE:
-    cout << "Output(FILE)\t: " << conf.output;
-    if (stat(conf.input.c_str(), &st) != -1) {
+    cout << "Output(FILE)\t: " << conf->output;
+    if (stat(conf->input.c_str(), &st) != -1) {
       cout << "(" << (double)st.st_size / MBYTE << "M)\n";
     } else {
       cout << "(invalid)\n";
     }
     break;
   case OutputType::KAFKA:
-    cout << "Output(KAFKA)\t: " << conf.kafka_broker << "(" << conf.kafka_topic
-         << ")\n";
+    cout << "Output(KAFKA)\t: " << conf->kafka_broker << "("
+         << conf->kafka_topic << ")\n";
     break;
   case OutputType::NONE:
     cout << "Output(NONE)\t: \n";

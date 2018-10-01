@@ -78,9 +78,9 @@ void RdEventCb::event_cb(RdKafka::Event& event)
   }
 }
 
-KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
+KafkaProducer::KafkaProducer(Config* _conf) : conf(_conf)
 {
-  if (conf.kafka_broker.empty() || conf.kafka_topic.empty()) {
+  if (conf->kafka_broker.empty() || conf->kafka_topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
   }
 
@@ -95,12 +95,11 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
   }
 
   set_kafka_conf();
-  if (!conf.kafka_conf.empty()) {
-    set_kafka_conf_file(conf.kafka_conf);
+  if (!conf->kafka_conf.empty()) {
+    set_kafka_conf_file(conf->kafka_conf);
   }
 
   set_kafka_threshold();
-
   show_kafka_conf();
 
   string errstr;
@@ -113,7 +112,7 @@ KafkaProducer::KafkaProducer(Config _conf) : conf(move(_conf))
 
   // Create topic handle
   kafka_topic.reset(RdKafka::Topic::create(
-      kafka_producer.get(), conf.kafka_topic, kafka_tconf.get(), errstr));
+      kafka_producer.get(), conf->kafka_topic, kafka_tconf.get(), errstr));
   if (!kafka_topic) {
     throw runtime_error("Failed to create kafka topic handle: " + errstr);
   }
@@ -124,7 +123,7 @@ void KafkaProducer::set_kafka_conf()
   string errstr;
 
   // Set configuration properties
-  if (kafka_gconf->set("metadata.broker.list", conf.kafka_broker, errstr) !=
+  if (kafka_gconf->set("metadata.broker.list", conf->kafka_broker, errstr) !=
       RdKafka::Conf::CONF_OK) {
     throw runtime_error("Failed to set config: metadata.broker.list: " +
                         errstr);
@@ -223,7 +222,7 @@ void KafkaProducer::set_kafka_conf_file(const string& conf_file)
 void KafkaProducer::set_kafka_threshold()
 {
   // TODO: optimize redundancy_kbytes, redundancy_counts
-  const size_t redundancy_kbytes = conf.queue_size;
+  const size_t redundancy_kbytes = conf->queue_size;
   const size_t redundancy_counts = 1;
   string queue_buffering_max_kbytes, queue_buffering_max_messages,
       message_max_bytes;
@@ -232,14 +231,14 @@ void KafkaProducer::set_kafka_threshold()
   kafka_gconf->get("queue.buffering.max.messages",
                    queue_buffering_max_messages);
   kafka_gconf->get("message.max.bytes", message_max_bytes);
-  if (conf.queue_size > stoul(message_max_bytes)) {
+  if (conf->queue_size > stoul(message_max_bytes)) {
     throw runtime_error("Queue size too large. Increase message.max.bytes "
                         "value in the config file or lower queue value: " +
-                        to_string(conf.queue_size));
+                        to_string(conf->queue_size));
   }
   queue_threshold =
       (stoul(queue_buffering_max_kbytes) * 1024 - redundancy_kbytes) /
-      conf.queue_size;
+      conf->queue_size;
   if (queue_threshold > stoul(queue_buffering_max_messages)) {
     queue_threshold = stoul(queue_buffering_max_messages) - redundancy_counts;
   }
@@ -248,7 +247,7 @@ void KafkaProducer::set_kafka_threshold()
 
 void KafkaProducer::show_kafka_conf() const
 {
-  if (!conf.mode_debug) {
+  if (!conf->mode_debug) {
     return;
   }
 
@@ -293,7 +292,9 @@ bool KafkaProducer::produce_core(const string& message) noexcept
     return false;
   }
 
-  Util::dprint(F, "produced message: ", message.size(), " bytes");
+  Util::dprint(F, "produced message: ", message.size(), " bytes",
+               " (queue_size/threshold: ", conf->queue_size, "/",
+               queue_threshold, ")");
 
   kafka_producer->poll(0);
 
@@ -302,7 +303,7 @@ bool KafkaProducer::produce_core(const string& message) noexcept
 
 bool KafkaProducer::produce(const string& message) noexcept
 {
-  if (queue_data.length() + message.length() >= conf.queue_size) {
+  if (queue_data.length() + message.length() >= conf->queue_size) {
     while (!produce_core(queue_data)) {
       // FIXME: error handling
     }
@@ -332,11 +333,11 @@ KafkaProducer::~KafkaProducer()
  * FileProducer
  */
 
-FileProducer::FileProducer(Config _conf) : conf(move(_conf))
+FileProducer::FileProducer(Config* _conf) : conf(_conf)
 {
-  if (!conf.output.empty()) {
+  if (!conf->output.empty()) {
     if (!open()) {
-      throw runtime_error("Failed to open output file: " + conf.output);
+      throw runtime_error("Failed to open output file: " + conf->output);
     }
   }
 }
@@ -352,6 +353,7 @@ bool FileProducer::produce(const string& message) noexcept
 {
   file << message << "\n";
   file.flush();
+
   // FIXME: check error?
 
   return true;
@@ -359,9 +361,9 @@ bool FileProducer::produce(const string& message) noexcept
 
 bool FileProducer::open() noexcept
 {
-  file.open(conf.output, ios::out);
+  file.open(conf->output, ios::out);
   if (!file.is_open()) {
-    Util::eprint(F, "Failed to open file: ", conf.output);
+    Util::eprint(F, "Failed to open file: ", conf->output);
     return false;
   }
 
@@ -372,7 +374,7 @@ bool FileProducer::open() noexcept
  * NullProducer
  */
 
-NullProducer::NullProducer(Config _conf) : conf(move(_conf)) {}
+NullProducer::NullProducer(Config* _conf) : conf(_conf) {}
 
 bool NullProducer::produce(const string& message) noexcept { return true; }
 

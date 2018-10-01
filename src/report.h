@@ -5,18 +5,20 @@
 
 class Report {
 public:
-  Report() = default;
+  Report() = delete;
+  Report(Config*);
   Report(const Report&) = delete;
   Report& operator=(const Report&) = delete;
   Report(Report&&) = delete;
   Report& operator=(Report&&) = delete;
   ~Report() = default;
   void start() noexcept;
+  void calculate() noexcept;
   void process(const size_t orig_length, const size_t sent_length) noexcept;
   void end() noexcept;
   void fail() noexcept;
   size_t get_sent_count() const noexcept;
-  Config conf;
+  Config* conf;
 
 private:
   size_t orig_byte{0};

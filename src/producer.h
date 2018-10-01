@@ -36,7 +36,7 @@ public:
 class KafkaProducer : public Producer {
 public:
   KafkaProducer() = delete;
-  KafkaProducer(Config);
+  KafkaProducer(Config*);
   KafkaProducer(const KafkaProducer&) = delete;
   KafkaProducer& operator=(const KafkaProducer&) = delete;
   KafkaProducer(KafkaProducer&&) = delete;
@@ -45,7 +45,7 @@ public:
   bool produce(const std::string& message) noexcept override;
 
 private:
-  Config conf;
+  Config* conf;
   std::unique_ptr<RdKafka::Conf> kafka_gconf;
   std::unique_ptr<RdKafka::Conf> kafka_tconf;
   std::unique_ptr<RdKafka::Topic> kafka_topic;
@@ -69,7 +69,7 @@ private:
 class FileProducer : public Producer {
 public:
   FileProducer() = delete;
-  FileProducer(Config);
+  FileProducer(Config*);
   FileProducer(const FileProducer&) = delete;
   FileProducer& operator=(const FileProducer&) = delete;
   FileProducer(FileProducer&&) = delete;
@@ -78,7 +78,7 @@ public:
   bool produce(const std::string& message) noexcept override;
 
 private:
-  Config conf;
+  Config* conf;
   std::ofstream file;
   bool open() noexcept;
 };
@@ -90,7 +90,7 @@ private:
 class NullProducer : public Producer {
 public:
   NullProducer() = delete;
-  NullProducer(Config);
+  NullProducer(Config*);
   NullProducer(const NullProducer&) = delete;
   NullProducer& operator=(const NullProducer&) = delete;
   NullProducer(NullProducer&&) = delete;
@@ -99,7 +99,7 @@ public:
   bool produce(const std::string& message) noexcept override;
 
 private:
-  Config conf;
+  Config* conf;
 };
 
 #endif

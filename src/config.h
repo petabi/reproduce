@@ -5,6 +5,9 @@
 
 #include "util.h"
 
+constexpr size_t queue_size_min = 100;
+constexpr size_t queue_size_max = 900000;
+
 enum class InputType {
   NONE,
   PCAP,
@@ -21,14 +24,15 @@ enum class OutputType {
 
 class Config {
 public:
-  bool mode_debug{false}; // print debug messages
-  bool mode_eval{false};  // report statistics
-  bool mode_grow{false};  // convert while tracking the growing file
-  size_t count_send{0};   // count to send
-  size_t count_skip{0};   // count to skip
-  size_t queue_size{0};   // how many bytes send once
-  std::string input;      // input: packet/log/none
-  std::string output;     // output: kafka/file/none
+  bool mode_debug{false};     // print debug messages
+  bool mode_eval{false};      // report statistics
+  bool mode_grow{false};      // convert while tracking the growing file
+  bool mode_auto_queue{true}; // auto queue size
+  size_t count_send{0};       // count to send
+  size_t count_skip{0};       // count to skip
+  size_t queue_size{0};       // how many bytes send once
+  std::string input;          // input: packet/log/none
+  std::string output;         // output: kafka/file/none
   InputType input_type;
   OutputType output_type;
   std::string packet_filter;

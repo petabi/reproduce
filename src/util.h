@@ -34,7 +34,10 @@ private:
   static bool debug;
 };
 
-template <typename T> void Util::print(T tail) { std::cout << tail << "\n"; }
+template <typename T> void Util::print(T tail)
+{
+  std::cout << tail << "\n" << std::flush;
+}
 
 template <typename T, typename... Ts> void Util::print(T head, Ts... tail)
 {
@@ -48,7 +51,7 @@ template <typename T> void Util::dprint(const char* name, T head)
     return;
   }
 
-  std::cout << "[DEBUG] " << name << ": " << head << "\n";
+  std::cout << "[DEBUG] " << name << ": " << head << "\n" << std::flush;
 }
 
 template <typename T, typename... Ts>
@@ -64,7 +67,7 @@ void Util::dprint(const char* name, T head, Ts... tail)
 
 template <typename T> void Util::eprint(const char* name, T tail)
 {
-  std::cout << "[ERROR] " << name << ": " << tail << "\n";
+  std::cout << "[ERROR] " << name << ": " << tail << "\n" << std::flush;
 }
 
 template <typename T, typename... Ts>

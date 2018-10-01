@@ -10,7 +10,6 @@ using namespace std;
 
 static constexpr char default_kafka_broker[] = "localhost:9092";
 static constexpr char default_kafka_topic[] = "pcap";
-static constexpr size_t default_queue_size = 900000;
 
 void Config::help() const noexcept
 {
@@ -26,12 +25,16 @@ void Config::help() const noexcept
   cout << "  -g: follow the growing input file\n";
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/NIC]\n";
-  cout << "      If no 'i' option is given, sample data is converted\n";
-  cout << "  -k: kafka config file (Ex: kafka.conf)\n";
+  cout << "      If no 'i' option is given, input is internal sample data\n";
+  cout << "  -k: kafka config file"
+       << " (Ex: kafka.conf)\n"
+       << "      it overrides default kafka config to user kafka config\n";
   cout << "  -o: output [TEXTFILE/none]\n";
-  cout << "      If no 'o' option is given, it will be sent via kafka\n";
-  cout << "  -q: queue size in byte. how many bytes send once"
-       << " (default: " << default_queue_size << ")\n";
+  cout << "      If no 'o' option is given, output is kafka\n";
+  cout << "  -q: queue size. how many bytes send once\n"
+       << "      (default: auto adjustment in proportion to bandwidth,\n"
+       << "       min/max: " << queue_size_min << "~" << queue_size_max
+       << ")\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
        << " (default: " << default_kafka_topic << ")\n";
@@ -109,8 +112,10 @@ void Config::set_default() noexcept
     kafka_topic = default_kafka_topic;
   }
 
-  if (queue_size == 0) {
-    queue_size = default_queue_size;
+  if (queue_size > queue_size_min) {
+    mode_auto_queue = false;
+  } else {
+    queue_size = queue_size_min;
   }
 }
 
@@ -129,6 +134,8 @@ void Config::show() const noexcept
 {
   Util::dprint(F, "mode_debug=", mode_debug);
   Util::dprint(F, "mode_eval=", mode_eval);
+  Util::dprint(F, "mode_grow=", mode_grow);
+  Util::dprint(F, "mode_auto_queue=", mode_auto_queue);
   Util::dprint(F, "count_send=", count_send);
   Util::dprint(F, "count_skip=", count_skip);
   Util::dprint(F, "queue_size=", queue_size);
