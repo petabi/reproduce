@@ -220,12 +220,34 @@ bool Controller::set_producer()
 
 uint32_t Controller::open_nic(const std::string& devname)
 {
+  bpf_u_int32 net;
+  bpf_u_int32 mask;
+  struct bpf_program fp;
   char errbuf[PCAP_ERRBUF_SIZE];
+
+  if (pcap_lookupnet(devname.c_str(), &net, &mask, errbuf) == -1) {
+    throw runtime_error("Failed to lookup the network: " + devname + " : " +
+                        errbuf);
+  }
+
   pcd = pcap_open_live(devname.c_str(), BUFSIZ, 0, -1, errbuf);
+
   if (pcd == nullptr) {
     throw runtime_error("Failed to initialize the nic mode: " + devname +
                         " : " + errbuf);
   }
+
+  if (pcap_compile(pcd, &fp, conf.packet_filter.c_str(), 0, net) == -1) {
+    throw runtime_error("Failed to compile the capture rules: " +
+                        conf.packet_filter);
+  }
+
+  if (pcap_setfilter(pcd, &fp) == -1) {
+    throw runtime_error("Failed to set the capture rules: " +
+                        conf.packet_filter);
+  }
+
+  Util::dprint(F, "capture rule setting completed" + conf.packet_filter);
 
   return pcap_datalink(pcd);
 }
