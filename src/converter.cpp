@@ -39,7 +39,7 @@ size_t PacketConverter::convert(char* in, size_t in_len, char* out,
   // TODO: How to check the bounds of the buffer?
   conv_len = 0;
   ptr = out;
-  auto* pp = reinterpret_cast<pcap_pkthdr*>(in);
+  auto* pp = reinterpret_cast<pcap_pkthdr_*>(in);
 
 #if 0
   // TODO: Fix to enhance performance
@@ -51,13 +51,14 @@ size_t PacketConverter::convert(char* in, size_t in_len, char* out,
   ADD_STREAM("%d ", pp->ts.tv_sec);
 
   if (!invoke(get_l2_process(), this,
-              reinterpret_cast<unsigned char*>(in + sizeof(pcap_pkthdr)))) {
+              reinterpret_cast<unsigned char*>(in + sizeof(pcap_pkthdr_)))) {
     return 0;
   }
 
   // TODO: payload process
+  *ptr = 0;
 
-  return conv_len;
+  return conv_len + 1;
 }
 
 bool (PacketConverter::*PacketConverter::get_l2_process())(
