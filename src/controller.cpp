@@ -67,7 +67,7 @@ void Controller::run()
       Util::eprint(F, "Failed to convert input data");
       break;
     } else if (ret == ControllerResult::NO_MORE) {
-      if (conf.mode_grow) {
+      if (conf.input_type != InputType::NIC && conf.mode_grow) {
         // TODO: optimize time interval
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         continue;
@@ -310,11 +310,14 @@ ControllerResult Controller::get_next_pcap_nic(char* imessage,
   auto ptr = reinterpret_cast<u_char*>(imessage);
   int res = 0;
 
-  while (res == 0) {
+  while (res == 0 && !stop) {
     res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
   }
   if (res < 0) {
     return ControllerResult::FAIL;
+  }
+  if (stop == 1) {
+    return ControllerResult::NO_MORE;
   }
   myhdr.caplen = pkthdr->caplen;
   myhdr.len = pkthdr->len;
