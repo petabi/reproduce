@@ -47,8 +47,8 @@ private:
   void close_pcap();
   void open_log(const std::string& filename);
   void close_log();
-  ControllerResult get_next_pcap_nic(char* imessage, size_t& imessage_len);
-  ControllerResult get_next_pcap_file(char* imessage, size_t& imessage_len);
+  ControllerResult get_next_nic(char* imessage, size_t& imessage_len);
+  ControllerResult get_next_pcap(char* imessage, size_t& imessage_len);
   ControllerResult get_next_log(char* imessage, size_t& imessage_len);
   ControllerResult get_next_null(char* imessage, size_t& imessage_len);
   bool skip_pcap(const size_t count_skip);

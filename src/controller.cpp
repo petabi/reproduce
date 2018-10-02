@@ -13,7 +13,7 @@ using namespace std;
 
 static constexpr size_t MAX_PACKET_LENGTH = 65535;
 static constexpr size_t MESSAGE_SIZE =
-    MAX_PACKET_LENGTH + sizeof(pcap_pkthdr_) + 1;
+    MAX_PACKET_LENGTH + sizeof(pcap_sf_pkthdr) + 1;
 volatile sig_atomic_t stop = 0;
 
 Controller::Controller(Config _conf) : conf(move(_conf))
@@ -117,7 +117,8 @@ InputType Controller::get_input_type() const
   if (!ifs) {
     pcap_t* pcd_chk;
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcd_chk = pcap_open_live(conf.input.c_str(), BUFSIZ, 0, -1, errbuf);
+    pcd_chk =
+        pcap_open_live(conf.input.c_str(), MAX_PACKET_LENGTH, 0, -1, errbuf);
     if (pcd_chk != nullptr) {
       pcap_close(pcd_chk);
       return InputType::NIC;
@@ -165,13 +166,13 @@ bool Controller::set_converter()
   case InputType::NIC:
     l2_type = open_nic(conf.input);
     conv = make_unique<PacketConverter>(l2_type);
-    get_next_data = &Controller::get_next_pcap_nic;
+    get_next_data = &Controller::get_next_nic;
     Util::dprint(F, "input type: NIC");
     break;
   case InputType::PCAP:
     l2_type = open_pcap(conf.input);
     conv = make_unique<PacketConverter>(l2_type);
-    get_next_data = &Controller::get_next_pcap_file;
+    get_next_data = &Controller::get_next_pcap;
     skip_data = &Controller::skip_pcap;
     Util::dprint(F, "input type: PCAP");
     break;
@@ -300,13 +301,12 @@ void Controller::close_log()
   }
 }
 
-ControllerResult Controller::get_next_pcap_nic(char* imessage,
-                                               size_t& imessage_len)
+ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
 {
   pcap_pkthdr* pkthdr;
-  pcap_pkthdr_ myhdr;
+  pcap_sf_pkthdr sfhdr;
   const u_char* pkt_data;
-  size_t pp_len = sizeof(pcap_pkthdr_);
+  size_t pp_len = sizeof(pcap_sf_pkthdr);
   auto ptr = reinterpret_cast<u_char*>(imessage);
   int res = 0;
 
@@ -319,22 +319,25 @@ ControllerResult Controller::get_next_pcap_nic(char* imessage,
   if (stop == 1) {
     return ControllerResult::NO_MORE;
   }
-  myhdr.caplen = pkthdr->caplen;
-  myhdr.len = pkthdr->len;
-  memcpy(ptr, reinterpret_cast<u_char*>(&myhdr), pp_len);
-  ptr += pp_len;
-  memcpy(ptr, pkt_data, myhdr.caplen);
+  sfhdr.caplen = pkthdr->caplen;
+  sfhdr.len = pkthdr->len;
+  sfhdr.ts.tv_sec = pkthdr->ts.tv_sec;
+  // TODO: fix to satisfy both 32bit and 64bit systems
+  // sfhdr.ts.tv_usec = pkthdr->??
 
-  imessage_len = myhdr.caplen + pp_len;
+  memcpy(ptr, reinterpret_cast<u_char*>(&sfhdr), pp_len);
+  ptr += pp_len;
+  memcpy(ptr, pkt_data, sfhdr.caplen);
+
+  imessage_len = sfhdr.caplen + pp_len;
 
   return ControllerResult::SUCCESS;
 }
 
-ControllerResult Controller::get_next_pcap_file(char* imessage,
-                                                size_t& imessage_len)
+ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 {
   size_t offset = 0;
-  size_t pp_len = sizeof(pcap_pkthdr_);
+  size_t pp_len = sizeof(pcap_sf_pkthdr);
 
   offset = fread(imessage, 1, pp_len, pcapfile);
   if (offset != pp_len) {
@@ -342,7 +345,7 @@ ControllerResult Controller::get_next_pcap_file(char* imessage,
     return ControllerResult::NO_MORE;
   }
 
-  auto* pp = reinterpret_cast<pcap_pkthdr_*>(imessage);
+  auto* pp = reinterpret_cast<pcap_sf_pkthdr*>(imessage);
   if (pp->caplen > MAX_PACKET_LENGTH) {
     Util::dprint(F,
                  "The captured packet size is abnormally large: ", pp->caplen);
@@ -408,7 +411,7 @@ ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
 
 bool Controller::skip_pcap(const size_t count_skip)
 {
-  struct pcap_pkthdr_ pp;
+  struct pcap_sf_pkthdr pp;
   size_t count = 0;
   size_t pp_len = sizeof(pp);
 
