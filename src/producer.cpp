@@ -78,7 +78,7 @@ void RdEventCb::event_cb(RdKafka::Event& event)
   }
 }
 
-KafkaProducer::KafkaProducer(shared_ptr<Config> _conf) : conf(_conf)
+KafkaProducer::KafkaProducer(shared_ptr<Config> _conf) : conf(move(_conf))
 {
   if (conf->kafka_broker.empty() || conf->kafka_topic.empty()) {
     throw runtime_error("Invalid constructor parameter");
@@ -333,7 +333,7 @@ KafkaProducer::~KafkaProducer()
  * FileProducer
  */
 
-FileProducer::FileProducer(shared_ptr<Config> _conf) : conf(_conf)
+FileProducer::FileProducer(shared_ptr<Config> _conf) : conf(move(_conf))
 {
   if (!conf->output.empty()) {
     if (!open()) {
@@ -374,7 +374,7 @@ bool FileProducer::open() noexcept
  * NullProducer
  */
 
-NullProducer::NullProducer(shared_ptr<Config> _conf) : conf(_conf) {}
+NullProducer::NullProducer(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
 bool NullProducer::produce(const string& message) noexcept { return true; }
 

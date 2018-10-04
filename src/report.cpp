@@ -10,7 +10,7 @@ static constexpr double MBYTE = KBYTE * KBYTE;
 static constexpr double KPACKET = 1000.0;
 static constexpr double MPACKET = KPACKET * KPACKET;
 
-Report::Report(shared_ptr<Config> _conf) : conf(_conf) {}
+Report::Report(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
 void Report::start() noexcept
 {
