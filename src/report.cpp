@@ -9,6 +9,10 @@ static constexpr double KBYTE = 1024.0;
 static constexpr double MBYTE = KBYTE * KBYTE;
 static constexpr double KPACKET = 1000.0;
 static constexpr double MPACKET = KPACKET * KPACKET;
+// FIXME: adjust this value
+static constexpr size_t CALCULATE_INTERVAL = 10;
+static constexpr size_t QUEUE_SIZE_RATIO = 50000;
+static constexpr double QUEUE_FLUSH_INTERVAL = 3.0;
 
 Report::Report(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
@@ -29,17 +33,25 @@ void Report::calculate() noexcept
   if (time_diff) {
     perf_kbps = (double)sent_byte / KBYTE / time_diff;
     perf_kpps = (double)sent_count / KPACKET / time_diff;
+
+    if (time_diff > QUEUE_FLUSH_INTERVAL) {
+      conf->queue_flush = true;
+    }
   }
   orig_byte_avg = (double)orig_byte / sent_count;
   sent_byte_avg = (double)sent_byte / sent_count;
 
   if (conf->mode_auto_queue) {
-    conf->queue_size = static_cast<int>(perf_kbps) * 10;
+    conf->queue_size = static_cast<int>(perf_kpps * QUEUE_SIZE_RATIO);
     if (conf->queue_size < queue_size_min) {
       conf->queue_size = queue_size_min;
     } else if (conf->queue_size > queue_size_max) {
       conf->queue_size = queue_size_max;
     }
+    Util::dprint(F, "queue_flush: ", static_cast<int>(conf->queue_flush),
+                 ", queue_size: ", conf->queue_size,
+                 "(kbps/kpps: ", static_cast<double>(perf_kbps), "/",
+                 static_cast<double>(perf_kpps), ")");
   }
 
   conf->calculate_interval = 0;
@@ -66,7 +78,7 @@ void Report::process(const size_t orig_length,
 
   sent_count++;
 
-  if (conf->mode_auto_queue && conf->calculate_interval > 100) {
+  if (conf->mode_auto_queue && conf->calculate_interval > CALCULATE_INTERVAL) {
     calculate();
   }
   conf->calculate_interval++;

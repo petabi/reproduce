@@ -292,9 +292,9 @@ bool KafkaProducer::produce_core(const string& message) noexcept
     return false;
   }
 
-  Util::dprint(F, "produced message: ", message.size(), " bytes",
-               " (queue_size/threshold: ", conf->queue_size, "/",
-               queue_threshold, ")");
+  Util::dprint(F, "produced message: ", message.size(),
+               " bytes (queue_flush: ", static_cast<int>(conf->queue_flush),
+               ", queue_size: ", conf->queue_size, ")");
 
   kafka_producer->poll(0);
 
@@ -303,15 +303,19 @@ bool KafkaProducer::produce_core(const string& message) noexcept
 
 bool KafkaProducer::produce(const string& message) noexcept
 {
-  if (queue_data.length() + message.length() >= conf->queue_size) {
+  queue_data += message;
+
+  if (conf->queue_flush || queue_data.length() >= conf->queue_size) {
     while (!produce_core(queue_data)) {
       // FIXME: error handling
     }
     queue_data.clear();
+    conf->queue_flush = false;
 
     wait_queue(queue_threshold);
+  } else {
+    queue_data += '\n';
   }
-  queue_data += message + '\n';
 
   return true;
 }

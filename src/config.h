@@ -5,7 +5,7 @@
 
 #include "util.h"
 
-constexpr size_t queue_size_min = 100;
+constexpr size_t queue_size_min = 1;
 constexpr size_t queue_size_max = 900000;
 
 enum class InputType {
@@ -38,8 +38,9 @@ public:
   std::string kafka_conf;
 
   // internal
-  size_t count_send{0};
   bool mode_auto_queue{false};
+  bool queue_flush{false};
+  size_t count_send{0};
   size_t calculate_interval{0};
   InputType input_type;
   OutputType output_type;

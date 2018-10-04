@@ -114,7 +114,7 @@ void Config::set_default() noexcept
     kafka_topic = default_kafka_topic;
   }
 
-  if (mode_grow || input_type == InputType::NIC) {
+  if (mode_grow) {
     mode_auto_queue = true;
     queue_size = queue_size_min;
   } else {
