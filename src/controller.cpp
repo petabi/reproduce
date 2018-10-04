@@ -16,8 +16,10 @@ static constexpr size_t MESSAGE_SIZE =
     MAX_PACKET_LENGTH + sizeof(pcap_pkthdr_) + 1;
 volatile sig_atomic_t stop = 0;
 
-Controller::Controller(Config _conf) : conf(move(_conf))
+Controller::Controller(Config _conf)
 {
+  conf = make_shared<Config>(_conf);
+
   if (!set_converter()) {
     throw runtime_error("Failed to set the converter");
   }
@@ -40,7 +42,7 @@ void Controller::run()
   size_t imessage_len = 0, omessage_len = 0;
   ControllerResult ret;
   size_t sent_count;
-  Report report(&conf);
+  Report report(conf);
 
   if (signal(SIGINT, signal_handler) == SIG_ERR ||
       signal(SIGTERM, signal_handler) == SIG_ERR) {
@@ -48,9 +50,9 @@ void Controller::run()
     return;
   }
 
-  if (conf.count_skip) {
-    if (!invoke(skip_data, this, conf.count_skip)) {
-      Util::dprint(F, "failed to skip(", conf.count_skip, ")");
+  if (conf->count_skip) {
+    if (!invoke(skip_data, this, conf->count_skip)) {
+      Util::dprint(F, "failed to skip(", conf->count_skip, ")");
     }
   }
 
@@ -67,7 +69,7 @@ void Controller::run()
       Util::eprint(F, "Failed to convert input data");
       break;
     } else if (ret == ControllerResult::NO_MORE) {
-      if (conf.input_type != InputType::NIC && conf.mode_grow) {
+      if (conf->input_type != InputType::NIC && conf->mode_grow) {
         // TODO: optimize time interval
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         continue;
@@ -109,20 +111,20 @@ InputType Controller::get_input_type() const
   // TODO: Check whether input is a network interface
   // return NIC;
 
-  if (conf.input.empty()) {
+  if (conf->input.empty()) {
     return InputType::NONE;
   }
 
-  ifstream ifs(conf.input, ios::binary);
+  ifstream ifs(conf->input, ios::binary);
   if (!ifs) {
     pcap_t* pcd_chk;
     char errbuf[PCAP_ERRBUF_SIZE];
-    pcd_chk = pcap_open_live(conf.input.c_str(), BUFSIZ, 0, -1, errbuf);
+    pcd_chk = pcap_open_live(conf->input.c_str(), BUFSIZ, 0, -1, errbuf);
     if (pcd_chk != nullptr) {
       pcap_close(pcd_chk);
       return InputType::NIC;
     } else {
-      throw runtime_error("Failed to open input file: " + conf.input);
+      throw runtime_error("Failed to open input file: " + conf->input);
     }
   }
 
@@ -145,11 +147,11 @@ InputType Controller::get_input_type() const
 
 OutputType Controller::get_output_type() const
 {
-  if (conf.output.empty()) {
+  if (conf->output.empty()) {
     return OutputType::KAFKA;
   }
 
-  if (conf.output == "none") {
+  if (conf->output == "none") {
     return OutputType::NONE;
   }
 
@@ -158,25 +160,25 @@ OutputType Controller::get_output_type() const
 
 bool Controller::set_converter()
 {
-  conf.input_type = get_input_type();
+  conf->input_type = get_input_type();
   uint32_t l2_type;
 
-  switch (conf.input_type) {
+  switch (conf->input_type) {
   case InputType::NIC:
-    l2_type = open_nic(conf.input);
+    l2_type = open_nic(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_pcap_nic;
     Util::dprint(F, "input type: NIC");
     break;
   case InputType::PCAP:
-    l2_type = open_pcap(conf.input);
+    l2_type = open_pcap(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_pcap_file;
     skip_data = &Controller::skip_pcap;
     Util::dprint(F, "input type: PCAP");
     break;
   case InputType::LOG:
-    open_log(conf.input);
+    open_log(conf->input);
     conv = make_unique<LogConverter>();
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
@@ -197,18 +199,18 @@ bool Controller::set_converter()
 
 bool Controller::set_producer()
 {
-  conf.output_type = get_output_type();
-  switch (conf.output_type) {
+  conf->output_type = get_output_type();
+  switch (conf->output_type) {
   case OutputType::KAFKA:
-    prod = make_unique<KafkaProducer>(&conf);
+    prod = make_unique<KafkaProducer>(conf);
     Util::dprint(F, "output type: KAFKA");
     break;
   case OutputType::FILE:
-    prod = make_unique<FileProducer>(&conf);
+    prod = make_unique<FileProducer>(conf);
     Util::dprint(F, "output type: FILE");
     break;
   case OutputType::NONE:
-    prod = make_unique<NullProducer>(&conf);
+    prod = make_unique<NullProducer>(conf);
     Util::dprint(F, "output type: NONE");
     break;
   default:
@@ -237,17 +239,17 @@ uint32_t Controller::open_nic(const std::string& devname)
                         " : " + errbuf);
   }
 
-  if (pcap_compile(pcd, &fp, conf.packet_filter.c_str(), 0, net) == -1) {
+  if (pcap_compile(pcd, &fp, conf->packet_filter.c_str(), 0, net) == -1) {
     throw runtime_error("Failed to compile the capture rules: " +
-                        conf.packet_filter);
+                        conf->packet_filter);
   }
 
   if (pcap_setfilter(pcd, &fp) == -1) {
     throw runtime_error("Failed to set the capture rules: " +
-                        conf.packet_filter);
+                        conf->packet_filter);
   }
 
-  Util::dprint(F, "capture rule setting completed" + conf.packet_filter);
+  Util::dprint(F, "capture rule setting completed" + conf->packet_filter);
 
   return pcap_datalink(pcd);
 }
@@ -445,7 +447,7 @@ bool Controller::skip_null(const size_t count_skip) { return true; }
 
 bool Controller::check_count(const size_t sent_count) const noexcept
 {
-  if (conf.count_send == 0 || sent_count < conf.count_send) {
+  if (conf->count_send == 0 || sent_count < conf->count_send) {
     return false;
   }
 

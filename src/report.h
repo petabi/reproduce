@@ -1,12 +1,14 @@
 #ifndef REPORT_H
 #define REPORT_H
 
+#include <memory>
+
 #include "config.h"
 
 class Report {
 public:
   Report() = delete;
-  Report(Config*);
+  Report(std::shared_ptr<Config>);
   Report(const Report&) = delete;
   Report& operator=(const Report&) = delete;
   Report(Report&&) = delete;
@@ -18,7 +20,7 @@ public:
   void end() noexcept;
   void fail() noexcept;
   size_t get_sent_count() const noexcept;
-  Config* conf;
+  std::shared_ptr<Config> conf;
 
 private:
   size_t orig_byte{0};

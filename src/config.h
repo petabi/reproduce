@@ -24,21 +24,26 @@ enum class OutputType {
 
 class Config {
 public:
-  bool mode_debug{false};     // print debug messages
-  bool mode_eval{false};      // report statistics
-  bool mode_grow{false};      // convert while tracking the growing file
-  bool mode_auto_queue{true}; // auto queue size
-  size_t count_send{0};       // count to send
-  size_t count_skip{0};       // count to skip
-  size_t queue_size{0};       // how many bytes send once
-  std::string input;          // input: packet/log/none
-  std::string output;         // output: kafka/file/none
-  InputType input_type;
-  OutputType output_type;
+  // user
+  bool mode_debug{false}; // print debug messages
+  bool mode_eval{false};  // report statistics
+  bool mode_grow{false};  // convert while tracking the growing file
+  size_t count_skip{0};   // count to skip
+  size_t queue_size{0};   // how many bytes send once
+  std::string input;      // input: packet/log/none
+  std::string output;     // output: kafka/file/none
   std::string packet_filter;
   std::string kafka_broker;
   std::string kafka_topic;
   std::string kafka_conf;
+
+  // internal
+  size_t count_send{0};
+  bool mode_auto_queue{false};
+  size_t calculate_interval{0};
+  InputType input_type;
+  OutputType output_type;
+
   Config() = default;
   Config(const Config&) = default;
   Config& operator=(const Config&) = default;

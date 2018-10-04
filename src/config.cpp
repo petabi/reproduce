@@ -31,10 +31,12 @@ void Config::help() const noexcept
        << "      it overrides default kafka config to user kafka config\n";
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' option is given, output is kafka\n";
+#if 0
   cout << "  -q: queue size. how many bytes send once\n"
        << "      (default: auto adjustment in proportion to bandwidth,\n"
        << "       min/max: " << queue_size_min << "~" << queue_size_max
        << ")\n";
+#endif
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
        << " (default: " << default_kafka_topic << ")\n";
@@ -112,9 +114,13 @@ void Config::set_default() noexcept
     kafka_topic = default_kafka_topic;
   }
 
-  if (queue_size > queue_size_min) {
-    mode_auto_queue = false;
+  if (mode_grow || input_type == InputType::NIC) {
+    mode_auto_queue = true;
+    queue_size = queue_size_min;
   } else {
+    queue_size = queue_size_max;
+  }
+  if (queue_size < queue_size_min) {
     queue_size = queue_size_min;
   }
 }

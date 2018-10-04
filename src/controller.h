@@ -27,7 +27,7 @@ public:
   void run();
 
 private:
-  Config conf;
+  std::shared_ptr<Config> conf;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
   pcap_t* pcd{nullptr};

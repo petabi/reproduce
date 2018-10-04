@@ -10,7 +10,7 @@ static constexpr double MBYTE = KBYTE * KBYTE;
 static constexpr double KPACKET = 1000.0;
 static constexpr double MPACKET = KPACKET * KPACKET;
 
-Report::Report(Config* _conf) { conf = _conf; }
+Report::Report(shared_ptr<Config> _conf) : conf(_conf) {}
 
 void Report::start() noexcept
 {
@@ -33,12 +33,16 @@ void Report::calculate() noexcept
   orig_byte_avg = (double)orig_byte / sent_count;
   sent_byte_avg = (double)sent_byte / sent_count;
 
-  conf->queue_size = static_cast<int>(perf_kbps);
-  if (conf->queue_size < queue_size_min) {
-    conf->queue_size = queue_size_min;
-  } else if (conf->queue_size > queue_size_max) {
-    conf->queue_size = queue_size_max;
+  if (conf->mode_auto_queue) {
+    conf->queue_size = static_cast<int>(perf_kbps) * 10;
+    if (conf->queue_size < queue_size_min) {
+      conf->queue_size = queue_size_min;
+    } else if (conf->queue_size > queue_size_max) {
+      conf->queue_size = queue_size_max;
+    }
   }
+
+  conf->calculate_interval = 0;
 }
 
 void Report::process(const size_t orig_length,
@@ -62,9 +66,10 @@ void Report::process(const size_t orig_length,
 
   sent_count++;
 
-  if (conf->mode_auto_queue) {
+  if (conf->mode_auto_queue && conf->calculate_interval > 100) {
     calculate();
   }
+  conf->calculate_interval++;
 }
 
 void Report::end() noexcept

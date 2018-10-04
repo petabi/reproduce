@@ -1,12 +1,15 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <cstring>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <string>
 
-#define F __func__
+#define __FILENAME__                                                           \
+  (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define F __FILENAME__, __func__
 
 class Util {
 public:
@@ -18,12 +21,14 @@ public:
   ~Util() = delete;
   template <typename T> static void print(T tail);
   template <typename T, typename... Ts> static void print(T head, Ts... tail);
-  template <typename T> static void dprint(const char* name, T tail);
+  template <typename T>
+  static void dprint(const char* file, const char* name, T tail);
   template <typename T, typename... Ts>
-  static void dprint(const char* name, T head, Ts... tail);
-  template <typename T> static void eprint(const char* name, T tail);
+  static void dprint(const char* file, const char* name, T head, Ts... tail);
+  template <typename T>
+  static void eprint(const char* file, const char* name, T tail);
   template <typename T, typename... Ts>
-  static void eprint(const char* name, T head, Ts... tail);
+  static void eprint(const char* file, const char* name, T head, Ts... tail);
   static void mprint(const char* message, const size_t count) noexcept;
   static void set_debug(const bool& debug);
   static std::string& ltrim(std::string& str);
@@ -45,35 +50,39 @@ template <typename T, typename... Ts> void Util::print(T head, Ts... tail)
   print(tail...);
 }
 
-template <typename T> void Util::dprint(const char* name, T head)
+template <typename T>
+void Util::dprint(const char* file, const char* name, T head)
 {
   if (!debug) {
     return;
   }
 
-  std::cout << "[DEBUG] " << name << ": " << head << "\n" << std::flush;
+  std::cout << "[DEBUG] " << file << "::" << name << ": " << head << "\n"
+            << std::flush;
 }
 
 template <typename T, typename... Ts>
-void Util::dprint(const char* name, T head, Ts... tail)
+void Util::dprint(const char* file, const char* name, T head, Ts... tail)
 {
   if (!debug) {
     return;
   }
 
-  std::cout << "[DEBUG] " << name << ": " << head;
+  std::cout << "[DEBUG] " << file << "::" << name << ": " << head;
   print(tail...);
 }
 
-template <typename T> void Util::eprint(const char* name, T tail)
+template <typename T>
+void Util::eprint(const char* file, const char* name, T tail)
 {
-  std::cout << "[ERROR] " << name << ": " << tail << "\n" << std::flush;
+  std::cout << "[ERROR] " << file << "::" << name << ": " << tail << "\n"
+            << std::flush;
 }
 
 template <typename T, typename... Ts>
-void Util::eprint(const char* name, T head, Ts... tail)
+void Util::eprint(const char* file, const char* name, T head, Ts... tail)
 {
-  std::cout << "[ERROR] " << name << ": " << head;
+  std::cout << "[ERROR] " << file << "::" << name << ": " << head;
   print(tail...);
 }
 
