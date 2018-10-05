@@ -7,9 +7,21 @@
 #include <iostream>
 #include <string>
 
+inline std::string class_name(const std::string& pretty_function)
+{
+  size_t colons = pretty_function.find("::");
+  if (colons == std::string::npos)
+    return "";
+  size_t begin = pretty_function.substr(0, colons).rfind(" ") + 1;
+  size_t end = colons - begin;
+
+  return pretty_function.substr(begin, end);
+}
+
+#define __CLASS__ class_name(__PRETTY_FUNCTION__)
 #define __FILENAME__                                                           \
   (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-#define F __FILENAME__, __func__
+#define F (__CLASS__).c_str(), __func__
 
 class Util {
 public:
