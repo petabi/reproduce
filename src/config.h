@@ -5,8 +5,8 @@
 
 #include "util.h"
 
-constexpr size_t queue_size_min = 1;
-constexpr size_t queue_size_max = 900000;
+constexpr size_t QUEUE_SIZE_MIN = 1;
+constexpr size_t QUEUE_SIZE_MAX = 900000;
 
 enum class InputType {
   NONE,

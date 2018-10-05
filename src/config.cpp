@@ -34,7 +34,7 @@ void Config::help() const noexcept
 #if 0
   cout << "  -q: queue size. how many bytes send once\n"
        << "      (default: auto adjustment in proportion to bandwidth,\n"
-       << "       min/max: " << queue_size_min << "~" << queue_size_max
+       << "       min/max: " << QUEUE_SIZE_MIN << "~" << QUEUE_SIZE_MAX
        << ")\n";
 #endif
   cout << "  -s: skip count\n";
@@ -116,12 +116,12 @@ void Config::set_default() noexcept
 
   if (mode_grow) {
     mode_auto_queue = true;
-    queue_size = queue_size_min;
+    queue_size = QUEUE_SIZE_MIN;
   } else {
-    queue_size = queue_size_max;
+    queue_size = QUEUE_SIZE_MAX;
   }
-  if (queue_size < queue_size_min) {
-    queue_size = queue_size_min;
+  if (queue_size < QUEUE_SIZE_MIN) {
+    queue_size = QUEUE_SIZE_MIN;
   }
 }
 
