@@ -120,7 +120,7 @@ InputType Controller::get_input_type() const
     pcap_t* pcd_chk;
     char errbuf[PCAP_ERRBUF_SIZE];
     pcd_chk =
-        pcap_open_live(conf.input.c_str(), MAX_PACKET_LENGTH, 0, -1, errbuf);
+        pcap_open_live(conf->input.c_str(), MAX_PACKET_LENGTH, 0, -1, errbuf);
     if (pcd_chk != nullptr) {
       pcap_close(pcd_chk);
       return InputType::NIC;
