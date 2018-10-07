@@ -12,7 +12,7 @@ inline std::string class_name(const std::string& pretty_function)
   size_t colons = pretty_function.find("::");
   if (colons == std::string::npos)
     return "";
-  size_t begin = pretty_function.substr(0, colons).rfind(" ") + 1;
+  size_t begin = pretty_function.substr(0, colons).rfind(' ') + 1;
   size_t end = colons - begin;
 
   return pretty_function.substr(begin, end);
