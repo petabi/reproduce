@@ -27,19 +27,22 @@ void Report::start() noexcept
 
 void Report::calculate() noexcept
 {
+  time_prev = time_now;
   time_now = clock();
-  time_diff = (double)(time_now - time_start) / CLOCKS_PER_SEC;
+  time_diff = static_cast<double>(time_now - time_start) / CLOCKS_PER_SEC;
+  double time_prev_diff =
+      static_cast<double>(time_now - time_prev) / CLOCKS_PER_SEC;
 
   if (time_diff) {
-    perf_kbps = (double)sent_byte / KBYTE / time_diff;
-    perf_kpps = (double)sent_count / KPACKET / time_diff;
+    perf_kbps = static_cast<double>(sent_byte) / KBYTE / time_diff;
+    perf_kpps = static_cast<double>(sent_count) / KPACKET / time_diff;
 
-    if (time_diff > QUEUE_FLUSH_INTERVAL) {
+    if (time_prev_diff > QUEUE_FLUSH_INTERVAL) {
       conf->queue_flush = true;
     }
   }
-  orig_byte_avg = (double)orig_byte / sent_count;
-  sent_byte_avg = (double)sent_byte / sent_count;
+  orig_byte_avg = static_cast<double>(orig_byte) / sent_count;
+  sent_byte_avg = static_cast<double>(sent_byte) / sent_count;
 
   if (conf->queue_auto) {
     conf->queue_size = static_cast<int>(perf_kpps * QUEUE_SIZE_RATIO);
@@ -49,7 +52,7 @@ void Report::calculate() noexcept
       conf->queue_size = QUEUE_SIZE_MAX;
     }
     Util::dprint(F, "queue_flush=", static_cast<int>(conf->queue_flush),
-                 " (time_diff=", time_diff, ")");
+                 " (time_prev_diff=", time_prev_diff, ")");
     Util::dprint(F, "queue_size=", conf->queue_size,
                  " (kbps=", static_cast<double>(perf_kbps),
                  ", kpps=", static_cast<double>(perf_kpps), ")");
@@ -101,7 +104,7 @@ void Report::end() noexcept
   case InputType::PCAP:
     cout << "Input(PCAP)\t: " << conf->input;
     if (stat(conf->input.c_str(), &st) != -1) {
-      cout << "(" << (double)st.st_size / MBYTE << "M)\n";
+      cout << "(" << static_cast<double>(st.st_size) / MBYTE << "M)\n";
     } else {
       cout << '\n';
     }
@@ -109,7 +112,7 @@ void Report::end() noexcept
   case InputType::LOG:
     cout << "Input(LOG)\t: " << conf->input;
     if (stat(conf->input.c_str(), &st) != -1) {
-      cout << "(" << (double)st.st_size / MBYTE << "M)\n";
+      cout << "(" << static_cast<double>(st.st_size) / MBYTE << "M)\n";
     } else {
       cout << '\n';
     }
@@ -124,7 +127,7 @@ void Report::end() noexcept
   case OutputType::FILE:
     cout << "Output(FILE)\t: " << conf->output;
     if (stat(conf->input.c_str(), &st) != -1) {
-      cout << "(" << (double)st.st_size / MBYTE << "M)\n";
+      cout << "(" << static_cast<double>(st.st_size) / MBYTE << "M)\n";
     } else {
       cout << "(invalid)\n";
     }
@@ -141,12 +144,12 @@ void Report::end() noexcept
        << orig_byte_avg << "(Min/Max/Avg)\n";
   cout << "Output Length\t: " << sent_byte_min << "/" << sent_byte_max << "/"
        << sent_byte_avg << "(Min/Max/Avg)\n";
-  cout << "Sent Bytes\t: " << sent_byte << "(" << (double)sent_byte / MBYTE
-       << "M)\n";
-  cout << "Sent Count\t: " << sent_count << "(" << (double)sent_count / MPACKET
-       << "M)\n";
-  cout << "Fail Count\t: " << fail_count << "(" << (double)fail_count / MPACKET
-       << "M)\n";
+  cout << "Sent Bytes\t: " << sent_byte << "("
+       << static_cast<double>(sent_byte) / MBYTE << "M)\n";
+  cout << "Sent Count\t: " << sent_count << "("
+       << static_cast<double>(sent_count) / MPACKET << "M)\n";
+  cout << "Fail Count\t: " << fail_count << "("
+       << static_cast<double>(fail_count) / MPACKET << "M)\n";
   cout << "Elapsed Time\t: " << time_diff << "s\n";
   cout << "Performance\t: " << perf_kbps / KBYTE << "MBps/" << perf_kpps
        << "Kpps\n";
