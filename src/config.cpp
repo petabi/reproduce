@@ -40,7 +40,7 @@ void Config::help() const noexcept
 bool Config::set(int argc, char** argv)
 {
   int o;
-  while ((o = getopt(argc, argv, "b:c:defghi:k:o:q:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:def:ghi:k:o:q:s:t:")) != -1) {
     switch (o) {
     case 'b':
       kafka_broker = optarg;

@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 
+#include <pcap/pcap.h>
+
 #include "converter.h"
 #include "producer.h"
 #include "report.h"
@@ -29,6 +31,7 @@ private:
   Report report;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
+  pcap_t* pcd{nullptr};
   FILE* pcapfile{nullptr};
   std::ifstream logfile;
   ControllerResult (Controller::*get_next_data)(char* imessage,
@@ -38,10 +41,13 @@ private:
   OutputType get_output_type() const;
   bool set_converter();
   bool set_producer();
+  uint32_t open_nic(const std::string& devname);
+  void close_nic();
   uint32_t open_pcap(const std::string& filename);
   void close_pcap();
   void open_log(const std::string& filename);
   void close_log();
+  ControllerResult get_next_nic(char* imessage, size_t& imessage_len);
   ControllerResult get_next_pcap(char* imessage, size_t& imessage_len);
   ControllerResult get_next_log(char* imessage, size_t& imessage_len);
   ControllerResult get_next_null(char* imessage, size_t& imessage_len);

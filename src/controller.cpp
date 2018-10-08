@@ -5,13 +5,15 @@
 #include <functional>
 #include <thread>
 
+#include <pcap/pcap.h>
+
 #include "controller.h"
 
 using namespace std;
 
 static constexpr size_t MAX_PACKET_LENGTH = 65535;
 static constexpr size_t MESSAGE_SIZE =
-    MAX_PACKET_LENGTH + sizeof(pcap_pkthdr) + 1;
+    MAX_PACKET_LENGTH + sizeof(pcap_sf_pkthdr) + 1;
 volatile sig_atomic_t stop = 0;
 
 Controller::Controller(Config _conf) : conf(move(_conf))
@@ -27,6 +29,7 @@ Controller::Controller(Config _conf) : conf(move(_conf))
 
 Controller::~Controller()
 {
+  close_nic();
   close_pcap();
   close_log();
 }
@@ -64,7 +67,7 @@ void Controller::run()
       Util::eprint(F, "Failed to convert input data");
       break;
     } else if (ret == ControllerResult::NO_MORE) {
-      if (conf.mode_grow) {
+      if (conf.input_type != InputType::NIC && conf.mode_grow) {
         // TODO: optimize time interval
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         continue;
@@ -111,8 +114,17 @@ InputType Controller::get_input_type() const
   }
 
   ifstream ifs(conf.input, ios::binary);
-  if (!ifs.is_open()) {
-    throw runtime_error("Failed to open input file: " + conf.input);
+  if (!ifs) {
+    pcap_t* pcd_chk;
+    char errbuf[PCAP_ERRBUF_SIZE];
+    pcd_chk =
+        pcap_open_live(conf.input.c_str(), MAX_PACKET_LENGTH, 0, -1, errbuf);
+    if (pcd_chk != nullptr) {
+      pcap_close(pcd_chk);
+      return InputType::NIC;
+    } else {
+      throw runtime_error("Failed to open input file: " + conf.input);
+    }
   }
 
   ifs.seekg(0, ios::beg);
@@ -148,9 +160,16 @@ OutputType Controller::get_output_type() const
 bool Controller::set_converter()
 {
   conf.input_type = get_input_type();
+  uint32_t l2_type;
+
   switch (conf.input_type) {
+  case InputType::NIC:
+    l2_type = open_nic(conf.input);
+    conv = make_unique<PacketConverter>(l2_type);
+    get_next_data = &Controller::get_next_nic;
+    Util::dprint(F, "input type: NIC");
+    break;
   case InputType::PCAP:
-    uint32_t l2_type;
     l2_type = open_pcap(conf.input);
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_pcap;
@@ -199,6 +218,48 @@ bool Controller::set_producer()
 
   return true;
 }
+
+uint32_t Controller::open_nic(const std::string& devname)
+{
+  bpf_u_int32 net;
+  bpf_u_int32 mask;
+  struct bpf_program fp;
+  char errbuf[PCAP_ERRBUF_SIZE];
+
+  if (pcap_lookupnet(devname.c_str(), &net, &mask, errbuf) == -1) {
+    throw runtime_error("Failed to lookup the network: " + devname + " : " +
+                        errbuf);
+  }
+
+  pcd = pcap_open_live(devname.c_str(), BUFSIZ, 0, -1, errbuf);
+
+  if (pcd == nullptr) {
+    throw runtime_error("Failed to initialize the nic mode: " + devname +
+                        " : " + errbuf);
+  }
+
+  if (pcap_compile(pcd, &fp, conf.packet_filter.c_str(), 0, net) == -1) {
+    throw runtime_error("Failed to compile the capture rules: " +
+                        conf.packet_filter);
+  }
+
+  if (pcap_setfilter(pcd, &fp) == -1) {
+    throw runtime_error("Failed to set the capture rules: " +
+                        conf.packet_filter);
+  }
+
+  Util::dprint(F, "capture rule setting completed" + conf.packet_filter);
+
+  return pcap_datalink(pcd);
+}
+
+void Controller::close_nic()
+{
+  if (pcd != nullptr) {
+    pcap_close(pcd);
+  }
+}
+
 uint32_t Controller::open_pcap(const string& filename)
 {
   pcapfile = fopen(filename.c_str(), "r");
@@ -240,10 +301,43 @@ void Controller::close_log()
   }
 }
 
+ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
+{
+  pcap_pkthdr* pkthdr;
+  pcap_sf_pkthdr sfhdr;
+  const u_char* pkt_data;
+  size_t pp_len = sizeof(pcap_sf_pkthdr);
+  auto ptr = reinterpret_cast<u_char*>(imessage);
+  int res = 0;
+
+  while (res == 0 && !stop) {
+    res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
+  }
+  if (res < 0) {
+    return ControllerResult::FAIL;
+  }
+  if (stop == 1) {
+    return ControllerResult::NO_MORE;
+  }
+  sfhdr.caplen = pkthdr->caplen;
+  sfhdr.len = pkthdr->len;
+  sfhdr.ts.tv_sec = pkthdr->ts.tv_sec;
+  // TODO: fix to satisfy both 32bit and 64bit systems
+  // sfhdr.ts.tv_usec = pkthdr->??
+
+  memcpy(ptr, reinterpret_cast<u_char*>(&sfhdr), pp_len);
+  ptr += pp_len;
+  memcpy(ptr, pkt_data, sfhdr.caplen);
+
+  imessage_len = sfhdr.caplen + pp_len;
+
+  return ControllerResult::SUCCESS;
+}
+
 ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 {
   size_t offset = 0;
-  size_t pp_len = sizeof(pcap_pkthdr);
+  size_t pp_len = sizeof(pcap_sf_pkthdr);
 
   offset = fread(imessage, 1, pp_len, pcapfile);
   if (offset != pp_len) {
@@ -251,7 +345,7 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
     return ControllerResult::NO_MORE;
   }
 
-  auto* pp = reinterpret_cast<pcap_pkthdr*>(imessage);
+  auto* pp = reinterpret_cast<pcap_sf_pkthdr*>(imessage);
   if (pp->caplen > MAX_PACKET_LENGTH) {
     Util::dprint(F,
                  "The captured packet size is abnormally large: ", pp->caplen);
@@ -264,7 +358,7 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
     fseek(pcapfile, -(offset + pp_len), SEEK_CUR);
     return ControllerResult::NO_MORE;
   }
-  imessage_len = pp->caplen;
+  imessage_len = pp->caplen + pp_len;
 
   return ControllerResult::SUCCESS;
 }
@@ -317,7 +411,7 @@ ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
 
 bool Controller::skip_pcap(const size_t count_skip)
 {
-  struct pcap_pkthdr pp;
+  struct pcap_sf_pkthdr pp;
   size_t count = 0;
   size_t pp_len = sizeof(pp);
 
