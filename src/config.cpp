@@ -11,6 +11,7 @@ using namespace std;
 static constexpr char KAFKA_BROKER[] = "localhost:9092";
 static constexpr char KAFKA_TOPIC[] = "pcap";
 static constexpr size_t QUEUE_PERIOD = 3;
+static constexpr size_t QUEUE_SIZE = 900000;
 
 void Config::help() const noexcept
 {
@@ -35,9 +36,7 @@ void Config::help() const noexcept
   cout << "  -p: queue period time. how much time keep queued data\n"
        << "      (default: " << QUEUE_PERIOD << ")\n";
   cout << "  -q: queue size. how many bytes send once to kafka\n"
-       << "      (default: " << QUEUE_SIZE_MAX << "\n"
-       << "       min/max: " << QUEUE_SIZE_MIN << "~" << QUEUE_SIZE_MAX
-       << ")\n";
+       << "      (default: " << QUEUE_SIZE << ")\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
        << " (default: " << KAFKA_TOPIC << ")\n";
@@ -115,29 +114,8 @@ void Config::set_default() noexcept
   if (kafka_topic.empty()) {
     kafka_topic = KAFKA_TOPIC;
   }
-
-#if 0
-  if (queue_size < QUEUE_SIZE_MIN) {
-    if (mode_grow) {
-      queue_auto = true;
-      queue_size = QUEUE_SIZE_MIN;
-    } else {
-      queue_size = QUEUE_SIZE_MAX;
-    }
-  } else {
-    queue_defined = true;
-  }
-  if (queue_size < QUEUE_SIZE_MIN) {
-    queue_size = QUEUE_SIZE_MIN;
-  } else if (queue_size > QUEUE_SIZE_MAX) {
-    queue_size = QUEUE_SIZE_MAX;
-  }
-#endif
-  if (mode_grow) {
-    // ??
-  }
-  if (queue_size < QUEUE_SIZE_MIN || queue_size > QUEUE_SIZE_MAX) {
-    queue_size = QUEUE_SIZE_MAX;
+  if (queue_size <= 0 || queue_size > QUEUE_SIZE) {
+    queue_size = QUEUE_SIZE;
   }
   if (queue_period == 0) {
     queue_period = QUEUE_PERIOD;

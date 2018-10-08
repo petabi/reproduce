@@ -9,10 +9,6 @@ static constexpr double KBYTE = 1024.0;
 static constexpr double MBYTE = KBYTE * KBYTE;
 static constexpr double KPACKET = 1000.0;
 static constexpr double MPACKET = KPACKET * KPACKET;
-// FIXME: adjust this value
-static constexpr size_t CALCULATE_INTERVAL = 10;
-static constexpr size_t QUEUE_SIZE_RATIO = 200000;
-static constexpr double QUEUE_FLUSH_INTERVAL = 3.0;
 
 Report::Report(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
@@ -23,41 +19,6 @@ void Report::start() noexcept
   }
 
   time_start = clock();
-}
-
-void Report::calculate() noexcept
-{
-  time_now = clock();
-  time_diff = static_cast<double>(time_now - time_start) / CLOCKS_PER_SEC;
-  if (time_diff) {
-    perf_kbps = static_cast<double>(sent_byte) / KBYTE / time_diff;
-    perf_kpps = static_cast<double>(sent_count) / KPACKET / time_diff;
-  }
-  orig_byte_avg = static_cast<double>(orig_byte) / sent_count;
-  sent_byte_avg = static_cast<double>(sent_byte) / sent_count;
-
-  if (conf->queue_auto) {
-    double time_prev_diff =
-        static_cast<double>(time_now - time_prev) / CLOCKS_PER_SEC;
-    if (time_prev_diff > QUEUE_FLUSH_INTERVAL) {
-      conf->queue_flush = true;
-    }
-    Util::dprint(F, "queue_flush=", static_cast<int>(conf->queue_flush),
-                 " (time_prev_diff=", time_prev_diff, ")");
-
-    conf->queue_size = static_cast<int>(perf_kpps * QUEUE_SIZE_RATIO);
-    if (conf->queue_size < QUEUE_SIZE_MIN) {
-      conf->queue_size = QUEUE_SIZE_MIN;
-    } else if (conf->queue_size > QUEUE_SIZE_MAX) {
-      conf->queue_size = QUEUE_SIZE_MAX;
-    }
-    Util::dprint(F, "queue_size=", conf->queue_size,
-                 " (kbps=", static_cast<double>(perf_kbps),
-                 ", kpps=", static_cast<double>(perf_kpps), ")");
-
-    conf->calculate_interval = 0;
-    time_prev = time_now;
-  }
 }
 
 void Report::process(const size_t orig_length,
@@ -78,14 +39,6 @@ void Report::process(const size_t orig_length,
   sent_byte += sent_length;
 
   sent_count++;
-
-  if (conf->queue_auto) {
-    if (conf->calculate_interval >= CALCULATE_INTERVAL) {
-      calculate();
-    }
-
-    conf->calculate_interval++;
-  }
 }
 
 void Report::end() noexcept
@@ -94,7 +47,15 @@ void Report::end() noexcept
     return;
   }
 
-  calculate();
+  time_now = clock();
+  time_diff = static_cast<double>(time_now - time_start) / CLOCKS_PER_SEC;
+
+  if (time_diff) {
+    perf_kbps = static_cast<double>(sent_byte) / KBYTE / time_diff;
+    perf_kpps = static_cast<double>(sent_count) / KPACKET / time_diff;
+  }
+  orig_byte_avg = static_cast<double>(orig_byte) / sent_count;
+  sent_byte_avg = static_cast<double>(sent_byte) / sent_count;
 
   cout.precision(2);
   cout << fixed;

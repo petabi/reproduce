@@ -99,6 +99,10 @@ KafkaProducer::KafkaProducer(shared_ptr<Config> _conf) : conf(move(_conf))
     set_kafka_conf_file(conf->kafka_conf);
   }
 
+  if (conf->mode_grow || conf->input_type == InputType::NIC) {
+    queue_auto_flush = true;
+  }
+
   set_kafka_threshold();
   show_kafka_conf();
 
@@ -293,8 +297,8 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   }
 
   Util::dprint(F, "produced message: ", message.size(),
-               " bytes (queue_auto=", static_cast<int>(conf->queue_auto),
-               ", queue_flush=", static_cast<int>(conf->queue_flush),
+               " bytes (queue_auto_flush=", static_cast<int>(queue_auto_flush),
+               ", queue_flush=", static_cast<int>(queue_flush),
                ", queue_size=", conf->queue_size, ")");
 
   kafka_producer->poll(0);
@@ -302,20 +306,45 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   return true;
 }
 
+static constexpr size_t CALCULATE_INTERVAL = 10;
+static constexpr size_t QUEUE_SIZE_RATIO = 200000;
+static constexpr double QUEUE_FLUSH_INTERVAL = 3.0;
+
+void KafkaProducer::calculate() noexcept
+{
+  current_time = clock();
+  double time_diff =
+      static_cast<double>(current_time - last_time) / CLOCKS_PER_SEC;
+  if (time_diff > conf->queue_period) {
+    queue_flush = true;
+  }
+  Util::dprint(F, "queue_flush=", static_cast<int>(queue_flush),
+               " (time_diff=", time_diff, ")");
+  calculate_interval = 0;
+  last_time = current_time;
+}
+
 bool KafkaProducer::produce(const string& message) noexcept
 {
   queue_data += message;
 
-  if (conf->queue_flush || queue_data.length() >= conf->queue_size) {
+  if (queue_flush || queue_data.length() >= conf->queue_size) {
     while (!produce_core(queue_data)) {
       // FIXME: error handling
     }
     queue_data.clear();
-    conf->queue_flush = false;
+    queue_flush = false;
 
     wait_queue(queue_threshold);
   } else {
     queue_data += '\n';
+  }
+
+  if (queue_auto_flush) {
+    if (calculate_interval >= CALCULATE_INTERVAL) {
+      calculate();
+    }
+    calculate_interval++;
   }
 
   return true;

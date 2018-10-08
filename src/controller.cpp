@@ -170,12 +170,6 @@ bool Controller::set_converter()
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_nic;
     Util::dprint(F, "input type=NIC");
-    if (!conf->queue_defined) {
-      conf->queue_auto = true;
-      conf->queue_size = QUEUE_SIZE_MIN;
-      Util::dprint(F, "queue_auto=", static_cast<int>(conf->queue_auto),
-                   " (queue_size=", conf->queue_size, ")");
-    }
     break;
   case InputType::PCAP:
     l2_type = open_pcap(conf->input);

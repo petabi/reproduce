@@ -36,7 +36,6 @@ private:
   double perf_kbps{0.0};
   double perf_kpps{0.0};
   clock_t time_start{0};
-  clock_t time_prev{0};
   clock_t time_now{0};
   double time_diff{0.0};
 };
