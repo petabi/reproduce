@@ -31,12 +31,10 @@ void Config::help() const noexcept
        << "      it overrides default kafka config to user kafka config\n";
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' option is given, output is kafka\n";
-#if 0
-  cout << "  -q: queue size. how many bytes send once\n"
+  cout << "  -q: queue size. how many bytes send once to kafka\n"
        << "      (default: auto adjustment in proportion to bandwidth,\n"
        << "       min/max: " << QUEUE_SIZE_MIN << "~" << QUEUE_SIZE_MAX
        << ")\n";
-#endif
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
        << " (default: " << default_kafka_topic << ")\n";
@@ -60,7 +58,6 @@ bool Config::set(int argc, char** argv)
       mode_eval = true;
       break;
     case 'f':
-      // TODO: not implemented yet
       packet_filter = optarg;
       break;
     case 'g':
@@ -70,7 +67,6 @@ bool Config::set(int argc, char** argv)
       help();
       return false;
     case 'i':
-      // TODO: nic
       input = optarg;
       break;
     case 'k':
@@ -114,14 +110,21 @@ void Config::set_default() noexcept
     kafka_topic = default_kafka_topic;
   }
 
-  if (mode_grow) {
-    mode_auto_queue = true;
-    queue_size = QUEUE_SIZE_MIN;
+  if (queue_size < QUEUE_SIZE_MIN) {
+    if (mode_grow) {
+      queue_auto = true;
+      queue_size = QUEUE_SIZE_MIN;
+    } else {
+      queue_size = QUEUE_SIZE_MAX;
+    }
   } else {
-    queue_size = QUEUE_SIZE_MAX;
+    queue_defined = true;
   }
+
   if (queue_size < QUEUE_SIZE_MIN) {
     queue_size = QUEUE_SIZE_MIN;
+  } else if (queue_size > QUEUE_SIZE_MAX) {
+    queue_size = QUEUE_SIZE_MAX;
   }
 }
 
@@ -141,7 +144,6 @@ void Config::show() const noexcept
   Util::dprint(F, "mode_debug=", mode_debug);
   Util::dprint(F, "mode_eval=", mode_eval);
   Util::dprint(F, "mode_grow=", mode_grow);
-  Util::dprint(F, "mode_auto_queue=", mode_auto_queue);
   Util::dprint(F, "count_send=", count_send);
   Util::dprint(F, "count_skip=", count_skip);
   Util::dprint(F, "queue_size=", queue_size);

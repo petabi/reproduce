@@ -38,7 +38,8 @@ public:
   std::string kafka_conf;
 
   // internal
-  bool mode_auto_queue{false};
+  bool queue_auto{false};
+  bool queue_defined{false};
   bool queue_flush{false};
   size_t count_send{0};
   size_t calculate_interval{0};

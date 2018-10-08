@@ -293,8 +293,9 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   }
 
   Util::dprint(F, "produced message: ", message.size(),
-               " bytes (queue_flush: ", static_cast<int>(conf->queue_flush),
-               ", queue_size: ", conf->queue_size, ")");
+               " bytes (queue_auto=", static_cast<int>(conf->queue_auto),
+               ", queue_flush=", static_cast<int>(conf->queue_flush),
+               ", queue_size=", conf->queue_size, ")");
 
   kafka_producer->poll(0);
 

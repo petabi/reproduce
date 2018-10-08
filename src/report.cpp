@@ -41,7 +41,7 @@ void Report::calculate() noexcept
   orig_byte_avg = (double)orig_byte / sent_count;
   sent_byte_avg = (double)sent_byte / sent_count;
 
-  if (conf->mode_auto_queue) {
+  if (conf->queue_auto) {
     conf->queue_size = static_cast<int>(perf_kpps * QUEUE_SIZE_RATIO);
     if (conf->queue_size < QUEUE_SIZE_MIN) {
       conf->queue_size = QUEUE_SIZE_MIN;
@@ -78,7 +78,7 @@ void Report::process(const size_t orig_length,
 
   sent_count++;
 
-  if (conf->mode_auto_queue && conf->calculate_interval > CALCULATE_INTERVAL) {
+  if (conf->queue_auto && conf->calculate_interval > CALCULATE_INTERVAL) {
     calculate();
   }
   conf->calculate_interval++;
