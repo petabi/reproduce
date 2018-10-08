@@ -8,8 +8,9 @@
 
 using namespace std;
 
-static constexpr char default_kafka_broker[] = "localhost:9092";
-static constexpr char default_kafka_topic[] = "pcap";
+static constexpr char KAFKA_BROKER[] = "localhost:9092";
+static constexpr char KAFKA_TOPIC[] = "pcap";
+static constexpr size_t QUEUE_PERIOD = 3;
 
 void Config::help() const noexcept
 {
@@ -17,7 +18,7 @@ void Config::help() const noexcept
        << RdKafka::version_str() << ")\n";
   cout << "[USAGE] " << PROGRAM_NAME << " [OPTIONS]\n";
   cout << "  -b: kafka broker list"
-       << " (default: " << default_kafka_broker << ")\n";
+       << " (default: " << KAFKA_BROKER << ")\n";
   cout << "  -c: send count\n";
   cout << "  -d: debug mode. print debug messages\n";
   cout << "  -e: evaluation mode. report statistics\n";
@@ -31,19 +32,21 @@ void Config::help() const noexcept
        << "      it overrides default kafka config to user kafka config\n";
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' option is given, output is kafka\n";
+  cout << "  -p: queue period time. how much time keep queued data\n"
+       << "      (default: " << QUEUE_PERIOD << ")\n";
   cout << "  -q: queue size. how many bytes send once to kafka\n"
-       << "      (default: auto adjustment in proportion to bandwidth,\n"
+       << "      (default: " << QUEUE_SIZE_MAX << "\n"
        << "       min/max: " << QUEUE_SIZE_MIN << "~" << QUEUE_SIZE_MAX
        << ")\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
-       << " (default: " << default_kafka_topic << ")\n";
+       << " (default: " << KAFKA_TOPIC << ")\n";
 }
 
 bool Config::set(int argc, char** argv)
 {
   int o;
-  while ((o = getopt(argc, argv, "b:c:def:ghi:k:o:q:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:def:ghi:k:o:p:q:s:t:")) != -1) {
     switch (o) {
     case 'b':
       kafka_broker = optarg;
@@ -75,6 +78,9 @@ bool Config::set(int argc, char** argv)
     case 'o':
       output = optarg;
       break;
+    case 'p':
+      queue_period = strtoul(optarg, nullptr, 0);
+      break;
     case 'q':
       queue_size = strtoul(optarg, nullptr, 0);
       break;
@@ -103,13 +109,14 @@ void Config::set_default() noexcept
   Util::dprint(F, "set default config");
 
   if (kafka_broker.empty()) {
-    kafka_broker = default_kafka_broker;
+    kafka_broker = KAFKA_BROKER;
   }
 
   if (kafka_topic.empty()) {
-    kafka_topic = default_kafka_topic;
+    kafka_topic = KAFKA_TOPIC;
   }
 
+#if 0
   if (queue_size < QUEUE_SIZE_MIN) {
     if (mode_grow) {
       queue_auto = true;
@@ -120,11 +127,20 @@ void Config::set_default() noexcept
   } else {
     queue_defined = true;
   }
-
   if (queue_size < QUEUE_SIZE_MIN) {
     queue_size = QUEUE_SIZE_MIN;
   } else if (queue_size > QUEUE_SIZE_MAX) {
     queue_size = QUEUE_SIZE_MAX;
+  }
+#endif
+  if (mode_grow) {
+    // ??
+  }
+  if (queue_size < QUEUE_SIZE_MIN || queue_size > QUEUE_SIZE_MAX) {
+    queue_size = QUEUE_SIZE_MAX;
+  }
+  if (queue_period == 0) {
+    queue_period = QUEUE_PERIOD;
   }
 }
 
@@ -147,6 +163,7 @@ void Config::show() const noexcept
   Util::dprint(F, "count_send=", count_send);
   Util::dprint(F, "count_skip=", count_skip);
   Util::dprint(F, "queue_size=", queue_size);
+  Util::dprint(F, "queue_period=", queue_period);
   Util::dprint(F, "input=", input);
   Util::dprint(F, "output=", output);
   Util::dprint(F, "packet_filter=", packet_filter);
