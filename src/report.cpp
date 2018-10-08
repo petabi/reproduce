@@ -48,10 +48,11 @@ void Report::calculate() noexcept
     } else if (conf->queue_size > QUEUE_SIZE_MAX) {
       conf->queue_size = QUEUE_SIZE_MAX;
     }
-    Util::dprint(F, "queue_flush: ", static_cast<int>(conf->queue_flush));
-    Util::dprint(F, "queue_size: ", conf->queue_size,
-                 "(kbps/kpps: ", static_cast<double>(perf_kbps), "/",
-                 static_cast<double>(perf_kpps), ")");
+    Util::dprint(F, "queue_flush=", static_cast<int>(conf->queue_flush),
+                 " (time_diff=", time_diff, ")");
+    Util::dprint(F, "queue_size=", conf->queue_size,
+                 " (kbps=", static_cast<double>(perf_kbps),
+                 ", kpps=", static_cast<double>(perf_kpps), ")");
   }
 
   conf->calculate_interval = 0;

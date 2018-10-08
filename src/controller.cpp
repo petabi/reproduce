@@ -169,12 +169,12 @@ bool Controller::set_converter()
     l2_type = open_nic(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_nic;
-    Util::dprint(F, "input type: NIC");
+    Util::dprint(F, "input type=NIC");
     if (!conf->queue_defined) {
       conf->queue_auto = true;
       conf->queue_size = QUEUE_SIZE_MIN;
-      Util::dprint(F, "queue_auto= ", static_cast<int>(conf->queue_auto),
-                   " (queue_size: ", conf->queue_size, ")");
+      Util::dprint(F, "queue_auto=", static_cast<int>(conf->queue_auto),
+                   " (queue_size=", conf->queue_size, ")");
     }
     break;
   case InputType::PCAP:
@@ -182,20 +182,20 @@ bool Controller::set_converter()
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_pcap;
     skip_data = &Controller::skip_pcap;
-    Util::dprint(F, "input type: PCAP");
+    Util::dprint(F, "input type=PCAP");
     break;
   case InputType::LOG:
     open_log(conf->input);
     conv = make_unique<LogConverter>();
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
-    Util::dprint(F, "input type: LOG");
+    Util::dprint(F, "input type=LOG");
     break;
   case InputType::NONE:
     conv = make_unique<NullConverter>();
     get_next_data = &Controller::get_next_null;
     skip_data = &Controller::skip_null;
-    Util::dprint(F, "input type: NONE");
+    Util::dprint(F, "input type=NONE");
     break;
   default:
     return false;
@@ -210,15 +210,15 @@ bool Controller::set_producer()
   switch (conf->output_type) {
   case OutputType::KAFKA:
     prod = make_unique<KafkaProducer>(conf);
-    Util::dprint(F, "output type: KAFKA");
+    Util::dprint(F, "output type=KAFKA");
     break;
   case OutputType::FILE:
     prod = make_unique<FileProducer>(conf);
-    Util::dprint(F, "output type: FILE");
+    Util::dprint(F, "output type=FILE");
     break;
   case OutputType::NONE:
     prod = make_unique<NullProducer>(conf);
-    Util::dprint(F, "output type: NONE");
+    Util::dprint(F, "output type=NONE");
     break;
   default:
     return false;
