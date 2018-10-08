@@ -11,7 +11,7 @@ static constexpr double KPACKET = 1000.0;
 static constexpr double MPACKET = KPACKET * KPACKET;
 // FIXME: adjust this value
 static constexpr size_t CALCULATE_INTERVAL = 10;
-static constexpr size_t QUEUE_SIZE_RATIO = 50000;
+static constexpr size_t QUEUE_SIZE_RATIO = 200000;
 static constexpr double QUEUE_FLUSH_INTERVAL = 3.0;
 
 Report::Report(shared_ptr<Config> _conf) : conf(move(_conf)) {}
