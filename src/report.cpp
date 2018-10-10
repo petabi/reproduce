@@ -80,6 +80,9 @@ void Report::end() noexcept
       cout << '\n';
     }
     break;
+  case InputType::NIC:
+    cout << "Input(NIC)\t: " << conf->input << '\n';
+    break;
   case InputType::NONE:
     cout << "Input(NONE)\t: \n";
     break;
