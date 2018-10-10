@@ -54,8 +54,10 @@ void Report::end() noexcept
     perf_kbps = static_cast<double>(sent_byte) / KBYTE / time_diff;
     perf_kpps = static_cast<double>(sent_count) / KPACKET / time_diff;
   }
-  orig_byte_avg = static_cast<double>(orig_byte) / sent_count;
-  sent_byte_avg = static_cast<double>(sent_byte) / sent_count;
+  if (sent_count) {
+    orig_byte_avg = static_cast<double>(orig_byte) / sent_count;
+    sent_byte_avg = static_cast<double>(sent_byte) / sent_count;
+  }
 
   cout.precision(2);
   cout << fixed;

@@ -306,7 +306,7 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   return true;
 }
 
-static constexpr size_t CALCULATE_INTERVAL = 10;
+static constexpr size_t CALCULATE_INTERVAL = 1;
 static constexpr size_t QUEUE_SIZE_RATIO = 200000;
 static constexpr double QUEUE_FLUSH_INTERVAL = 3.0;
 
@@ -321,7 +321,6 @@ void KafkaProducer::calculate() noexcept
   Util::dprint(F, "queue_flush=", static_cast<int>(queue_flush),
                " (time_diff=", time_diff, ")");
   calculate_interval = 0;
-  last_time = current_time;
 }
 
 bool KafkaProducer::produce(const string& message) noexcept
@@ -336,6 +335,10 @@ bool KafkaProducer::produce(const string& message) noexcept
     queue_flush = false;
 
     wait_queue(queue_threshold);
+
+    if (queue_auto_flush) {
+      last_time = clock();
+    }
   } else {
     queue_data += '\n';
   }
