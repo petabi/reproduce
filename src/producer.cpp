@@ -316,14 +316,21 @@ void KafkaProducer::calculate() noexcept
       static_cast<double>(current_time - last_time) / CLOCKS_PER_SEC;
   if (time_diff > conf->queue_period) {
     queue_flush = true;
+    Util::dprint(F, "queue_flush=", static_cast<int>(queue_flush),
+                 " (time_diff=", time_diff, ")");
   }
-  Util::dprint(F, "queue_flush=", static_cast<int>(queue_flush),
-               " (time_diff=", time_diff, ")");
   calculate_interval = 0;
 }
 
 bool KafkaProducer::produce(const string& message) noexcept
 {
+  if (queue_auto_flush) {
+    if (calculate_interval >= CALCULATE_INTERVAL) {
+      calculate();
+    }
+    calculate_interval++;
+  }
+
   queue_data += message;
 
   if (queue_flush || queue_data.length() >= conf->queue_size) {
@@ -331,22 +338,15 @@ bool KafkaProducer::produce(const string& message) noexcept
       // FIXME: error handling
     }
     queue_data.clear();
+
     queue_flush = false;
-
-    wait_queue(queue_threshold);
-
     if (queue_auto_flush) {
       last_time = clock();
     }
+
+    wait_queue(queue_threshold);
   } else {
     queue_data += '\n';
-  }
-
-  if (queue_auto_flush) {
-    if (calculate_interval >= CALCULATE_INTERVAL) {
-      calculate();
-    }
-    calculate_interval++;
   }
 
   return true;
