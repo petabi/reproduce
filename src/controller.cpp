@@ -238,6 +238,10 @@ uint32_t Controller::open_nic(const std::string& devname)
                         " : " + errbuf);
   }
 
+  if (pcap_setnonblock(pcd, false, errbuf) != 0) {
+    Util::eprint(F, "non-blocking mode is set, it can cause cpu overload");
+  }
+
   if (pcap_compile(pcd, &fp, conf.packet_filter.c_str(), 0, net) == -1) {
     throw runtime_error("Failed to compile the capture rules: " +
                         conf.packet_filter);
