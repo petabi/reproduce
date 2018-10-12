@@ -59,6 +59,7 @@ private:
   size_t calculate_interval{0};
   clock_t last_time{0};
   clock_t current_time{0};
+  double time_diff{0.0};
   bool produce_core(const std::string& message) noexcept;
   void wait_queue(const int count) noexcept;
   void set_kafka_conf();

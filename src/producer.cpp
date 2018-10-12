@@ -299,7 +299,8 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   Util::dprint(F, "produced message: ", message.size(),
                " bytes (queue_auto_flush=", static_cast<int>(queue_auto_flush),
                ", queue_flush=", static_cast<int>(queue_flush),
-               ", queue_size=", conf->queue_size, ")");
+               ", time_diff=", time_diff, ", queue_size=", conf->queue_size,
+               ")");
 
   kafka_producer->poll(0);
 
@@ -312,12 +313,9 @@ static constexpr double QUEUE_FLUSH_INTERVAL = 3.0;
 void KafkaProducer::calculate() noexcept
 {
   current_time = clock();
-  double time_diff =
-      static_cast<double>(current_time - last_time) / CLOCKS_PER_SEC;
+  time_diff = static_cast<double>(current_time - last_time) / CLOCKS_PER_SEC;
   if (time_diff > conf->queue_period) {
     queue_flush = true;
-    Util::dprint(F, "queue_flush=", static_cast<int>(queue_flush),
-                 " (time_diff=", time_diff, ")");
   }
   calculate_interval = 0;
 }
