@@ -101,6 +101,7 @@ KafkaProducer::KafkaProducer(shared_ptr<Config> _conf) : conf(move(_conf))
 
   if (conf->mode_grow || conf->input_type == InputType::NIC) {
     queue_auto_flush = true;
+    last_time = std::chrono::high_resolution_clock::now();
   }
 
   set_kafka_threshold();
@@ -299,8 +300,8 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   Util::dprint(F, "produced message: ", message.size(),
                " bytes (queue_auto_flush=", static_cast<int>(queue_auto_flush),
                ", queue_flush=", static_cast<int>(queue_flush),
-               ", time_diff=", time_diff, ", queue_size=", conf->queue_size,
-               ")");
+               ", time_diff=", time_diff.count(),
+               ", queue_size=", conf->queue_size, ")");
 
   kafka_producer->poll(0);
 
@@ -312,9 +313,10 @@ static constexpr double QUEUE_FLUSH_INTERVAL = 3.0;
 
 void KafkaProducer::calculate() noexcept
 {
-  current_time = clock();
-  time_diff = static_cast<double>(current_time - last_time) / CLOCKS_PER_SEC;
-  if (time_diff > conf->queue_period) {
+  current_time = std::chrono::high_resolution_clock::now();
+  time_diff = std::chrono::duration_cast<std::chrono::duration<double>>(
+      current_time - last_time);
+  if (time_diff.count() > static_cast<double>(conf->queue_period)) {
     queue_flush = true;
   }
   calculate_interval = 0;
@@ -339,7 +341,7 @@ bool KafkaProducer::produce(const string& message) noexcept
 
     queue_flush = false;
     if (queue_auto_flush) {
-      last_time = clock();
+      last_time = std::chrono::high_resolution_clock::now();
     }
 
     wait_queue(queue_threshold);

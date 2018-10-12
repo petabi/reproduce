@@ -15,6 +15,7 @@ static constexpr size_t MAX_PACKET_LENGTH = 65535;
 static constexpr size_t MESSAGE_SIZE =
     MAX_PACKET_LENGTH + sizeof(pcap_sf_pkthdr) + 1;
 volatile sig_atomic_t stop = 0;
+pcap_t* Controller::pcd = nullptr;
 
 Controller::Controller(Config _conf)
 {
@@ -120,7 +121,7 @@ InputType Controller::get_input_type() const
     pcap_t* pcd_chk;
     char errbuf[PCAP_ERRBUF_SIZE];
     pcd_chk =
-        pcap_open_live(conf->input.c_str(), MAX_PACKET_LENGTH, 0, -1, errbuf);
+        pcap_open_live(conf->input.c_str(), MAX_PACKET_LENGTH, 0, 1000, errbuf);
     if (pcd_chk != nullptr) {
       pcap_close(pcd_chk);
       return InputType::NIC;
@@ -319,7 +320,7 @@ ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
   while (res == 0 && !stop) {
     res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
   }
-  if (res < 0) {
+  if (res < 0 && !stop) {
     return ControllerResult::FAIL;
   }
   if (stop == 1) {
@@ -461,6 +462,12 @@ bool Controller::check_count(const size_t sent_count) const noexcept
   return true;
 }
 
-void Controller::signal_handler(int signal) { stop = 1; }
+void Controller::signal_handler(int signal)
+{
+  if (pcd != nullptr) {
+    pcap_breakloop(pcd);
+  }
+  stop = 1;
+}
 
 // vim: et:ts=2:sw=2

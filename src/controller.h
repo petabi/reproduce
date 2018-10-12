@@ -30,7 +30,7 @@ private:
   std::shared_ptr<Config> conf;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
-  pcap_t* pcd{nullptr};
+  static pcap_t* pcd;
   FILE* pcapfile{nullptr};
   std::ifstream logfile;
   ControllerResult (Controller::*get_next_data)(char* imessage,
