@@ -18,7 +18,7 @@ void Report::start() noexcept
     return;
   }
 
-  time_start = clock();
+  time_start = std::chrono::steady_clock::now();
 }
 
 void Report::process(const size_t orig_length,
@@ -47,12 +47,13 @@ void Report::end() noexcept
     return;
   }
 
-  time_now = clock();
-  time_diff = static_cast<double>(time_now - time_start) / CLOCKS_PER_SEC;
+  time_now = std::chrono::steady_clock::now();
+  time_diff = std::chrono::duration_cast<std::chrono::duration<double>>(
+      time_now - time_start);
 
-  if (time_diff) {
-    perf_kbps = static_cast<double>(sent_byte) / KBYTE / time_diff;
-    perf_kpps = static_cast<double>(sent_count) / KPACKET / time_diff;
+  if (time_diff.count()) {
+    perf_kbps = static_cast<double>(sent_byte) / KBYTE / time_diff.count();
+    perf_kpps = static_cast<double>(sent_count) / KPACKET / time_diff.count();
   }
   if (sent_count) {
     orig_byte_avg = static_cast<double>(orig_byte) / sent_count;
@@ -116,7 +117,7 @@ void Report::end() noexcept
        << static_cast<double>(sent_count) / MPACKET << "M)\n";
   cout << "Fail Count\t: " << fail_count << "("
        << static_cast<double>(fail_count) / MPACKET << "M)\n";
-  cout << "Elapsed Time\t: " << time_diff << "s\n";
+  cout << "Elapsed Time\t: " << time_diff.count() << "s\n";
   cout << "Performance\t: " << perf_kbps / KBYTE << "MBps/" << perf_kpps
        << "Kpps\n";
   cout << "--------------------------------------------------\n";

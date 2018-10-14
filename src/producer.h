@@ -59,9 +59,9 @@ private:
   bool queue_flush{false};
   size_t calculate_interval{0};
   std::chrono::time_point<std::chrono::steady_clock> last_time{
-      (std::chrono::seconds::zero())};
+      (std::chrono::milliseconds::zero())};
   std::chrono::time_point<std::chrono::steady_clock> current_time{
-      (std::chrono::seconds::zero())};
+      (std::chrono::milliseconds::zero())};
   std::chrono::duration<double> time_diff{0.0};
   bool produce_core(const std::string& message) noexcept;
   void wait_queue(const int count) noexcept;

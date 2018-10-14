@@ -1,6 +1,7 @@
 #ifndef REPORT_H
 #define REPORT_H
 
+#include <chrono>
 #include <memory>
 
 #include "config.h"
@@ -35,9 +36,11 @@ private:
   size_t fail_count{0};
   double perf_kbps{0.0};
   double perf_kpps{0.0};
-  clock_t time_start{0};
-  clock_t time_now{0};
-  double time_diff{0.0};
+  std::chrono::time_point<std::chrono::steady_clock> time_start{
+      (std::chrono::milliseconds::zero())};
+  std::chrono::time_point<std::chrono::steady_clock> time_now{
+      (std::chrono::milliseconds::zero())};
+  std::chrono::duration<double> time_diff{0.0};
 };
 
 #endif
