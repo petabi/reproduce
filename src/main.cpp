@@ -1,9 +1,5 @@
-#include <iostream>
-
 #include "config.h"
 #include "controller.h"
-#include "converter.h"
-#include "producer.h"
 
 using namespace std;
 

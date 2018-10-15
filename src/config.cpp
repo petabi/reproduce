@@ -33,10 +33,10 @@ void Config::help() const noexcept
        << "      it overrides default kafka config to user kafka config\n";
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' option is given, output is kafka\n";
-  cout << "  -p: queue period time. how much time keep queued data\n"
-       << "      (default: " << QUEUE_PERIOD << ")\n";
-  cout << "  -q: queue size. how many bytes send once to kafka\n"
-       << "      (default: " << QUEUE_SIZE << ")\n";
+  cout << "  -p: queue period time. how much time keep queued data."
+       << " (default: " << QUEUE_PERIOD << ")\n";
+  cout << "  -q: queue size. how many bytes send once to kafka."
+       << " (default: " << QUEUE_SIZE << ")\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
        << " (default: " << KAFKA_TOPIC << ")\n";
