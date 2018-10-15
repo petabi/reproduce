@@ -38,17 +38,53 @@ Controller::~Controller()
 
 void Controller::run()
 {
-  char imessage[message_size];
-  char omessage[message_size];
+  if (conf->input_type == InputType::DIR) {
+    run_split();
+    return;
+  } else {
+    run_single();
+  }
+}
+
+void Controller::run_split()
+{
+  string filename;
+  string dir_path = conf->input;
+  if (dir_path[dir_path.length() - 1] != '/') {
+    dir_path += '/';
+  }
+  DIR* dir = opendir(dir_path.c_str());
+  if (dir == nullptr) {
+    throw runtime_error("Failed to open the directory: " + dir_path);
+  }
+  while (!stop) {
+    filename = get_next_file(dir);
+    if (filename == "." || filename == "..") {
+      continue;
+    } else if (filename.empty()) {
+      break;
+    }
+    conf->input = dir_path + filename;
+    Util::dprint(F, conf->input);
+    if (!set_converter()) {
+      closedir(dir);
+      throw runtime_error("Failed to set the converter");
+    }
+    this->run();
+    close_pcap();
+    close_log();
+  }
+  closedir(dir);
+}
+
+void Controller::run_single()
+{
+  char imessage[MESSAGE_SIZE];
+  char omessage[MESSAGE_SIZE];
   size_t imessage_len = 0, omessage_len = 0;
   ControllerResult ret;
   size_t sent_count;
   Report report(conf);
-
-  if (conf->input_type == InputType::DIR) {
-    run_dir();
-    return;
-  }
 
   if (signal(SIGINT, signal_handler) == SIG_ERR ||
       signal(SIGTERM, signal_handler) == SIG_ERR) {
@@ -492,37 +528,6 @@ void Controller::signal_handler(int signal)
     pcap_breakloop(pcd);
   }
   stop = 1;
-}
-
-void Controller::run_dir()
-{
-  string filename;
-  string dir_path = conf->input;
-  if (dir_path[dir_path.length() - 1] != '/') {
-    dir_path += '/';
-  }
-  DIR* dir = opendir(dir_path.c_str());
-  if (dir == nullptr) {
-    throw runtime_error("Failed to open the directory: " + dir_path);
-  }
-  while (!stop) {
-    filename = get_next_file(dir);
-    if (filename == "." || filename == "..") {
-      continue;
-    } else if (filename.empty()) {
-      break;
-    }
-    conf->input = dir_path + filename;
-    Util::dprint(F, conf->input);
-    if (!set_converter()) {
-      closedir(dir);
-      throw runtime_error("Failed to set the converter");
-    }
-    this->run();
-    close_pcap();
-    close_log();
-  }
-  closedir(dir);
 }
 
 // vim: et:ts=2:sw=2

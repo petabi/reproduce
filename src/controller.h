@@ -38,6 +38,8 @@ private:
   ControllerResult (Controller::*get_next_data)(char* imessage,
                                                 size_t& imessage_len);
   bool (Controller::*skip_data)(const size_t count_skip);
+  void run_split();
+  void run_single();
   InputType get_input_type() const;
   OutputType get_output_type() const;
   bool set_converter();
@@ -58,7 +60,6 @@ private:
   bool skip_null(const size_t count_skip);
   bool check_count(const size_t sent_count) const noexcept;
   static void signal_handler(int signal);
-  void run_dir();
 };
 
 #endif
