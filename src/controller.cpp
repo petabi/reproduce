@@ -45,6 +45,11 @@ void Controller::run()
   size_t sent_count;
   Report report(conf);
 
+  if (conf->input_type == InputType::DIR) {
+    run_dir();
+    return;
+  }
+
   if (signal(SIGINT, signal_handler) == SIG_ERR ||
       signal(SIGTERM, signal_handler) == SIG_ERR) {
     Util::eprint(F, "Failed to register signal");
@@ -116,6 +121,13 @@ InputType Controller::get_input_type() const
     return InputType::None;
   }
 
+  DIR* dir_chk = nullptr;
+  dir_chk = opendir(conf->input.c_str());
+  if (dir_chk != nullptr) {
+    closedir(dir_chk);
+    return InputType::DIR;
+  }
+
   ifstream ifs(conf->input, ios::binary);
   if (!ifs) {
     pcap_t* pcd_chk;
@@ -185,6 +197,9 @@ bool Controller::set_converter()
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
     Util::dprint(F, "input type=LOG");
+    break;
+  case InputType::DIR:
+    Util::dprint(F, "input type=DIR");
     break;
   case InputType::None:
     conv = make_unique<NullConverter>();
@@ -416,6 +431,15 @@ ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
   return ControllerResult::Success;
 }
 
+std::string Controller::get_next_file(DIR* dir) const
+{
+  struct dirent* dirp = readdir(dir);
+  if (dirp == nullptr) {
+    return "";
+  }
+  return dirp->d_name;
+}
+
 bool Controller::skip_pcap(const size_t count_skip)
 {
   struct pcap_sf_pkthdr pp;
@@ -468,6 +492,37 @@ void Controller::signal_handler(int signal)
     pcap_breakloop(pcd);
   }
   stop = 1;
+}
+
+void Controller::run_dir()
+{
+  string filename;
+  string dir_path = conf->input;
+  if (dir_path[dir_path.length() - 1] != '/') {
+    dir_path += '/';
+  }
+  DIR* dir = opendir(dir_path.c_str());
+  if (dir == nullptr) {
+    throw runtime_error("Failed to open the directory: " + dir_path);
+  }
+  while (!stop) {
+    filename = get_next_file(dir);
+    if (filename == "." || filename == "..") {
+      continue;
+    } else if (filename.empty()) {
+      break;
+    }
+    conf->input = dir_path + filename;
+    Util::dprint(F, conf->input);
+    if (!set_converter()) {
+      closedir(dir);
+      throw runtime_error("Failed to set the converter");
+    }
+    this->run();
+    close_pcap();
+    close_log();
+  }
+  closedir(dir);
 }
 
 // vim: et:ts=2:sw=2
