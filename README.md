@@ -41,12 +41,12 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 
 ### Program Usage
 
-```./Packetproducer [OPTIONS]```
+```./packetproducer [OPTIONS]```
 
 ### OPTIONS
 
 ```
-  -b: kafka broker (default: localhost:9092)
+  -b: kafka broker list (default: localhost:9092)
   -c: send count
   -d: debug mode. print debug messages
   -e: evaluation mode. report statistics
@@ -54,12 +54,13 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
   -g: follow the growing input file
   -h: help
   -i: input [PCAPFILE/LOGFILE/NIC]
-      If no 'i' option is given, sample data is converted
+      If no 'i' option is given, input is internal sample data
   -k: kafka config file (Ex: kafka.conf)
+      it overrides default kafka config to user kafka config
   -o: output [TEXTFILE/none]
-      If no 'o' input is given, it will be sent via kafka
-  -p: queue period time. how much time keep queued data (default: 3)
-  -q: queue size in byte. how many bytes send once
+      If no 'o' option is given, output is kafka
+  -p: queue period time. how much time keep queued data. (default: 3)
+  -q: queue size. how many bytes send once to kafka. (default: 900000)
   -s: skip count
   -t: kafka topic (default: pcap)
 ```
