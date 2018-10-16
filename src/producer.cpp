@@ -309,7 +309,6 @@ bool KafkaProducer::produce_core(const string& message) noexcept
 }
 
 static constexpr size_t CALCULATE_INTERVAL = 1;
-static constexpr double QUEUE_FLUSH_INTERVAL = 3.0;
 
 void KafkaProducer::calculate() noexcept
 {
