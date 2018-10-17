@@ -8,10 +8,10 @@
 
 using namespace std;
 
-static constexpr char KAFKA_BROKER[] = "localhost:9092";
-static constexpr char KAFKA_TOPIC[] = "pcap";
-static constexpr size_t QUEUE_PERIOD = 3;
-static constexpr size_t QUEUE_SIZE = 900000;
+static constexpr char default_kafka_broker[] = "localhost:9092";
+static constexpr char default_kafka_topic[] = "pcap";
+static constexpr size_t default_queue_period = 3;
+static constexpr size_t default_queue_size = 900000;
 
 void Config::help() const noexcept
 {
@@ -19,7 +19,7 @@ void Config::help() const noexcept
        << RdKafka::version_str() << ")\n";
   cout << "[USAGE] " << PROGRAM_NAME << " [OPTIONS]\n";
   cout << "  -b: kafka broker list"
-       << " (default: " << KAFKA_BROKER << ")\n";
+       << " (default: " << default_kafka_broker << ")\n";
   cout << "  -c: send count\n";
   cout << "  -d: debug mode. print debug messages\n";
   cout << "  -e: evaluation mode. report statistics\n";
@@ -34,12 +34,12 @@ void Config::help() const noexcept
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' option is given, output is kafka\n";
   cout << "  -p: queue period time. how much time keep queued data."
-       << " (default: " << QUEUE_PERIOD << ")\n";
+       << " (default: " << default_queue_period << ")\n";
   cout << "  -q: queue size. how many bytes send once to kafka."
-       << " (default: " << QUEUE_SIZE << ")\n";
+       << " (default: " << default_queue_size << ")\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic"
-       << " (default: " << KAFKA_TOPIC << ")\n";
+       << " (default: " << default_kafka_topic << ")\n";
 }
 
 bool Config::set(int argc, char** argv)
@@ -108,17 +108,17 @@ void Config::set_default() noexcept
   Util::dprint(F, "set default config");
 
   if (kafka_broker.empty()) {
-    kafka_broker = KAFKA_BROKER;
+    kafka_broker = default_kafka_broker;
   }
 
   if (kafka_topic.empty()) {
-    kafka_topic = KAFKA_TOPIC;
+    kafka_topic = default_kafka_topic;
   }
-  if (queue_size <= 0 || queue_size > QUEUE_SIZE) {
-    queue_size = QUEUE_SIZE;
+  if (queue_size <= 0 || queue_size > default_queue_size) {
+    queue_size = default_queue_size;
   }
   if (queue_period == 0) {
-    queue_period = QUEUE_PERIOD;
+    queue_period = default_queue_period;
   }
 }
 

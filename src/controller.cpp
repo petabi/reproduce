@@ -11,9 +11,9 @@
 
 using namespace std;
 
-static constexpr size_t MAX_PACKET_LENGTH = 65535;
-static constexpr size_t MESSAGE_SIZE =
-    MAX_PACKET_LENGTH + sizeof(pcap_sf_pkthdr) + 1;
+static constexpr size_t max_packet_length = 65535;
+static constexpr size_t message_size =
+    max_packet_length + sizeof(pcap_sf_pkthdr) + 1;
 volatile sig_atomic_t stop = 0;
 pcap_t* Controller::pcd = nullptr;
 
@@ -38,8 +38,8 @@ Controller::~Controller()
 
 void Controller::run()
 {
-  char imessage[MESSAGE_SIZE];
-  char omessage[MESSAGE_SIZE];
+  char imessage[message_size];
+  char omessage[message_size];
   size_t imessage_len = 0, omessage_len = 0;
   ControllerResult ret;
   size_t sent_count;
@@ -61,16 +61,16 @@ void Controller::run()
   report.start();
 
   while (!stop) {
-    imessage_len = MESSAGE_SIZE;
+    imessage_len = message_size;
     ret = invoke(get_next_data, this, imessage, imessage_len);
-    if (ret == ControllerResult::SUCCESS) {
+    if (ret == ControllerResult::Success) {
       omessage_len =
-          conv->convert(imessage, imessage_len, omessage, MESSAGE_SIZE);
-    } else if (ret == ControllerResult::FAIL) {
+          conv->convert(imessage, imessage_len, omessage, message_size);
+    } else if (ret == ControllerResult::Fail) {
       Util::eprint(F, "Failed to convert input data");
       break;
-    } else if (ret == ControllerResult::NO_MORE) {
-      if (conf->input_type != InputType::NIC && conf->mode_grow) {
+    } else if (ret == ControllerResult::No_more) {
+      if (conf->input_type != InputType::Nic && conf->mode_grow) {
         // TODO: optimize time interval
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         continue;
@@ -113,7 +113,7 @@ InputType Controller::get_input_type() const
   // return NIC;
 
   if (conf->input.empty()) {
-    return InputType::NONE;
+    return InputType::None;
   }
 
   ifstream ifs(conf->input, ios::binary);
@@ -121,10 +121,10 @@ InputType Controller::get_input_type() const
     pcap_t* pcd_chk;
     char errbuf[PCAP_ERRBUF_SIZE];
     pcd_chk =
-        pcap_open_live(conf->input.c_str(), MAX_PACKET_LENGTH, 0, 1000, errbuf);
+        pcap_open_live(conf->input.c_str(), max_packet_length, 0, 1000, errbuf);
     if (pcd_chk != nullptr) {
       pcap_close(pcd_chk);
-      return InputType::NIC;
+      return InputType::Nic;
     } else {
       throw runtime_error("Failed to open input file: " + conf->input);
     }
@@ -138,26 +138,26 @@ InputType Controller::get_input_type() const
       memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
       memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
       memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
-    return InputType::PCAP;
+    return InputType::Pcap;
   } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
              memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
-    return InputType::PCAPNG;
+    return InputType::Pcapng;
   }
 
-  return InputType::LOG;
+  return InputType::Log;
 }
 
 OutputType Controller::get_output_type() const
 {
   if (conf->output.empty()) {
-    return OutputType::KAFKA;
+    return OutputType::Kafka;
   }
 
   if (conf->output == "none") {
-    return OutputType::NONE;
+    return OutputType::None;
   }
 
-  return OutputType::FILE;
+  return OutputType::File;
 }
 
 bool Controller::set_converter()
@@ -166,27 +166,27 @@ bool Controller::set_converter()
   uint32_t l2_type;
 
   switch (conf->input_type) {
-  case InputType::NIC:
+  case InputType::Nic:
     l2_type = open_nic(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_nic;
     Util::dprint(F, "input type=NIC");
     break;
-  case InputType::PCAP:
+  case InputType::Pcap:
     l2_type = open_pcap(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_pcap;
     skip_data = &Controller::skip_pcap;
     Util::dprint(F, "input type=PCAP");
     break;
-  case InputType::LOG:
+  case InputType::Log:
     open_log(conf->input);
     conv = make_unique<LogConverter>();
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
     Util::dprint(F, "input type=LOG");
     break;
-  case InputType::NONE:
+  case InputType::None:
     conv = make_unique<NullConverter>();
     get_next_data = &Controller::get_next_null;
     skip_data = &Controller::skip_null;
@@ -203,15 +203,15 @@ bool Controller::set_producer()
 {
   conf->output_type = get_output_type();
   switch (conf->output_type) {
-  case OutputType::KAFKA:
+  case OutputType::Kafka:
     prod = make_unique<KafkaProducer>(conf);
     Util::dprint(F, "output type=KAFKA");
     break;
-  case OutputType::FILE:
+  case OutputType::File:
     prod = make_unique<FileProducer>(conf);
     Util::dprint(F, "output type=FILE");
     break;
-  case OutputType::NONE:
+  case OutputType::None:
     prod = make_unique<NullProducer>(conf);
     Util::dprint(F, "output type=NONE");
     break;
@@ -321,10 +321,10 @@ ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
     res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
   }
   if (res < 0 && !stop) {
-    return ControllerResult::FAIL;
+    return ControllerResult::Fail;
   }
   if (stop == 1) {
-    return ControllerResult::NO_MORE;
+    return ControllerResult::No_more;
   }
   sfhdr.caplen = pkthdr->caplen;
   sfhdr.len = pkthdr->len;
@@ -338,7 +338,7 @@ ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
 
   imessage_len = sfhdr.caplen + pp_len;
 
-  return ControllerResult::SUCCESS;
+  return ControllerResult::Success;
 }
 
 ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
@@ -349,25 +349,25 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
   offset = fread(imessage, 1, pp_len, pcapfile);
   if (offset != pp_len) {
     fseek(pcapfile, -offset, SEEK_CUR);
-    return ControllerResult::NO_MORE;
+    return ControllerResult::No_more;
   }
 
   auto* pp = reinterpret_cast<pcap_sf_pkthdr*>(imessage);
-  if (pp->caplen > MAX_PACKET_LENGTH) {
+  if (pp->caplen > max_packet_length) {
     Util::dprint(F,
                  "The captured packet size is abnormally large: ", pp->caplen);
-    return ControllerResult::FAIL;
+    return ControllerResult::Fail;
   }
 
   offset = fread(reinterpret_cast<char*>(imessage + static_cast<int>(pp_len)),
                  1, pp->caplen, pcapfile);
   if (offset != pp->caplen) {
     fseek(pcapfile, -(offset + pp_len), SEEK_CUR);
-    return ControllerResult::NO_MORE;
+    return ControllerResult::No_more;
   }
   imessage_len = pp->caplen + pp_len;
 
-  return ControllerResult::SUCCESS;
+  return ControllerResult::Success;
 }
 
 ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
@@ -380,10 +380,10 @@ ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
   if (!logfile.getline(imessage, imessage_len)) {
     if (logfile.eof()) {
       logfile.clear();
-      return ControllerResult::NO_MORE;
+      return ControllerResult::No_more;
     }
     if (logfile.bad()) {
-      return ControllerResult::FAIL;
+      return ControllerResult::Fail;
     }
     if (logfile.fail()) {
       Util::eprint(F, "The message is truncated [", count, " line(",
@@ -400,7 +400,7 @@ ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
     }
   }
 
-  return ControllerResult::SUCCESS;
+  return ControllerResult::Success;
 }
 
 ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
@@ -413,7 +413,7 @@ ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
   memcpy(imessage, sample_data, strlen(sample_data) + 1);
   imessage_len = strlen(imessage);
 
-  return ControllerResult::SUCCESS;
+  return ControllerResult::Success;
 }
 
 bool Controller::skip_pcap(const size_t count_skip)

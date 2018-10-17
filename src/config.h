@@ -6,17 +6,17 @@
 #include "util.h"
 
 enum class InputType {
-  NONE,
-  PCAP,
-  PCAPNG,
-  NIC,
-  LOG,
+  None,
+  Pcap,
+  Pcapng,
+  Nic,
+  Log,
 };
 
 enum class OutputType {
-  NONE,
-  KAFKA,
-  FILE,
+  None,
+  Kafka,
+  File,
 };
 
 class Config {

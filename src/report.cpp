@@ -5,10 +5,10 @@
 
 using namespace std;
 
-static constexpr double KBYTE = 1024.0;
-static constexpr double MBYTE = KBYTE * KBYTE;
-static constexpr double KPACKET = 1000.0;
-static constexpr double MPACKET = KPACKET * KPACKET;
+static constexpr double kbytes = 1024.0;
+static constexpr double mbytes = kbytes * kbytes;
+static constexpr double kpackets = 1000.0;
+static constexpr double mpackets = kpackets * kpackets;
 
 Report::Report(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
@@ -52,8 +52,8 @@ void Report::end() noexcept
       time_now - time_start);
 
   if (time_diff.count()) {
-    perf_kbps = static_cast<double>(sent_byte) / KBYTE / time_diff.count();
-    perf_kpps = static_cast<double>(sent_count) / KPACKET / time_diff.count();
+    perf_kbps = static_cast<double>(sent_byte) / kbytes / time_diff.count();
+    perf_kpps = static_cast<double>(sent_count) / kpackets / time_diff.count();
   }
   if (sent_count) {
     orig_byte_avg = static_cast<double>(orig_byte) / sent_count;
@@ -65,45 +65,45 @@ void Report::end() noexcept
   cout << "--------------------------------------------------\n";
   struct stat st;
   switch (conf->input_type) {
-  case InputType::PCAP:
+  case InputType::Pcap:
     cout << "Input(PCAP)\t: " << conf->input;
     if (stat(conf->input.c_str(), &st) != -1) {
-      cout << "(" << static_cast<double>(st.st_size) / MBYTE << "M)\n";
+      cout << "(" << static_cast<double>(st.st_size) / mbytes << "M)\n";
     } else {
       cout << '\n';
     }
     break;
-  case InputType::LOG:
+  case InputType::Log:
     cout << "Input(LOG)\t: " << conf->input;
     if (stat(conf->input.c_str(), &st) != -1) {
-      cout << "(" << static_cast<double>(st.st_size) / MBYTE << "M)\n";
+      cout << "(" << static_cast<double>(st.st_size) / mbytes << "M)\n";
     } else {
       cout << '\n';
     }
     break;
-  case InputType::NIC:
+  case InputType::Nic:
     cout << "Input(NIC)\t: " << conf->input << '\n';
     break;
-  case InputType::NONE:
+  case InputType::None:
     cout << "Input(NONE)\t: \n";
     break;
   default:
     break;
   }
   switch (conf->output_type) {
-  case OutputType::FILE:
+  case OutputType::File:
     cout << "Output(FILE)\t: " << conf->output;
     if (stat(conf->input.c_str(), &st) != -1) {
-      cout << "(" << static_cast<double>(st.st_size) / MBYTE << "M)\n";
+      cout << "(" << static_cast<double>(st.st_size) / mbytes << "M)\n";
     } else {
       cout << "(invalid)\n";
     }
     break;
-  case OutputType::KAFKA:
+  case OutputType::Kafka:
     cout << "Output(KAFKA)\t: " << conf->kafka_broker << "("
          << conf->kafka_topic << ")\n";
     break;
-  case OutputType::NONE:
+  case OutputType::None:
     cout << "Output(NONE)\t: \n";
     break;
   }
@@ -112,13 +112,13 @@ void Report::end() noexcept
   cout << "Output Length\t: " << sent_byte_min << "/" << sent_byte_max << "/"
        << sent_byte_avg << "(Min/Max/Avg)\n";
   cout << "Sent Bytes\t: " << sent_byte << "("
-       << static_cast<double>(sent_byte) / MBYTE << "M)\n";
+       << static_cast<double>(sent_byte) / mbytes << "M)\n";
   cout << "Sent Count\t: " << sent_count << "("
-       << static_cast<double>(sent_count) / MPACKET << "M)\n";
+       << static_cast<double>(sent_count) / mpackets << "M)\n";
   cout << "Fail Count\t: " << fail_count << "("
-       << static_cast<double>(fail_count) / MPACKET << "M)\n";
+       << static_cast<double>(fail_count) / mpackets << "M)\n";
   cout << "Elapsed Time\t: " << time_diff.count() << "s\n";
-  cout << "Performance\t: " << perf_kbps / KBYTE << "MBps/" << perf_kpps
+  cout << "Performance\t: " << perf_kbps / kbytes << "MBps/" << perf_kpps
        << "Kpps\n";
   cout << "--------------------------------------------------\n";
 }

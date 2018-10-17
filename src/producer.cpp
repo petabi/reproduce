@@ -9,8 +9,8 @@ using namespace std;
  */
 
 enum class KafkaConfType {
-  GLOBAL = 1,
-  TOPIC,
+  Global = 1,
+  Topic,
 };
 
 struct KafkaConf {
@@ -24,20 +24,20 @@ struct KafkaConf {
 };
 
 static const array<KafkaConf, 4> kafka_conf = {{
-    {KafkaConfType::GLOBAL, "delivery.report.only.error", "true", "false",
+    {KafkaConfType::Global, "delivery.report.only.error", "true", "false",
      "true", "false", "Only provide delivery reports for failed messages"},
-    {KafkaConfType::GLOBAL, "message.max.bytes", "1000000", "1000",
+    {KafkaConfType::Global, "message.max.bytes", "1000000", "1000",
      "1000000000", "1000000", "Maximum Kafka protocol request message size"},
-    {KafkaConfType::GLOBAL, "queue.buffering.max.messages", "10000000", "1",
+    {KafkaConfType::Global, "queue.buffering.max.messages", "10000000", "1",
      "10000000", "100000",
      "Maximum number of messages allowed on the producer queue"},
-    {KafkaConfType::GLOBAL, "queue.buffering.max.kbytes", "2097151", "1",
+    {KafkaConfType::Global, "queue.buffering.max.kbytes", "2097151", "1",
      "2097151", "1048576",
      "Maximum total message size sum allowed on the producer queue"},
 
 #if 0
     // it will reduce performance
-    {KafkaConfType::TOPIC, "compression.codec", "lz4", "none", "none", "none",
+    {KafkaConfType::Topic, "compression.codec", "lz4", "none", "none", "none",
      "none/gzip/snappy/lz4"},
 #endif
 }};
@@ -99,7 +99,7 @@ KafkaProducer::KafkaProducer(shared_ptr<Config> _conf) : conf(move(_conf))
     set_kafka_conf_file(conf->kafka_conf);
   }
 
-  if (conf->mode_grow || conf->input_type == InputType::NIC) {
+  if (conf->mode_grow || conf->input_type == InputType::Nic) {
     queue_auto_flush = true;
     last_time = std::chrono::steady_clock::now();
   }
@@ -146,14 +146,14 @@ void KafkaProducer::set_kafka_conf()
     Util::dprint(F, entry.key, "=", entry.value, " (", entry.min, "~",
                  entry.max, ", ", entry.base, ")");
     switch (entry.type) {
-    case KafkaConfType::GLOBAL:
+    case KafkaConfType::Global:
       if (kafka_gconf->set(entry.key, entry.value, errstr) !=
           RdKafka::Conf::CONF_OK) {
         throw runtime_error("Failed to set kafka global config: " +
                             string(entry.key) + ": " + errstr);
       }
       break;
-    case KafkaConfType::TOPIC:
+    case KafkaConfType::Topic:
       if (kafka_tconf->set(entry.key, entry.value, errstr) !=
           RdKafka::Conf::CONF_OK) {
         throw runtime_error("Failed to set kafka topic config: " +
@@ -308,7 +308,7 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   return true;
 }
 
-static constexpr size_t CALCULATE_INTERVAL = 1;
+static constexpr size_t calculate_threshold = 1;
 
 void KafkaProducer::calculate() noexcept
 {
@@ -324,7 +324,7 @@ void KafkaProducer::calculate() noexcept
 bool KafkaProducer::produce(const string& message) noexcept
 {
   if (queue_auto_flush) {
-    if (calculate_interval >= CALCULATE_INTERVAL) {
+    if (calculate_interval >= calculate_threshold) {
       calculate();
     }
     calculate_interval++;

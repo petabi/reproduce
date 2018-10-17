@@ -13,7 +13,7 @@
 #include "report.h"
 #include "util.h"
 
-enum class ControllerResult { FAIL = -2, NO_MORE = -1, SUCCESS = 0 };
+enum class ControllerResult { Fail = -2, No_more = -1, Success = 0 };
 
 class Controller {
 public:
