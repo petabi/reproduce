@@ -15,9 +15,9 @@ static constexpr size_t default_queue_size = 900000;
 
 void Config::help() const noexcept
 {
-  cout << PROGRAM_NAME << "-" << PROGRAM_VERSION << " (librdkafka++-"
+  cout << program_name << "-" << program_version << " (librdkafka++-"
        << RdKafka::version_str() << ")\n";
-  cout << "[USAGE] " << PROGRAM_NAME << " [OPTIONS]\n";
+  cout << "[USAGE] " << program_name << " [OPTIONS]\n";
   cout << "  -b: kafka broker list"
        << " (default: " << default_kafka_broker << ")\n";
   cout << "  -c: send count\n";
