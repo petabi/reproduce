@@ -22,13 +22,16 @@ void Config::help() const noexcept
        << " (default: " << default_kafka_broker << ")\n";
   cout << "  -c: send count\n";
   cout << "  -d: debug mode. print debug messages\n";
-  cout << "  -e: evaluation mode. output statistical result of transmission after job is terminated or stopped\n";
+  cout << "  -e: evaluation mode. output statistical result of transmission "
+          "after job is terminated or stopped\n";
   cout << "  -f: tcpdump filter (when input is NIC)\n";
-  cout << "      (reference : https://www.tcpdump.org/manpages/pcap-filter.7.html)\n";
+  cout << "      (reference : "
+          "https://www.tcpdump.org/manpages/pcap-filter.7.html)\n";
   cout << "  -g: follow the growing input file\n";
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/DIR/NIC]\n";
-  cout << "      If no 'i' option is given, input is internal sample data and\n";
+  cout
+      << "      If no 'i' option is given, input is internal sample data and\n";
   cout << "      If DIR is given, the g option is not supported.\n";
   cout << "  -k: kafka config file."
        << " (Ex: kafka.conf)\n"
