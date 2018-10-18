@@ -40,7 +40,6 @@ void Controller::run()
 {
   if (conf->input_type == InputType::Dir) {
     run_split();
-    return;
   } else {
     run_single();
   }
