@@ -38,7 +38,7 @@ Controller::~Controller()
 
 void Controller::run()
 {
-  if (conf->input_type == InputType::DIR) {
+  if (conf->input_type == InputType::Dir) {
     run_split();
     return;
   } else {
@@ -79,8 +79,8 @@ void Controller::run_split()
 
 void Controller::run_single()
 {
-  char imessage[MESSAGE_SIZE];
-  char omessage[MESSAGE_SIZE];
+  char imessage[message_size];
+  char omessage[message_size];
   size_t imessage_len = 0, omessage_len = 0;
   ControllerResult ret;
   size_t sent_count;
@@ -161,7 +161,7 @@ InputType Controller::get_input_type() const
   dir_chk = opendir(conf->input.c_str());
   if (dir_chk != nullptr) {
     closedir(dir_chk);
-    return InputType::DIR;
+    return InputType::Dir;
   }
 
   ifstream ifs(conf->input, ios::binary);
@@ -234,7 +234,7 @@ bool Controller::set_converter()
     skip_data = &Controller::skip_log;
     Util::dprint(F, "input type=LOG");
     break;
-  case InputType::DIR:
+  case InputType::Dir:
     Util::dprint(F, "input type=DIR");
     break;
   case InputType::None:
