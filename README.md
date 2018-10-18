@@ -52,7 +52,6 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
   -e: evaluation mode. output statistical result of transmission after job is terminated or stopped
   -f: packet filter syntax when input is NIC
       (reference : https://www.tcpdump.org/manpages/pcap-filter.7.html)
-  -f: tcpdump filter (when input is NIC)
   -g: follow the growing input file
   -h: help
   -i: input [PCAPFILE/LOGFILE/DIR/NIC]
