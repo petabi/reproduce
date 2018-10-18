@@ -1,6 +1,7 @@
 #ifndef PRODUCER_H
 #define PRODUCER_H
 
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -36,7 +37,7 @@ public:
 class KafkaProducer : public Producer {
 public:
   KafkaProducer() = delete;
-  KafkaProducer(Config);
+  KafkaProducer(std::shared_ptr<Config>);
   KafkaProducer(const KafkaProducer&) = delete;
   KafkaProducer& operator=(const KafkaProducer&) = delete;
   KafkaProducer(KafkaProducer&&) = delete;
@@ -45,7 +46,7 @@ public:
   bool produce(const std::string& message) noexcept override;
 
 private:
-  Config conf;
+  std::shared_ptr<Config> conf;
   std::unique_ptr<RdKafka::Conf> kafka_gconf;
   std::unique_ptr<RdKafka::Conf> kafka_tconf;
   std::unique_ptr<RdKafka::Topic> kafka_topic;
@@ -54,12 +55,21 @@ private:
   RdEventCb rd_event_cb;
   std::string queue_data;
   size_t queue_threshold{0};
+  bool queue_auto_flush{false};
+  bool queue_flush{false};
+  size_t calculate_interval{0};
+  std::chrono::time_point<std::chrono::steady_clock> last_time{
+      (std::chrono::milliseconds::zero())};
+  std::chrono::time_point<std::chrono::steady_clock> current_time{
+      (std::chrono::milliseconds::zero())};
+  std::chrono::duration<double> time_diff{0.0};
   bool produce_core(const std::string& message) noexcept;
   void wait_queue(const int count) noexcept;
   void set_kafka_conf();
   void set_kafka_conf_file(const std::string& conf_file);
   void set_kafka_threshold();
   void show_kafka_conf() const;
+  void calculate() noexcept;
 };
 
 /**
@@ -69,7 +79,7 @@ private:
 class FileProducer : public Producer {
 public:
   FileProducer() = delete;
-  FileProducer(Config);
+  FileProducer(std::shared_ptr<Config>);
   FileProducer(const FileProducer&) = delete;
   FileProducer& operator=(const FileProducer&) = delete;
   FileProducer(FileProducer&&) = delete;
@@ -78,7 +88,7 @@ public:
   bool produce(const std::string& message) noexcept override;
 
 private:
-  Config conf;
+  std::shared_ptr<Config> conf;
   std::ofstream file;
   bool open() noexcept;
 };
@@ -90,7 +100,7 @@ private:
 class NullProducer : public Producer {
 public:
   NullProducer() = delete;
-  NullProducer(Config);
+  NullProducer(std::shared_ptr<Config>);
   NullProducer(const NullProducer&) = delete;
   NullProducer& operator=(const NullProducer&) = delete;
   NullProducer(NullProducer&&) = delete;
@@ -99,7 +109,7 @@ public:
   bool produce(const std::string& message) noexcept override;
 
 private:
-  Config conf;
+  std::shared_ptr<Config> conf;
 };
 
 #endif

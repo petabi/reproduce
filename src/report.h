@@ -1,22 +1,27 @@
 #ifndef REPORT_H
 #define REPORT_H
 
+#include <chrono>
+#include <memory>
+
 #include "config.h"
 
 class Report {
 public:
-  Report() = default;
+  Report() = delete;
+  Report(std::shared_ptr<Config>);
   Report(const Report&) = delete;
   Report& operator=(const Report&) = delete;
   Report(Report&&) = delete;
   Report& operator=(Report&&) = delete;
   ~Report() = default;
   void start() noexcept;
+  void calculate() noexcept;
   void process(const size_t orig_length, const size_t sent_length) noexcept;
   void end() noexcept;
   void fail() noexcept;
   size_t get_sent_count() const noexcept;
-  Config conf;
+  std::shared_ptr<Config> conf;
 
 private:
   size_t orig_byte{0};
@@ -31,9 +36,11 @@ private:
   size_t fail_count{0};
   double perf_kbps{0.0};
   double perf_kpps{0.0};
-  clock_t time_start{0};
-  clock_t time_now{0};
-  double time_diff{0.0};
+  std::chrono::time_point<std::chrono::steady_clock> time_start{
+      (std::chrono::milliseconds::zero())};
+  std::chrono::time_point<std::chrono::steady_clock> time_now{
+      (std::chrono::milliseconds::zero())};
+  std::chrono::duration<double> time_diff{0.0};
 };
 
 #endif

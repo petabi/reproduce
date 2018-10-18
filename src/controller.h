@@ -13,7 +13,7 @@
 #include "report.h"
 #include "util.h"
 
-enum class ControllerResult { FAIL = -2, NO_MORE = -1, SUCCESS = 0 };
+enum class ControllerResult { Fail = -2, No_more = -1, Success = 0 };
 
 class Controller {
 public:
@@ -27,11 +27,10 @@ public:
   void run();
 
 private:
-  Config conf;
-  Report report;
+  std::shared_ptr<Config> conf;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
-  pcap_t* pcd{nullptr};
+  static pcap_t* pcd;
   FILE* pcapfile{nullptr};
   std::ifstream logfile;
   ControllerResult (Controller::*get_next_data)(char* imessage,

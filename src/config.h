@@ -6,35 +6,40 @@
 #include "util.h"
 
 enum class InputType {
-  NONE,
-  PCAP,
-  PCAPNG,
-  NIC,
-  LOG,
+  None,
+  Pcap,
+  Pcapng,
+  Nic,
+  Log,
 };
 
 enum class OutputType {
-  NONE,
-  KAFKA,
-  FILE,
+  None,
+  Kafka,
+  File,
 };
 
 class Config {
 public:
+  // user
   bool mode_debug{false}; // print debug messages
   bool mode_eval{false};  // report statistics
   bool mode_grow{false};  // convert while tracking the growing file
-  size_t count_send{0};   // count to send
   size_t count_skip{0};   // count to skip
   size_t queue_size{0};   // how many bytes send once
+  size_t queue_period{0}; // how much time keep queued data
   std::string input;      // input: packet/log/none
   std::string output;     // output: kafka/file/none
-  InputType input_type;
-  OutputType output_type;
   std::string packet_filter;
   std::string kafka_broker;
   std::string kafka_topic;
   std::string kafka_conf;
+
+  // internal
+  size_t count_send{0};
+  InputType input_type;
+  OutputType output_type;
+
   Config() = default;
   Config(const Config&) = default;
   Config& operator=(const Config&) = default;

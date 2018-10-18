@@ -41,24 +41,26 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 
 ### Program Usage
 
-```./Packetproducer [OPTIONS]```
+```./packetproducer [OPTIONS]```
 
 ### OPTIONS
 
 ```
-  -b: kafka broker (default: localhost:9092)
+  -b: kafka broker list (default: localhost:9092)
   -c: send count
   -d: debug mode. print debug messages
   -e: evaluation mode. report statistics
-  -f: tcpdump filter (when input is PCAP or NIC)
+  -f: tcpdump filter (when input is NIC)
   -g: follow the growing input file
   -h: help
   -i: input [PCAPFILE/LOGFILE/NIC]
-      If no 'i' option is given, sample data is converted
+      If no 'i' option is given, input is internal sample data
   -k: kafka config file (Ex: kafka.conf)
+      it overrides default kafka config to user kafka config
   -o: output [TEXTFILE/none]
-      If no 'o' input is given, it will be sent via kafka
-  -q: queue size in byte. how many bytes send once
+      If no 'o' option is given, output is kafka
+  -p: queue period time. how much time keep queued data. (default: 3)
+  -q: queue size. how many bytes send once to kafka. (default: 900000)
   -s: skip count
   -t: kafka topic (default: pcap)
 ```
@@ -100,6 +102,10 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
     * ```./packetproducer -i test.pcap -s 10000 -c 1000 -o none -e```
 * Convert it while following, If the content of the input file continue to grow
     * ```./packetproducer -i test.pcap -g```
+* Convert only udp packets of traffic to and from network interface enp0s3
+    * ```./packetproducer -i enp0s3 -f "udp" -o none
+* When transmitting to kafka once, queue up to 10Kbytes, and if transmission interval is delayed more than 2 seconds, send immediately
+    * ```./packetproducer -i test.pcap -q 10240 -p 2
 
 ### Report Example
 
@@ -138,8 +144,6 @@ Performance     : 70.22MBps/419.14Kpps
 
 ## To do
 
-* Real-time conversion of sending and receiving packets in network interface (related option: i)
-* Add packet filtering function
 * Support More protocols
 * Define the conversion of log and Implement it
 
