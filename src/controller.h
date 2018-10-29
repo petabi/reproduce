@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 
+#include <dirent.h>
+
 #include <pcap/pcap.h>
 
 #include "converter.h"
@@ -36,6 +38,8 @@ private:
   ControllerResult (Controller::*get_next_data)(char* imessage,
                                                 size_t& imessage_len);
   bool (Controller::*skip_data)(const size_t count_skip);
+  void run_split();
+  void run_single();
   InputType get_input_type() const;
   OutputType get_output_type() const;
   bool set_converter();
@@ -50,6 +54,7 @@ private:
   ControllerResult get_next_pcap(char* imessage, size_t& imessage_len);
   ControllerResult get_next_log(char* imessage, size_t& imessage_len);
   ControllerResult get_next_null(char* imessage, size_t& imessage_len);
+  std::string get_next_file(DIR* dir) const;
   bool skip_pcap(const size_t count_skip);
   bool skip_log(const size_t count_skip);
   bool skip_null(const size_t count_skip);

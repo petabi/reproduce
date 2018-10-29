@@ -46,15 +46,17 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 ### OPTIONS
 
 ```
-  -b: kafka broker list (default: localhost:9092)
+  -b: kafka broker list, [host1:port1,host2:port2,..] (default: localhost:9092)
   -c: send count
   -d: debug mode. print debug messages
-  -e: evaluation mode. report statistics
-  -f: tcpdump filter (when input is NIC)
+  -e: evaluation mode. output statistical result of transmission after job is terminated or stopped
+  -f: packet filter syntax when input is NIC
+      (reference : https://www.tcpdump.org/manpages/pcap-filter.7.html)
   -g: follow the growing input file
   -h: help
-  -i: input [PCAPFILE/LOGFILE/NIC]
+  -i: input [PCAPFILE/LOGFILE/DIR/NIC]
       If no 'i' option is given, input is internal sample data
+      If DIR is given, the g option is not supported.
   -k: kafka config file (Ex: kafka.conf)
       it overrides default kafka config to user kafka config
   -o: output [TEXTFILE/none]

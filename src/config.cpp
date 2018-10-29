@@ -18,17 +18,22 @@ void Config::help() const noexcept
   cout << program_name << "-" << program_version << " (librdkafka++-"
        << RdKafka::version_str() << ")\n";
   cout << "[USAGE] " << program_name << " [OPTIONS]\n";
-  cout << "  -b: kafka broker list"
+  cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]"
        << " (default: " << default_kafka_broker << ")\n";
   cout << "  -c: send count\n";
   cout << "  -d: debug mode. print debug messages\n";
-  cout << "  -e: evaluation mode. report statistics\n";
+  cout << "  -e: evaluation mode. output statistical result of transmission "
+          "after job is terminated or stopped\n";
   cout << "  -f: tcpdump filter (when input is NIC)\n";
+  cout << "      (reference : "
+          "https://www.tcpdump.org/manpages/pcap-filter.7.html)\n";
   cout << "  -g: follow the growing input file\n";
   cout << "  -h: help\n";
-  cout << "  -i: input [PCAPFILE/LOGFILE/NIC]\n";
-  cout << "      If no 'i' option is given, input is internal sample data\n";
-  cout << "  -k: kafka config file"
+  cout << "  -i: input [PCAPFILE/LOGFILE/DIR/NIC]\n";
+  cout
+      << "      If no 'i' option is given, input is internal sample data and\n";
+  cout << "      If DIR is given, the g option is not supported.\n";
+  cout << "  -k: kafka config file."
        << " (Ex: kafka.conf)\n"
        << "      it overrides default kafka config to user kafka config\n";
   cout << "  -o: output [TEXTFILE/none]\n";

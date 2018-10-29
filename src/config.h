@@ -5,13 +5,7 @@
 
 #include "util.h"
 
-enum class InputType {
-  None,
-  Pcap,
-  Pcapng,
-  Nic,
-  Log,
-};
+enum class InputType { None, Pcap, Pcapng, Nic, Log, Dir };
 
 enum class OutputType {
   None,
