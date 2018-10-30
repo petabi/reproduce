@@ -125,7 +125,10 @@ void Controller::run_single()
       continue;
     }
 
-    prod->produce(omessage);
+    if (!prod->produce(omessage)) {
+      break;
+    }
+
     report.process(imessage_len, omessage_len);
 
     sent_count = report.get_sent_count();

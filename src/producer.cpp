@@ -8,6 +8,9 @@ using namespace std;
  * KafkaProducer
  */
 
+bool RdDeliveryReportCb::error = false;
+bool RdEventCb::error = false;
+
 enum class KafkaConfType {
   Global = 1,
   Topic,
@@ -44,8 +47,29 @@ static const array<KafkaConf, 4> kafka_conf = {{
 
 void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
 {
-  Util::eprint(F, "message delivery(", message.len(),
-               " bytes): ", message.errstr());
+// FIXME: error handling
+#if 0
+  switch (message.status()) {
+  case RdKafka::Message::MSG_STATUS_NOT_PERSISTED:
+    status_name = "NotPersisted";
+    break;
+  case RdKafka::Message::MSG_STATUS_POSSIBLY_PERSISTED:
+    status_name = "PossiblyPersisted";
+    break;
+  case RdKafka::Message::MSG_STATUS_PERSISTED:
+    status_name = "Persisted";
+    break;
+  default:
+    status_name = "Unknown?";
+    break;
+  }
+#endif
+  if (!message.errstr().empty()) {
+    Util::eprint(F, "KAFKA ERR: ", message.errstr());
+    error = true;
+  } else {
+    Util::eprint(F, "message delivery(", message.len(), " bytes)");
+  }
 
   if (message.key()) {
     Util::eprint(F, "key: ", *(message.key()));
@@ -63,6 +87,7 @@ void RdEventCb::event_cb(RdKafka::Event& event)
     if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) {
     }
 #endif
+    error = true;
     break;
   case RdKafka::Event::EVENT_STATS:
     Util::dprint(F, "KAFKA STAT: ", event.str());
@@ -305,6 +330,10 @@ bool KafkaProducer::produce_core(const string& message) noexcept
 
   kafka_producer->poll(0);
 
+  if (RdEventCb::error || RdDeliveryReportCb::error) {
+    return false;
+  }
+
   return true;
 }
 
@@ -333,8 +362,9 @@ bool KafkaProducer::produce(const string& message) noexcept
   queue_data += message;
 
   if (queue_flush || queue_data.length() >= conf->queue_size) {
-    while (!produce_core(queue_data)) {
+    if (!produce_core(queue_data)) {
       // FIXME: error handling
+      return false;
     }
     queue_data.clear();
 

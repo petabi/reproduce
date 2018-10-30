@@ -26,11 +26,13 @@ public:
 
 class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
 public:
+  static bool error;
   void dr_cb(RdKafka::Message&) override;
 };
 
 class RdEventCb : public RdKafka::EventCb {
 public:
+  static bool error;
   void event_cb(RdKafka::Event&) override;
 };
 
