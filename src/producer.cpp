@@ -441,6 +441,8 @@ bool FileProducer::open() noexcept
 
 NullProducer::NullProducer(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
+NullProducer::~NullProducer() {}
+
 bool NullProducer::produce(const string& message) noexcept { return true; }
 
 // vim: et:ts=2:sw=2

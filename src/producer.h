@@ -18,6 +18,7 @@
 class Producer {
 public:
   virtual bool produce(const std::string& message) = 0;
+  virtual ~Producer(){};
 };
 
 /**
@@ -107,7 +108,7 @@ public:
   NullProducer& operator=(const NullProducer&) = delete;
   NullProducer(NullProducer&&) = delete;
   NullProducer& operator=(NullProducer&&) = delete;
-  ~NullProducer() = default;
+  ~NullProducer();
   bool produce(const std::string& message) noexcept override;
 
 private:
