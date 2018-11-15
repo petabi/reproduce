@@ -18,7 +18,7 @@
 class Producer {
 public:
   virtual bool produce(const std::string& message) = 0;
-  virtual ~Producer(){};
+  virtual ~Producer() = 0;
 };
 
 /**
@@ -45,7 +45,7 @@ public:
   KafkaProducer& operator=(const KafkaProducer&) = delete;
   KafkaProducer(KafkaProducer&&) = delete;
   KafkaProducer& operator=(KafkaProducer&&) = delete;
-  ~KafkaProducer();
+  ~KafkaProducer() override;
   bool produce(const std::string& message) noexcept override;
 
 private:
@@ -85,7 +85,7 @@ public:
   FileProducer& operator=(const FileProducer&) = delete;
   FileProducer(FileProducer&&) = delete;
   FileProducer& operator=(FileProducer&&) = delete;
-  ~FileProducer();
+  ~FileProducer() override;
   bool produce(const std::string& message) noexcept override;
 
 private:
@@ -106,7 +106,7 @@ public:
   NullProducer& operator=(const NullProducer&) = delete;
   NullProducer(NullProducer&&) = delete;
   NullProducer& operator=(NullProducer&&) = delete;
-  ~NullProducer();
+  ~NullProducer() override;
   bool produce(const std::string& message) noexcept override;
 
 private:
