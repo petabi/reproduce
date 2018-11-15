@@ -45,6 +45,8 @@ static const array<KafkaConf, 4> kafka_conf = {{
 #endif
 }};
 
+Producer::~Producer() {}
+
 void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
 {
 // FIXME: error handling
