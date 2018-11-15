@@ -45,7 +45,7 @@ static const array<KafkaConf, 4> kafka_conf = {{
 #endif
 }};
 
-Producer::~Producer() {}
+Producer::~Producer() = default;
 
 void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
 {
@@ -437,7 +437,7 @@ bool FileProducer::open() noexcept
 
 NullProducer::NullProducer(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
-NullProducer::~NullProducer() {}
+NullProducer::~NullProducer() = default;
 
 bool NullProducer::produce(const string& message) noexcept { return true; }
 
