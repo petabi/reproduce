@@ -132,7 +132,7 @@ void Controller::run_single()
     report.process(imessage_len, omessage_len);
 
     sent_count = report.get_sent_count();
-    Util::mprint(omessage, sent_count);
+    Util::iprint("[", sent_count, "]", " message : ", omessage);
 
     if (check_count(sent_count)) {
       break;

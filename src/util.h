@@ -5,7 +5,9 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <string>
+#include <syslog.h>
 
 inline std::string class_name(const std::string& pretty_function)
 {
@@ -31,17 +33,17 @@ public:
   Util(Util&&) = delete;
   Util& operator=(Util&&) = delete;
   ~Util() = delete;
-  template <typename T> static void print(T tail);
-  template <typename T, typename... Ts> static void print(T head, Ts... tail);
+  template <typename T> static void print(std::ostream& logstream, T tail);
+  template <typename T, typename... Ts>
+  static void print(std::ostream& logstream, T head, Ts... tail);
   template <typename T>
   static void dprint(const char* file, const char* name, T tail);
   template <typename T, typename... Ts>
   static void dprint(const char* file, const char* name, T head, Ts... tail);
-  template <typename T>
-  static void eprint(const char* file, const char* name, T tail);
-  template <typename T, typename... Ts>
-  static void eprint(const char* file, const char* name, T head, Ts... tail);
-  static void mprint(const char* message, const size_t count) noexcept;
+  template <typename T> static void iprint(T tail);
+  template <typename T, typename... Ts> static void iprint(T head, Ts... tail);
+  template <typename T> static void eprint(T tail);
+  template <typename T, typename... Ts> static void eprint(T head, Ts... tail);
   static void set_debug(const bool& debug);
   static std::string& ltrim(std::string& str);
   static std::string& rtrim(std::string& str);
@@ -51,15 +53,16 @@ private:
   static bool debug;
 };
 
-template <typename T> void Util::print(T tail)
+template <typename T> void Util::print(std::ostream& logstream, T tail)
 {
-  std::cout << tail << "\n" << std::flush;
+  logstream << tail << "\n";
 }
 
-template <typename T, typename... Ts> void Util::print(T head, Ts... tail)
+template <typename T, typename... Ts>
+void Util::print(std::ostream& logstream, T head, Ts... tail)
 {
-  std::cout << head;
-  print(tail...);
+  logstream << head;
+  print(logstream, tail...);
 }
 
 template <typename T>
@@ -68,9 +71,10 @@ void Util::dprint(const char* file, const char* name, T head)
   if (!debug) {
     return;
   }
-
-  std::cout << "[DEBUG] " << file << "::" << name << ": " << head << "\n"
-            << std::flush;
+  std::ostringstream logstream;
+  logstream << file << "::" << name << ": " << head << "\n";
+  std::cout << logstream.str();
+  syslog(LOG_DEBUG, "%s", (logstream.str()).c_str());
 }
 
 template <typename T, typename... Ts>
@@ -79,23 +83,45 @@ void Util::dprint(const char* file, const char* name, T head, Ts... tail)
   if (!debug) {
     return;
   }
-
-  std::cout << "[DEBUG] " << file << "::" << name << ": " << head;
-  print(tail...);
+  std::ostringstream logstream;
+  logstream << file << "::" << name << ": " << head;
+  print(logstream, tail...);
+  std::cout << logstream.str();
+  syslog(LOG_DEBUG, "%s", (logstream.str()).c_str());
 }
 
-template <typename T>
-void Util::eprint(const char* file, const char* name, T tail)
+template <typename T> void Util::iprint(T tail)
 {
-  std::cout << "[ERROR] " << file << "::" << name << ": " << tail << "\n"
-            << std::flush;
+  std::ostringstream logstream;
+  logstream << tail << "\n";
+  std::cout << logstream.str();
+  syslog(LOG_INFO, "%s", (logstream.str()).c_str());
 }
 
-template <typename T, typename... Ts>
-void Util::eprint(const char* file, const char* name, T head, Ts... tail)
+template <typename T, typename... Ts> void Util::iprint(T head, Ts... tail)
 {
-  std::cout << "[ERROR] " << file << "::" << name << ": " << head;
-  print(tail...);
+  std::ostringstream logstream;
+  logstream << head;
+  print(logstream, tail...);
+  std::cout << logstream.str();
+  syslog(LOG_INFO, "%s", (logstream.str()).c_str());
+}
+
+template <typename T> void Util::eprint(T tail)
+{
+  std::ostringstream logstream;
+  logstream << tail << "\n";
+  std::cout << logstream.str();
+  syslog(LOG_ERR, "%s", (logstream.str()).c_str());
+}
+
+template <typename T, typename... Ts> void Util::eprint(T head, Ts... tail)
+{
+  std::ostringstream logstream;
+  logstream << head;
+  print(logstream, tail...);
+  std::cout << logstream.str();
+  syslog(LOG_ERR, "%s", (logstream.str()).c_str());
 }
 
 #endif

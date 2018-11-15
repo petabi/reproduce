@@ -27,7 +27,7 @@ struct KafkaConf {
 };
 
 static const array<KafkaConf, 4> kafka_conf = {{
-    {KafkaConfType::Global, "delivery.report.only.error", "true", "false",
+    {KafkaConfType::Global, "delivery.report.only.error", "false", "false",
      "true", "false", "Only provide delivery reports for failed messages"},
     {KafkaConfType::Global, "message.max.bytes", "1000000", "1000",
      "1000000000", "1000000", "Maximum Kafka protocol request message size"},
@@ -64,15 +64,15 @@ void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
     break;
   }
 #endif
-  if (!message.errstr().empty()) {
-    Util::eprint(F, "KAFKA ERR: ", message.errstr());
+  if (message.err() != 0) {
+    Util::eprint("Message Produce Fail: ", message.errstr());
     error = true;
   } else {
-    Util::eprint(F, "message delivery(", message.len(), " bytes)");
+    Util::iprint("Message Produce Success: ", message.len(), " bytes");
   }
 
   if (message.key()) {
-    Util::eprint(F, "key: ", *(message.key()));
+    Util::eprint(", key: ", *(message.key()));
   }
 }
 
@@ -80,24 +80,23 @@ void RdEventCb::event_cb(RdKafka::Event& event)
 {
   switch (event.type()) {
   case RdKafka::Event::EVENT_ERROR:
-    Util::eprint(F, "KAFKA ERR: ", RdKafka::err2str(event.err()), ": ",
+    Util::eprint("Kafka Event Error: ", RdKafka::err2str(event.err()), ": ",
                  event.str());
-    // FIXME: error handling
-#if 0
-    if (event.err() == RdKafka::ERR__ALL_BROKERS_DOWN) {
-    }
-#endif
     error = true;
     break;
+
+// TODO : if necessary, add statistical function and throttle function.
+#if 0
   case RdKafka::Event::EVENT_STATS:
-    Util::dprint(F, "KAFKA STAT: ", event.str());
+    Util::iprint("Kafka Event Stat: ", event.str());
     break;
+#endif
   case RdKafka::Event::EVENT_LOG:
-    Util::dprint(F, "KAFKA LOG-", event.severity(), "-", event.fac(), ": ",
+    Util::iprint("Kafka Event Log-", event.severity(), ": ", event.fac(), ": ",
                  event.str());
     break;
   default:
-    Util::eprint(F, "KAFKA EVENT: ", RdKafka::err2str(event.err()), ": ",
+    Util::dprint(F, "Kafka Event : ", RdKafka::err2str(event.err()), ": ",
                  event.str());
     break;
   }
@@ -174,20 +173,19 @@ void KafkaProducer::set_kafka_conf()
     case KafkaConfType::Global:
       if (kafka_gconf->set(entry.key, entry.value, errstr) !=
           RdKafka::Conf::CONF_OK) {
-        throw runtime_error("Failed to set kafka global config: " +
+        throw runtime_error("Failed to set default kafka global config: " +
                             string(entry.key) + ": " + errstr);
       }
       break;
     case KafkaConfType::Topic:
       if (kafka_tconf->set(entry.key, entry.value, errstr) !=
           RdKafka::Conf::CONF_OK) {
-        throw runtime_error("Failed to set kafka topic config: " +
+        throw runtime_error("Failed to set default kafka topic config: " +
                             string(entry.key) + ": " + errstr);
       }
       break;
     default:
-      Util::eprint(F,
-                   "unknown kafka config type: ", static_cast<int>(entry.type));
+      throw runtime_error("Failed to set default kafka config: unknown type");
       break;
     }
   }
@@ -286,27 +284,30 @@ void KafkaProducer::show_kafka_conf() const
     list<string>* dump;
     if (pass == 0) {
       dump = kafka_gconf->dump();
-      Util::dprint(F, "### Global Config");
+      Util::iprint("### Global Config");
     } else {
       dump = kafka_tconf->dump();
-      Util::dprint(F, "### Topic Config");
+      Util::iprint("### Topic Config");
     }
     for (auto it = dump->cbegin(); it != dump->cend();) {
       string key = *it++;
       string value = *it++;
-      Util::dprint(F, key, "=", value);
+      Util::iprint(key, "=", value);
     }
   }
 }
 
 void KafkaProducer::wait_queue(const int count) noexcept
 {
-  while (kafka_producer->outq_len() > count) {
-    Util::dprint(F, "waiting for ", kafka_producer->outq_len());
-
+  if (kafka_producer->outq_len() <= count) {
+    return;
+  }
+  Util::iprint("waiting for delivery of messages: ",
+               kafka_producer->outq_len());
+  do {
     // FIXME: test effects of timeout (original 1000)
     kafka_producer->poll(100);
-  }
+  } while (kafka_producer->outq_len() > count);
 }
 
 bool KafkaProducer::produce_core(const string& message) noexcept
@@ -318,15 +319,11 @@ bool KafkaProducer::produce_core(const string& message) noexcept
       const_cast<char*>(message.c_str()), message.size(), nullptr, nullptr);
 
   if (resp != RdKafka::ERR_NO_ERROR) {
-    Util::eprint(F, "produce failed: ", RdKafka::err2str(resp));
+    Util::eprint("A message queue entry failed(", message.size(),
+                 "bytes): ", RdKafka::err2str(resp));
     return false;
   }
-
-  Util::dprint(F, "produced message: ", message.size(),
-               " bytes (queue_auto_flush=", static_cast<int>(queue_auto_flush),
-               ", queue_flush=", static_cast<int>(queue_flush),
-               ", time_diff=", time_diff.count(),
-               ", queue_size=", conf->queue_size, ")");
+  Util::iprint("A message queue entry success(", message.size(), "bytes)");
 
   kafka_producer->poll(0);
 
@@ -337,38 +334,36 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   return true;
 }
 
-static constexpr size_t calculate_threshold = 1;
-
-void KafkaProducer::calculate() noexcept
+bool KafkaProducer::period_queue_flush() noexcept
 {
+  if (queue_auto_flush) {
+    return false;
+  }
+
   current_time = std::chrono::steady_clock::now();
   time_diff = std::chrono::duration_cast<std::chrono::duration<double>>(
       current_time - last_time);
   if (time_diff.count() > static_cast<double>(conf->queue_period)) {
-    queue_flush = true;
+    Util::dprint(
+        F, "Time lapse since last message queue entry: ", time_diff.count());
+    return true;
   }
-  calculate_interval = 0;
+
+  return false;
 }
 
 bool KafkaProducer::produce(const string& message) noexcept
 {
-  if (queue_auto_flush) {
-    if (calculate_interval >= calculate_threshold) {
-      calculate();
-    }
-    calculate_interval++;
-  }
 
   queue_data += message;
 
-  if (queue_flush || queue_data.length() >= conf->queue_size) {
+  if (period_queue_flush() || queue_data.length() >= conf->queue_size) {
     if (!produce_core(queue_data)) {
       // FIXME: error handling
       return false;
     }
     queue_data.clear();
 
-    queue_flush = false;
     if (queue_auto_flush) {
       last_time = std::chrono::steady_clock::now();
     }
@@ -383,12 +378,11 @@ bool KafkaProducer::produce(const string& message) noexcept
 
 KafkaProducer::~KafkaProducer()
 {
-  Util::dprint(F, "last queued data: ", queue_data.size());
-
   if (queue_data.size()) {
     produce_core(queue_data);
     queue_data.clear();
   }
+
   wait_queue(0);
 
   RdKafka::wait_destroyed(1000);
@@ -428,7 +422,7 @@ bool FileProducer::open() noexcept
 {
   file.open(conf->output, ios::out);
   if (!file.is_open()) {
-    Util::eprint(F, "Failed to open file: ", conf->output);
+    Util::eprint("Failed to open file: ", conf->output);
     return false;
   }
 

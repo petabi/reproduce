@@ -28,13 +28,13 @@ public:
 class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
 public:
   static bool error;
-  void dr_cb(RdKafka::Message&) override;
+  void dr_cb(RdKafka::Message& message) override;
 };
 
 class RdEventCb : public RdKafka::EventCb {
 public:
   static bool error;
-  void event_cb(RdKafka::Event&) override;
+  void event_cb(RdKafka::Event& event) override;
 };
 
 class KafkaProducer : public Producer {
@@ -59,8 +59,6 @@ private:
   std::string queue_data;
   size_t queue_threshold{0};
   bool queue_auto_flush{false};
-  bool queue_flush{false};
-  size_t calculate_interval{0};
   std::chrono::time_point<std::chrono::steady_clock> last_time{
       (std::chrono::milliseconds::zero())};
   std::chrono::time_point<std::chrono::steady_clock> current_time{
@@ -72,7 +70,7 @@ private:
   void set_kafka_conf_file(const std::string& conf_file);
   void set_kafka_threshold();
   void show_kafka_conf() const;
-  void calculate() noexcept;
+  bool period_queue_flush() noexcept;
 };
 
 /**
