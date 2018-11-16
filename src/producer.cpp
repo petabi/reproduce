@@ -8,9 +8,6 @@ using namespace std;
  * KafkaProducer
  */
 
-bool RdDeliveryReportCb::error = false;
-bool RdEventCb::error = false;
-
 enum class KafkaConfType {
   Global = 1,
   Topic,
@@ -68,8 +65,8 @@ void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
 #endif
   if (message.err() != 0) {
     Util::eprint("Message Produce Fail: ", message.errstr());
-    error = true;
   } else {
+    *(reinterpret_cast<size_t*>(message.msg_opaque())) += 1;
     Util::iprint("Message Produce Success: ", message.len(), " bytes");
   }
 
@@ -84,7 +81,6 @@ void RdEventCb::event_cb(RdKafka::Event& event)
   case RdKafka::Event::EVENT_ERROR:
     Util::eprint("Kafka Event Error: ", RdKafka::err2str(event.err()), ": ",
                  event.str());
-    error = true;
     break;
 
 // TODO : if necessary, add statistical function and throttle function.
@@ -126,7 +122,7 @@ KafkaProducer::KafkaProducer(shared_ptr<Config> _conf) : conf(move(_conf))
   }
 
   if (conf->mode_grow || conf->input_type == InputType::Nic) {
-    queue_auto_flush = true;
+    period_chk = true;
     last_time = std::chrono::steady_clock::now();
   }
 
@@ -314,31 +310,32 @@ void KafkaProducer::wait_queue(const int count) noexcept
 
 bool KafkaProducer::produce_core(const string& message) noexcept
 {
+  static size_t produce_cnt = 0, produce_ack_cnt = 0;
   // Produce message
   RdKafka::ErrorCode resp = kafka_producer->produce(
       kafka_topic.get(), RdKafka::Topic::PARTITION_UA,
       RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
-      const_cast<char*>(message.c_str()), message.size(), nullptr, nullptr);
-
-  if (resp != RdKafka::ERR_NO_ERROR) {
-    Util::eprint("A message queue entry failed(", message.size(),
-                 "bytes): ", RdKafka::err2str(resp));
-    return false;
-  }
-  Util::iprint("A message queue entry success(", message.size(), "bytes)");
+      const_cast<char*>(message.c_str()), message.size(), nullptr,
+      reinterpret_cast<void*>(&produce_ack_cnt));
 
   kafka_producer->poll(0);
-
-  if (RdEventCb::error || RdDeliveryReportCb::error) {
+  if (resp != RdKafka::ERR_NO_ERROR) {
+    Util::eprint("A message queue entry failed(", queue_data_cnt,
+                 "converted data, ", message.size(), "bytes, ", produce_ack_cnt,
+                 "/", produce_cnt, "acked): ", RdKafka::err2str(resp));
     return false;
   }
+  produce_cnt++;
+  Util::iprint("A message queue entry success(", queue_data_cnt,
+               "converted data, ", message.size(), "bytes, ", produce_ack_cnt,
+               "/", produce_cnt, "acked)");
 
   return true;
 }
 
 bool KafkaProducer::period_queue_flush() noexcept
 {
-  if (queue_auto_flush) {
+  if (!period_chk) {
     return false;
   }
 
@@ -354,19 +351,24 @@ bool KafkaProducer::period_queue_flush() noexcept
   return false;
 }
 
-bool KafkaProducer::produce(const string& message) noexcept
+bool KafkaProducer::produce(const string& message, bool flush) noexcept
 {
 
   queue_data += message;
+  if (!message.empty() && !flush) {
+    queue_data_cnt++;
+  }
 
-  if (period_queue_flush() || queue_data.length() >= conf->queue_size) {
+  if (flush || period_queue_flush() ||
+      queue_data.length() >= conf->queue_size) {
     if (!produce_core(queue_data)) {
       // FIXME: error handling
       return false;
     }
     queue_data.clear();
+    queue_data_cnt = 0;
 
-    if (queue_auto_flush) {
+    if (period_chk) {
       last_time = std::chrono::steady_clock::now();
     }
 
@@ -381,8 +383,7 @@ bool KafkaProducer::produce(const string& message) noexcept
 KafkaProducer::~KafkaProducer()
 {
   if (queue_data.size()) {
-    produce_core(queue_data);
-    queue_data.clear();
+    produce("", true);
   }
 
   wait_queue(0);
@@ -410,7 +411,7 @@ FileProducer::~FileProducer()
   }
 }
 
-bool FileProducer::produce(const string& message) noexcept
+bool FileProducer::produce(const string& message, bool flush) noexcept
 {
   file << message << "\n";
   file.flush();
@@ -439,6 +440,9 @@ NullProducer::NullProducer(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
 NullProducer::~NullProducer() = default;
 
-bool NullProducer::produce(const string& message) noexcept { return true; }
+bool NullProducer::produce(const string& message, bool flush) noexcept
+{
+  return true;
+}
 
 // vim: et:ts=2:sw=2

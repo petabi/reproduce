@@ -17,7 +17,7 @@
 
 class Producer {
 public:
-  virtual bool produce(const std::string& message) = 0;
+  virtual bool produce(const std::string& message, bool flush = false) = 0;
   virtual ~Producer() = 0;
 };
 
@@ -27,13 +27,11 @@ public:
 
 class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
 public:
-  static bool error;
   void dr_cb(RdKafka::Message& message) override;
 };
 
 class RdEventCb : public RdKafka::EventCb {
 public:
-  static bool error;
   void event_cb(RdKafka::Event& event) override;
 };
 
@@ -46,7 +44,8 @@ public:
   KafkaProducer(KafkaProducer&&) = delete;
   KafkaProducer& operator=(KafkaProducer&&) = delete;
   ~KafkaProducer() override;
-  bool produce(const std::string& message) noexcept override;
+  bool produce(const std::string& message,
+               bool flush = false) noexcept override;
 
 private:
   std::shared_ptr<Config> conf;
@@ -57,8 +56,9 @@ private:
   RdDeliveryReportCb rd_dr_cb;
   RdEventCb rd_event_cb;
   std::string queue_data;
+  size_t queue_data_cnt{0};
   size_t queue_threshold{0};
-  bool queue_auto_flush{false};
+  bool period_chk{false};
   std::chrono::time_point<std::chrono::steady_clock> last_time{
       (std::chrono::milliseconds::zero())};
   std::chrono::time_point<std::chrono::steady_clock> current_time{
@@ -86,7 +86,8 @@ public:
   FileProducer(FileProducer&&) = delete;
   FileProducer& operator=(FileProducer&&) = delete;
   ~FileProducer() override;
-  bool produce(const std::string& message) noexcept override;
+  bool produce(const std::string& message,
+               bool flush = false) noexcept override;
 
 private:
   std::shared_ptr<Config> conf;
@@ -107,7 +108,8 @@ public:
   NullProducer(NullProducer&&) = delete;
   NullProducer& operator=(NullProducer&&) = delete;
   ~NullProducer() override;
-  bool produce(const std::string& message) noexcept override;
+  bool produce(const std::string& message,
+               bool flush = false) noexcept override;
 
 private:
   std::shared_ptr<Config> conf;

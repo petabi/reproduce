@@ -12,8 +12,7 @@
 using namespace std;
 
 static constexpr size_t max_packet_length = 65535;
-static constexpr size_t message_size =
-    max_packet_length + sizeof(pcap_sf_pkthdr) + 1;
+static constexpr size_t message_size = 102400;
 volatile sig_atomic_t stop = 0;
 pcap_t* Controller::pcd = nullptr;
 
@@ -22,10 +21,10 @@ Controller::Controller(Config _conf)
   conf = make_shared<Config>(_conf);
 
   if (!set_converter()) {
-    throw runtime_error("Failed to set the converter");
+    throw runtime_error("failed to set the converter");
   }
   if (!set_producer()) {
-    throw runtime_error("Failed to set the producer");
+    throw runtime_error("failed to set the producer");
   }
 }
 
@@ -54,7 +53,7 @@ void Controller::run_split()
   }
   DIR* dir = opendir(dir_path.c_str());
   if (dir == nullptr) {
-    throw runtime_error("Failed to open the directory: " + dir_path);
+    throw runtime_error("failed to open the directory: " + dir_path);
   }
   while (!stop) {
     filename = get_next_file(dir);
@@ -64,10 +63,9 @@ void Controller::run_split()
       break;
     }
     conf->input = dir_path + filename;
-    Util::dprint(F, conf->input);
     if (!set_converter()) {
       closedir(dir);
-      throw runtime_error("Failed to set the converter");
+      throw runtime_error("failed to set the converter");
     }
     this->run();
     close_pcap();
@@ -87,17 +85,16 @@ void Controller::run_single()
 
   if (signal(SIGINT, signal_handler) == SIG_ERR ||
       signal(SIGTERM, signal_handler) == SIG_ERR) {
-    Util::eprint(F, "Failed to register signal");
+    Util::eprint("failed to register signal");
     return;
   }
 
   if (conf->count_skip) {
     if (!invoke(skip_data, this, conf->count_skip)) {
-      Util::dprint(F, "failed to skip(", conf->count_skip, ")");
+      Util::eprint("failed to skip(", conf->count_skip, ")");
     }
   }
 
-  Util::dprint(F, "start");
   report.start();
 
   while (!stop) {
@@ -107,7 +104,7 @@ void Controller::run_single()
       omessage_len =
           conv->convert(imessage, imessage_len, omessage, message_size);
     } else if (ret == ControllerResult::Fail) {
-      Util::eprint(F, "Failed to convert input data");
+      Util::eprint("failed to convert input data");
       break;
     } else if (ret == ControllerResult::No_more) {
       if (conf->input_type != InputType::Nic && conf->mode_grow) {
@@ -132,7 +129,7 @@ void Controller::run_single()
     report.process(imessage_len, omessage_len);
 
     sent_count = report.get_sent_count();
-    Util::iprint("[", sent_count, "]", " message : ", omessage);
+    Util::dprint(F, "[", sent_count, "]", " message : ", omessage);
 
     if (check_count(sent_count)) {
       break;
@@ -140,7 +137,6 @@ void Controller::run_single()
   }
 
   report.end();
-  Util::dprint(F, "end");
 }
 
 InputType Controller::get_input_type() const
@@ -176,7 +172,7 @@ InputType Controller::get_input_type() const
       pcap_close(pcd_chk);
       return InputType::Nic;
     } else {
-      throw runtime_error("Failed to open input file: " + conf->input);
+      throw runtime_error("failed to open input file: " + conf->input);
     }
   }
 
@@ -215,35 +211,36 @@ bool Controller::set_converter()
   conf->input_type = get_input_type();
   uint32_t l2_type;
 
+  Util::iprint("input=", conf->input);
   switch (conf->input_type) {
   case InputType::Nic:
     l2_type = open_nic(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_nic;
-    Util::dprint(F, "input type=NIC");
+    Util::iprint("input=", conf->input, ", input type=NIC");
     break;
   case InputType::Pcap:
     l2_type = open_pcap(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_pcap;
     skip_data = &Controller::skip_pcap;
-    Util::dprint(F, "input type=PCAP");
+    Util::iprint("input=", conf->input, ", input type=PCAP");
     break;
   case InputType::Log:
     open_log(conf->input);
     conv = make_unique<LogConverter>();
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
-    Util::dprint(F, "input type=LOG");
+    Util::iprint("input=", conf->input, ", input type=LOG");
     break;
   case InputType::Dir:
-    Util::dprint(F, "input type=DIR");
+    Util::iprint("input=", conf->input, ", input type=DIR");
     break;
   case InputType::None:
     conv = make_unique<NullConverter>();
     get_next_data = &Controller::get_next_null;
     skip_data = &Controller::skip_null;
-    Util::dprint(F, "input type=NONE");
+    Util::iprint("input=", conf->input, ", input type=NONE");
     break;
   default:
     return false;
@@ -258,15 +255,15 @@ bool Controller::set_producer()
   switch (conf->output_type) {
   case OutputType::Kafka:
     prod = make_unique<KafkaProducer>(conf);
-    Util::dprint(F, "output type=KAFKA");
+    Util::iprint("output=", conf->output, ", output type=KAFKA");
     break;
   case OutputType::File:
     prod = make_unique<FileProducer>(conf);
-    Util::dprint(F, "output type=FILE");
+    Util::iprint("output=", conf->output, ", output type=FILE");
     break;
   case OutputType::None:
     prod = make_unique<NullProducer>(conf);
-    Util::dprint(F, "output type=NONE");
+    Util::iprint("output=", conf->output, ", output type=NONE");
     break;
   default:
     return false;
@@ -283,28 +280,28 @@ uint32_t Controller::open_nic(const std::string& devname)
   char errbuf[PCAP_ERRBUF_SIZE];
 
   if (pcap_lookupnet(devname.c_str(), &net, &mask, errbuf) == -1) {
-    throw runtime_error("Failed to lookup the network: " + devname + " : " +
+    throw runtime_error("failed to lookup the network: " + devname + " : " +
                         errbuf);
   }
 
   pcd = pcap_open_live(devname.c_str(), BUFSIZ, 0, -1, errbuf);
 
   if (pcd == nullptr) {
-    throw runtime_error("Failed to initialize the nic mode: " + devname +
+    throw runtime_error("failed to initialize the nic mode: " + devname +
                         " : " + errbuf);
   }
 
   if (pcap_setnonblock(pcd, false, errbuf) != 0) {
-    Util::eprint(F, "non-blocking mode is set, it can cause cpu overload");
+    Util::dprint(F, "non-blocking mode is set, it can cause cpu overhead");
   }
 
   if (pcap_compile(pcd, &fp, conf->packet_filter.c_str(), 0, net) == -1) {
-    throw runtime_error("Failed to compile the capture rules: " +
+    throw runtime_error("failed to compile the capture rules: " +
                         conf->packet_filter);
   }
 
   if (pcap_setfilter(pcd, &fp) == -1) {
-    throw runtime_error("Failed to set the capture rules: " +
+    throw runtime_error("failed to set the capture rules: " +
                         conf->packet_filter);
   }
 
@@ -324,7 +321,7 @@ uint32_t Controller::open_pcap(const string& filename)
 {
   pcapfile = fopen(filename.c_str(), "r");
   if (pcapfile == nullptr) {
-    throw runtime_error("Failed to open input file: " + filename);
+    throw runtime_error("failed to open input file: " + filename);
   }
 
   struct pcap_file_header pfh;
@@ -350,7 +347,7 @@ void Controller::open_log(const std::string& filename)
 {
   logfile.open(filename.c_str(), fstream::in);
   if (!logfile.is_open()) {
-    throw runtime_error("Failed to open input file: " + filename);
+    throw runtime_error("failed to open input file: " + filename);
   }
 }
 
@@ -407,8 +404,7 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 
   auto* pp = reinterpret_cast<pcap_sf_pkthdr*>(imessage);
   if (pp->caplen > max_packet_length) {
-    Util::dprint(F,
-                 "The captured packet size is abnormally large: ", pp->caplen);
+    Util::eprint("The captured packet size is abnormally large: ", pp->caplen);
     return ControllerResult::Fail;
   }
 
@@ -439,16 +435,16 @@ ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
       return ControllerResult::Fail;
     }
     if (logfile.fail()) {
-      Util::eprint(F, "The message is truncated [", count, " line(",
-                   imessage_len, " bytes)]");
+      Util::eprint("The message is truncated [", count, " line(", imessage_len,
+                   " bytes)]");
       trunc = true;
       logfile.clear();
     }
   } else {
     imessage_len = strlen(imessage);
     if (trunc == true) {
-      Util::eprint(F, "The message is truncated [", count, " line(",
-                   imessage_len, " bytes)]");
+      Util::eprint("The message is truncated [", count, " line(", imessage_len,
+                   " bytes)]");
       trunc = false;
     }
   }
