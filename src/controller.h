@@ -50,6 +50,8 @@ private:
   void close_pcap();
   void open_log(const std::string& filename);
   void close_log();
+  uint32_t read_offset(const std::string& filename) const;
+  void write_offset(const std::string& filename, uint32_t offset) const;
   ControllerResult get_next_nic(char* imessage, size_t& imessage_len);
   ControllerResult get_next_pcap(char* imessage, size_t& imessage_len);
   ControllerResult get_next_log(char* imessage, size_t& imessage_len);

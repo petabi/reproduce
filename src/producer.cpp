@@ -263,7 +263,7 @@ void KafkaProducer::set_kafka_threshold()
                         to_string(conf->queue_size));
   }
   queue_threshold =
-      (stoul(queue_buffering_max_kbytes) * 1024 - redundancy_kbytes) /
+      (stoul(queue_buffering_max_kbytes) * 1000 - redundancy_kbytes) /
       conf->queue_size;
   if (queue_threshold > stoul(queue_buffering_max_messages)) {
     queue_threshold = stoul(queue_buffering_max_messages) - redundancy_counts;
@@ -273,10 +273,6 @@ void KafkaProducer::set_kafka_threshold()
 
 void KafkaProducer::show_kafka_conf() const
 {
-  if (!conf->mode_debug) {
-    return;
-  }
-
   // show kafka producer config
   for (int pass = 0; pass < 2; pass++) {
     list<string>* dump;
@@ -319,16 +315,20 @@ bool KafkaProducer::produce_core(const string& message) noexcept
       reinterpret_cast<void*>(&produce_ack_cnt));
 
   kafka_producer->poll(0);
-  if (resp != RdKafka::ERR_NO_ERROR) {
+  switch (resp) {
+  case RdKafka::ERR_NO_ERROR:
+    produce_cnt++;
+    Util::iprint("A message queue entry success(", queue_data_cnt,
+                 "converted data, ", message.size(), "bytes, ", produce_ack_cnt,
+                 "/", produce_cnt, "acked)");
+    break;
+
+  default:
     Util::eprint("A message queue entry failed(", queue_data_cnt,
                  "converted data, ", message.size(), "bytes, ", produce_ack_cnt,
                  "/", produce_cnt, "acked): ", RdKafka::err2str(resp));
     return false;
   }
-  produce_cnt++;
-  Util::iprint("A message queue entry success(", queue_data_cnt,
-               "converted data, ", message.size(), "bytes, ", produce_ack_cnt,
-               "/", produce_cnt, "acked)");
 
   return true;
 }
@@ -362,6 +362,8 @@ bool KafkaProducer::produce(const string& message, bool flush) noexcept
   if (flush || period_queue_flush() ||
       queue_data.length() >= conf->queue_size) {
     if (!produce_core(queue_data)) {
+      queue_data.clear();
+      queue_data_cnt = 0;
       // FIXME: error handling
       return false;
     }

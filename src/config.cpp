@@ -8,8 +8,6 @@
 
 using namespace std;
 
-static constexpr char default_kafka_broker[] = "localhost:9092";
-static constexpr char default_kafka_topic[] = "pcap";
 static constexpr size_t default_queue_period = 3;
 static constexpr size_t default_queue_size = 900000;
 
@@ -18,8 +16,7 @@ void Config::help() const noexcept
   cout << program_name << "-" << program_version << " (librdkafka++-"
        << RdKafka::version_str() << ")\n";
   cout << "[USAGE] " << program_name << " [OPTIONS]\n";
-  cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]"
-       << " (default: " << default_kafka_broker << ")\n";
+  cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]\n";
   cout << "  -c: send count\n";
   cout << "  -d: debug mode. print debug messages\n";
   cout << "  -e: evaluation mode. output statistical result of transmission "
@@ -43,8 +40,7 @@ void Config::help() const noexcept
   cout << "  -q: queue size. how many bytes send once to kafka."
        << " (default: " << default_queue_size << ")\n";
   cout << "  -s: skip count\n";
-  cout << "  -t: kafka topic"
-       << " (default: " << default_kafka_topic << ")\n";
+  cout << "  -t: kafka topic\n";
 }
 
 bool Config::set(int argc, char** argv)
@@ -112,13 +108,10 @@ void Config::set_default() noexcept
 {
   Util::dprint(F, "set default config");
 
-  if (kafka_broker.empty()) {
-    kafka_broker = default_kafka_broker;
+  if (offset_file.empty()) {
+    offset_file = input + "_offset";
   }
 
-  if (kafka_topic.empty()) {
-    kafka_topic = default_kafka_topic;
-  }
   if (queue_size <= 0 || queue_size > default_queue_size) {
     queue_size = default_queue_size;
   }
@@ -129,6 +122,12 @@ void Config::set_default() noexcept
 
 void Config::check() const
 {
+  if (kafka_broker.empty()) {
+    throw runtime_error("You must specify kafka broker list(-b)");
+  }
+  if (kafka_topic.empty()) {
+    throw runtime_error("You must specify kafka topic(-t)");
+  }
   if (input.empty() && output == "none") {
     throw runtime_error("You must specify input(-i) or output(-o) is not none");
   }
@@ -147,6 +146,7 @@ void Config::show() const noexcept
   Util::dprint(F, "queue_period=", queue_period);
   Util::dprint(F, "input=", input);
   Util::dprint(F, "output=", output);
+  Util::dprint(F, "offset_file=", offset_file);
   Util::dprint(F, "packet_filter=", packet_filter);
   Util::dprint(F, "kafka_broker=", kafka_broker);
   Util::dprint(F, "kafka_topic=", kafka_topic);

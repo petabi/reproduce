@@ -80,7 +80,8 @@ void Controller::run_single()
   char omessage[message_size];
   size_t imessage_len = 0, omessage_len = 0;
   ControllerResult ret;
-  size_t sent_count;
+  size_t sent_count = 0;
+  uint32_t offset = 0;
   Report report(conf);
 
   if (signal(SIGINT, signal_handler) == SIG_ERR ||
@@ -90,9 +91,12 @@ void Controller::run_single()
   }
 
   if (conf->count_skip) {
-    if (!invoke(skip_data, this, conf->count_skip)) {
-      Util::eprint("failed to skip(", conf->count_skip, ")");
-    }
+    offset = conf->count_skip;
+  } else {
+    offset = read_offset(conf->offset_file);
+  }
+  if (!invoke(skip_data, this, static_cast<size_t>(offset))) {
+    Util::eprint("failed to skip: ", offset);
   }
 
   report.start();
@@ -103,6 +107,7 @@ void Controller::run_single()
     if (ret == ControllerResult::Success) {
       omessage_len =
           conv->convert(imessage, imessage_len, omessage, message_size);
+      write_offset(conf->offset_file, ++offset);
     } else if (ret == ControllerResult::Fail) {
       Util::eprint("failed to convert input data");
       break;
@@ -211,7 +216,6 @@ bool Controller::set_converter()
   conf->input_type = get_input_type();
   uint32_t l2_type;
 
-  Util::iprint("input=", conf->input);
   switch (conf->input_type) {
   case InputType::Nic:
     l2_type = open_nic(conf->input);
@@ -358,6 +362,35 @@ void Controller::close_log()
   }
 }
 
+uint32_t Controller::read_offset(const std::string& filename) const
+{
+  string offset_str;
+  uint32_t offset = 0;
+
+  std::ifstream offset_file(filename);
+
+  if (offset_file.is_open()) {
+    getline(offset_file, offset_str);
+    std::istringstream iss(offset_str);
+    iss >> offset;
+    iss.str("");
+    offset_file.close();
+    Util::iprint("the offset file exists. skips by offset value: ", offset);
+  }
+
+  return offset;
+}
+
+void Controller::write_offset(const std::string& filename,
+                              uint32_t offset) const
+{
+  std::ofstream offset_file(filename, ios::out | ios::trunc);
+  if (offset_file.is_open()) {
+    offset_file << offset;
+    offset_file.close();
+  }
+}
+
 ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
 {
   pcap_pkthdr* pkthdr;
@@ -455,7 +488,8 @@ ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
 ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
 {
   static constexpr char sample_data[] =
-      "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 10240 "
+      "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 "
+      "10240 "
       "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "
       "86734452 2522990538 20 A 16425 7168 0";
 
@@ -493,9 +527,10 @@ bool Controller::skip_pcap(const size_t count_skip)
 
 bool Controller::skip_log(const size_t count_skip)
 {
-  char buf[1];
+  string tmp;
   size_t count = 0;
   while (count < count_skip) {
+#if 0
     if (!logfile.getline(buf, 1)) {
       if (logfile.eof()) {
         return false;
@@ -503,7 +538,12 @@ bool Controller::skip_log(const size_t count_skip)
         return false;
       }
     }
+#endif
+    getline(logfile, tmp);
     count++;
+  }
+  if (logfile.eof() || logfile.bad() || logfile.fail()) {
+    return false;
   }
 
   return true;
