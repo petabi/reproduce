@@ -16,7 +16,6 @@ enum class OutputType {
 class Config {
 public:
   // user
-  bool mode_debug{false};  // print debug messages
   bool mode_eval{false};   // report statistics
   bool mode_grow{false};   // convert while tracking the growing file
   size_t count_skip{0};    // count to skip

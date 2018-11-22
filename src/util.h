@@ -44,13 +44,11 @@ public:
   template <typename T, typename... Ts> static void iprint(T head, Ts... tail);
   template <typename T> static void eprint(T tail);
   template <typename T, typename... Ts> static void eprint(T head, Ts... tail);
-  static void set_debug(const bool& debug);
   static std::string& ltrim(std::string& str);
   static std::string& rtrim(std::string& str);
   static std::string& trim(std::string& str);
 
 private:
-  static bool debug;
 };
 
 template <typename T> void Util::print(std::ostream& logstream, T tail)
@@ -68,26 +66,24 @@ void Util::print(std::ostream& logstream, T head, Ts... tail)
 template <typename T>
 void Util::dprint(const char* file, const char* name, T head)
 {
-  if (!debug) {
-    return;
-  }
+#ifdef DEBUG
   std::ostringstream logstream;
   logstream << file << "::" << name << ": " << head << "\n";
   std::cout << logstream.str();
   syslog(LOG_DEBUG, "%s", (logstream.str()).c_str());
+#endif
 }
 
 template <typename T, typename... Ts>
 void Util::dprint(const char* file, const char* name, T head, Ts... tail)
 {
-  if (!debug) {
-    return;
-  }
+#ifdef DEBUG
   std::ostringstream logstream;
   logstream << file << "::" << name << ": " << head;
   print(logstream, tail...);
   std::cout << logstream.str();
   syslog(LOG_DEBUG, "%s", (logstream.str()).c_str());
+#endif
 }
 
 template <typename T> void Util::iprint(T tail)

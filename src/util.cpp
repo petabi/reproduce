@@ -6,10 +6,6 @@
 
 using namespace std;
 
-bool Util::debug = false;
-
-void Util::set_debug(const bool& _debug) { debug = _debug; }
-
 std::string& Util::ltrim(std::string& str)
 {
   str.erase(0, str.find_first_not_of("\t\n\v\f\r "));

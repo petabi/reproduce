@@ -18,7 +18,6 @@ void Config::help() const noexcept
   cout << "[USAGE] " << program_name << " [OPTIONS]\n";
   cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]\n";
   cout << "  -c: send count\n";
-  cout << "  -d: debug mode. print debug messages\n";
   cout << "  -e: evaluation mode. output statistical result of transmission "
           "after job is terminated or stopped\n";
   cout << "  -f: tcpdump filter (when input is NIC)\n";
@@ -46,16 +45,13 @@ void Config::help() const noexcept
 bool Config::set(int argc, char** argv)
 {
   int o;
-  while ((o = getopt(argc, argv, "b:c:def:ghi:k:o:p:q:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:ef:ghi:k:o:p:q:s:t:")) != -1) {
     switch (o) {
     case 'b':
       kafka_broker = optarg;
       break;
     case 'c':
       count_send = strtoul(optarg, nullptr, 0);
-      break;
-    case 'd':
-      mode_debug = true;
       break;
     case 'e':
       mode_eval = true;
@@ -94,8 +90,6 @@ bool Config::set(int argc, char** argv)
       break;
     }
   }
-
-  Util::set_debug(mode_debug);
 
   set_default();
   show();
@@ -137,7 +131,6 @@ void Config::check() const
 
 void Config::show() const noexcept
 {
-  Util::dprint(F, "mode_debug=", mode_debug);
   Util::dprint(F, "mode_eval=", mode_eval);
   Util::dprint(F, "mode_grow=", mode_grow);
   Util::dprint(F, "count_send=", count_send);

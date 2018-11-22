@@ -221,6 +221,7 @@ bool Controller::set_converter()
     l2_type = open_nic(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
     get_next_data = &Controller::get_next_nic;
+    skip_data = &Controller::skip_null;
     Util::iprint("input=", conf->input, ", input type=NIC");
     break;
   case InputType::Pcap:
@@ -364,6 +365,10 @@ void Controller::close_log()
 
 uint32_t Controller::read_offset(const std::string& filename) const
 {
+  if (conf->input_type == InputType::Nic) {
+    return 0;
+  }
+
   string offset_str;
   uint32_t offset = 0;
 
@@ -384,7 +389,12 @@ uint32_t Controller::read_offset(const std::string& filename) const
 void Controller::write_offset(const std::string& filename,
                               uint32_t offset) const
 {
+  if (conf->input_type == InputType::Nic) {
+    return;
+  }
+
   std::ofstream offset_file(filename, ios::out | ios::trunc);
+
   if (offset_file.is_open()) {
     offset_file << offset;
     offset_file.close();
@@ -510,6 +520,10 @@ std::string Controller::get_next_file(DIR* dir) const
 
 bool Controller::skip_pcap(const size_t count_skip)
 {
+  if (count_skip == 0) {
+    return true;
+  }
+
   struct pcap_sf_pkthdr pp;
   size_t count = 0;
   size_t pp_len = sizeof(pp);
@@ -527,8 +541,13 @@ bool Controller::skip_pcap(const size_t count_skip)
 
 bool Controller::skip_log(const size_t count_skip)
 {
+  if (count_skip == 0) {
+    return true;
+  }
+
   string tmp;
   size_t count = 0;
+
   while (count < count_skip) {
 #if 0
     if (!logfile.getline(buf, 1)) {
