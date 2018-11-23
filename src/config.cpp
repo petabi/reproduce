@@ -38,6 +38,11 @@ void Config::help() const noexcept
        << " (default: " << default_queue_period << ")\n";
   cout << "  -q: queue size. how many bytes send once to kafka."
        << " (default: " << default_queue_size << ")\n";
+  cout << "  -r: record [prefix of offset file]\n"
+       << "      using this option will start the conversion after the "
+          "previous \n"
+       << "      conversion. The offset file name is managed by [input \n"
+       << "      file]_[prefix]. Except when the input is a NIC.\n";
   cout << "  -s: skip count\n";
   cout << "  -t: kafka topic\n";
 }
@@ -45,7 +50,7 @@ void Config::help() const noexcept
 bool Config::set(int argc, char** argv)
 {
   int o;
-  while ((o = getopt(argc, argv, "b:c:ef:ghi:k:o:p:q:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:ef:ghi:k:o:p:q:r:s:t:")) != -1) {
     switch (o) {
     case 'b':
       kafka_broker = optarg;
@@ -80,6 +85,9 @@ bool Config::set(int argc, char** argv)
     case 'q':
       queue_size = strtoul(optarg, nullptr, 0);
       break;
+    case 'r':
+      offset_prefix = optarg;
+      break;
     case 's':
       count_skip = strtoul(optarg, nullptr, 0);
       break;
@@ -101,11 +109,6 @@ bool Config::set(int argc, char** argv)
 void Config::set_default() noexcept
 {
   Util::dprint(F, "set default config");
-
-  if (offset_file.empty()) {
-    offset_file = input + "_offset";
-  }
-
   if (queue_size <= 0 || queue_size > default_queue_size) {
     queue_size = default_queue_size;
   }
@@ -139,7 +142,7 @@ void Config::show() const noexcept
   Util::dprint(F, "queue_period=", queue_period);
   Util::dprint(F, "input=", input);
   Util::dprint(F, "output=", output);
-  Util::dprint(F, "offset_file=", offset_file);
+  Util::dprint(F, "offset_prefix=", offset_prefix);
   Util::dprint(F, "packet_filter=", packet_filter);
   Util::dprint(F, "kafka_broker=", kafka_broker);
   Util::dprint(F, "kafka_topic=", kafka_topic);

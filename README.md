@@ -48,7 +48,6 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
 ```
   -b: kafka broker list, [host1:port1,host2:port2,..] (default: localhost:9092)
   -c: send count
-  -d: debug mode. print debug messages
   -e: evaluation mode. output statistical result of transmission after job is terminated or stopped
   -f: packet filter syntax when input is NIC
       (reference : https://www.tcpdump.org/manpages/pcap-filter.7.html)
@@ -63,6 +62,10 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
       If no 'o' option is given, output is kafka
   -p: queue period time. how much time keep queued data. (default: 3)
   -q: queue size. how many bytes send once to kafka. (default: 900000)
+  -r: record [prefix of offset file]
+      using this option will start the conversion after the previous
+      conversion. The offset file name is managed by [input file]_[prefix].
+      Except when the input is a NIC.
   -s: skip count
   -t: kafka topic (default: pcap)
 ```
@@ -96,8 +99,6 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
     * ```./packetproducer -i test.pcap -b 192.168.10.1:9092 -t sample_topic```
 * Convert log file and send it to kafka server:
     * ```./packetproducer -i LOG_20180906 -b 192.168.10.1:9092 -t sample_topic```
-* Output only debugging messages (conversion result) after converting pcap file:
-    * ```./packetproducer -i test.pcap -o none -d```
 * Save result file after converting pcap file:
     * ```./packetproducer -i test.pcap -o result.txt```
 * Skip 10000 packets and convert 1000 packets in pcap file and evaluate performance:

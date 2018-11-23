@@ -16,14 +16,14 @@ enum class OutputType {
 class Config {
 public:
   // user
-  bool mode_eval{false};   // report statistics
-  bool mode_grow{false};   // convert while tracking the growing file
-  size_t count_skip{0};    // count to skip
-  size_t queue_size{0};    // how many bytes send once
-  size_t queue_period{0};  // how much time keep queued data
-  std::string input;       // input: packet/log/none
-  std::string output;      // output: kafka/file/none
-  std::string offset_file; // offset file: read and write the offset
+  bool mode_eval{false};     // report statistics
+  bool mode_grow{false};     // convert while tracking the growing file
+  size_t count_skip{0};      // count to skip
+  size_t queue_size{0};      // how many bytes send once
+  size_t queue_period{0};    // how much time keep queued data
+  std::string input;         // input: packet/log/none
+  std::string output;        // output: kafka/file/none
+  std::string offset_prefix; // prefix of offset file to read and write
   std::string packet_filter;
   std::string kafka_broker;
   std::string kafka_topic;

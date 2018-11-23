@@ -94,7 +94,7 @@ void Controller::run_single()
   if (conf->count_skip) {
     offset = conf->count_skip;
   } else {
-    offset = read_offset(conf->offset_file);
+    offset = read_offset(conf->input + "_" + conf->offset_prefix);
   }
   if (!invoke(skip_data, this, static_cast<size_t>(offset))) {
     Util::eprint("failed to skip: ", offset);
@@ -108,7 +108,7 @@ void Controller::run_single()
     if (ret == ControllerResult::Success) {
       omessage_len =
           conv->convert(imessage, imessage_len, omessage, message_size);
-      write_offset(conf->offset_file, ++offset);
+      write_offset(conf->input + "_" + conf->offset_prefix, ++offset);
     } else if (ret == ControllerResult::Fail) {
       Util::eprint("failed to convert input data");
       break;
@@ -366,7 +366,7 @@ void Controller::close_log()
 
 uint32_t Controller::read_offset(const std::string& filename) const
 {
-  if (conf->input_type == InputType::Nic) {
+  if (conf->offset_prefix.empty() || conf->input_type == InputType::Nic) {
     return 0;
   }
 
@@ -390,7 +390,7 @@ uint32_t Controller::read_offset(const std::string& filename) const
 void Controller::write_offset(const std::string& filename,
                               uint32_t offset) const
 {
-  if (conf->input_type == InputType::Nic) {
+  if (conf->offset_prefix.empty() || conf->input_type == InputType::Nic) {
     return;
   }
 
