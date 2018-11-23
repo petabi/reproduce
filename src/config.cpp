@@ -116,10 +116,10 @@ void Config::set_default() noexcept
 
 void Config::check() const
 {
-  if (kafka_broker.empty()) {
+  if (output.empty() && kafka_broker.empty()) {
     throw runtime_error("You must specify kafka broker list(-b)");
   }
-  if (kafka_topic.empty()) {
+  if (output.empty() && kafka_topic.empty()) {
     throw runtime_error("You must specify kafka topic(-t)");
   }
   if (input.empty() && output == "none") {

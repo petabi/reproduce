@@ -2,6 +2,10 @@
 #define PACKETPRODUCER_VERSION_H
 
 constexpr char program_name[] = "@PROJECT_NAME@";
+#ifdef DEBUG
+constexpr char program_version[] = "@PROJECT_VERSION@(debug)";
+#else
 constexpr char program_version[] = "@PROJECT_VERSION@";
+#endif
 
 #endif
