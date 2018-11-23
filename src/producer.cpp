@@ -23,7 +23,7 @@ struct KafkaConf {
   const char* desc;
 };
 
-static const array<KafkaConf, 4> kafka_conf = {{
+static const array<KafkaConf, 5> kafka_conf = {{
     {KafkaConfType::Global, "delivery.report.only.error", "false", "false",
      "true", "false", "Only provide delivery reports for failed messages"},
     {KafkaConfType::Global, "message.max.bytes", "1000000", "1000",
@@ -34,7 +34,8 @@ static const array<KafkaConf, 4> kafka_conf = {{
     {KafkaConfType::Global, "queue.buffering.max.kbytes", "2097151", "1",
      "2097151", "1048576",
      "Maximum total message size sum allowed on the producer queue"},
-
+    {KafkaConfType::Topic, "message.timeout.ms", "0", "0", "900000", "300000",
+     "limit the time a produced message waits for successful delivery"},
 #if 0
     // it will reduce performance
     {KafkaConfType::Topic, "compression.codec", "lz4", "none", "none", "none",
@@ -373,8 +374,11 @@ bool KafkaProducer::produce(const string& message, bool flush) noexcept
     if (period_chk) {
       last_time = std::chrono::steady_clock::now();
     }
-
-    wait_queue(queue_threshold);
+    if (flush) {
+      wait_queue(0);
+    } else {
+      wait_queue(queue_threshold);
+    }
   } else {
     queue_data += '\n';
   }
@@ -388,9 +392,9 @@ KafkaProducer::~KafkaProducer()
     produce("", true);
   }
 
-  wait_queue(0);
-
-  RdKafka::wait_destroyed(1000);
+  if (!RdKafka::wait_destroyed(1000)) {
+    Util::eprint("Failed to release kafka resources");
+  }
 }
 
 /**

@@ -68,6 +68,8 @@ Packetproducer outputs the converted result in a form specified by the user(Stdo
       Except when the input is a NIC.
   -s: skip count
   -t: kafka topic (default: pcap)
+      If the broker does not have a corresponding topic, the broker fails
+      unless there is a setting that automatically creates the topic.
 ```
 
 ### Kafka Config

@@ -18,8 +18,8 @@ void Config::help() const noexcept
   cout << "[USAGE] " << program_name << " [OPTIONS]\n";
   cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]\n";
   cout << "  -c: send count\n";
-  cout << "  -e: evaluation mode. output statistical result of transmission "
-          "after job is terminated or stopped\n";
+  cout << "  -e: evaluation mode. output statistical result of transmission\n"
+          "      after job is terminated or stopped\n";
   cout << "  -f: tcpdump filter (when input is NIC)\n";
   cout << "      (reference : "
           "https://www.tcpdump.org/manpages/pcap-filter.7.html)\n";
@@ -44,7 +44,11 @@ void Config::help() const noexcept
        << "      conversion. The offset file name is managed by [input \n"
        << "      file]_[prefix]. Except when the input is a NIC.\n";
   cout << "  -s: skip count\n";
-  cout << "  -t: kafka topic\n";
+  cout
+      << "  -t: kafka topic If the broker does not have a corresponding "
+         "topic,\n"
+      << "      the broker fails unless there is a setting that automatically\n"
+      << "      creates the topic.\n";
 }
 
 bool Config::set(int argc, char** argv)

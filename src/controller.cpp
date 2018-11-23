@@ -108,7 +108,6 @@ void Controller::run_single()
     if (ret == ControllerResult::Success) {
       omessage_len =
           conv->convert(imessage, imessage_len, omessage, message_size);
-      write_offset(conf->input + "_" + conf->offset_prefix, ++offset);
     } else if (ret == ControllerResult::Fail) {
       Util::eprint("failed to convert input data");
       break;
@@ -127,6 +126,7 @@ void Controller::run_single()
       report.fail();
       continue;
     }
+    offset++;
 
     if (!prod->produce(omessage)) {
       break;
@@ -142,6 +142,9 @@ void Controller::run_single()
     }
   }
 
+  write_offset(conf->input + "_" + conf->offset_prefix, offset);
+
+  prod->produce("", true);
   report.end();
 }
 
