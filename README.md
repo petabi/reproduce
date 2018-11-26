@@ -1,10 +1,10 @@
-# Packetproducer
+# REproduce
 
 ## Overview
 
 ### Introduction
 
-  Packetproducer is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
+  REproduce is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
 Packet translation is up to the transport layer, and the protocols currently supported are Ethernet, IP, ARP, TCP, UDP, and ICMP. Also, logs and plain text files are converted to a new type of log stream by adding or removing information according to their attributes.
 
 ## Function Specification
@@ -19,7 +19,7 @@ Specify a single pcap file or network interface or plain text file such as log t
 
 ### 2. Conversion
 
-Packetproducer converts the incoming packet or pcap file, log to a stream format with space as delimiter, as in the following Conversion Format. The conversion of packet starts with the sec value in the time_t structure representing the timestamp, and then converts from the lower layer to the higher layer of the protocol.
+REproduce converts the incoming packet or pcap file, log to a stream format with space as delimiter, as in the following Conversion Format. The conversion of packet starts with the sec value in the time_t structure representing the timestamp, and then converts from the lower layer to the higher layer of the protocol.
 
 #### Conversion Example
 
@@ -35,13 +35,13 @@ See more details in appendix.
 
 ### 3. Output
 
-Packetproducer outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
+REproduce outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
 
 ## Usage
 
 ### Program Usage
 
-```./packetproducer [OPTIONS]```
+```./REproduce [OPTIONS]```
 
 ### OPTIONS
 
@@ -98,24 +98,24 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 ### Examples
 
 * Convert pcap file and send it to kafka server:
-    * ```./packetproducer -i test.pcap -b 192.168.10.1:9092 -t sample_topic```
+    * ```./REproduce -i test.pcap -b 192.168.10.1:9092 -t sample_topic```
 * Convert log file and send it to kafka server:
-    * ```./packetproducer -i LOG_20180906 -b 192.168.10.1:9092 -t sample_topic```
+    * ```./REproduce -i LOG_20180906 -b 192.168.10.1:9092 -t sample_topic```
 * Save result file after converting pcap file:
-    * ```./packetproducer -i test.pcap -o result.txt```
+    * ```./REproduce -i test.pcap -o result.txt```
 * Skip 10000 packets and convert 1000 packets in pcap file and evaluate performance:
-    * ```./packetproducer -i test.pcap -s 10000 -c 1000 -o none -e```
+    * ```./REproduce -i test.pcap -s 10000 -c 1000 -o none -e```
 * Convert it while following, If the content of the input file continue to grow
-    * ```./packetproducer -i test.pcap -g```
+    * ```./REproduce -i test.pcap -g```
 * Convert only udp packets of traffic to and from network interface enp0s3
-    * ```./packetproducer -i enp0s3 -f "udp" -o none
+    * ```./REproduce -i enp0s3 -f "udp" -o none
 * When transmitting to kafka once, queue up to 10Kbytes, and if transmission interval is delayed more than 2 seconds, send immediately
-    * ```./packetproducer -i test.pcap -q 10240 -p 2
+    * ```./REproduce -i test.pcap -q 10240 -p 2
 
 ### Report Example
 
 ```
-root@bada-unbuntu:~/packetproducer# ./packetproducer -i test.pcap -e -c 10000000
+root@bada-unbuntu:~/REproduce# ./REproduce -i test.pcap -e -c 10000000
 --------------------------------------------------
 Input(PCAP)     : test.pcap(976.56M)
 Output(KAFKA)   : localhost:9092(pcap)
