@@ -17,6 +17,7 @@
 #include "udp.h"
 
 #include "converter.h"
+#include "util.h"
 
 using namespace std;
 
@@ -34,12 +35,25 @@ using namespace std;
 PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
 
 size_t PacketConverter::convert(char* in, size_t in_len, char* out,
-                                size_t out_len)
+                                size_t out_len, ForwardMsg& fm)
 {
   // TODO: How to check the bounds of the buffer?
   conv_len = 0;
   ptr = out;
   auto* pp = reinterpret_cast<pcap_sf_pkthdr*>(in);
+
+  std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
+                                         in + in_len);
+  fm.entries.push_back(std::make_tuple(1, pp->ts.tv_sec, binary_data));
+
+#ifdef DEBUG
+  std::stringstream ss;
+  ss << std::hex;
+  for (int i = 0; i < binary_data.size(); ++i) {
+    ss << std::setw(2) << std::setfill('0') << (int)binary_data[i] << ' ';
+  }
+  Util::dprint(F, "Binary packet data : ", ss.str());
+#endif
 
 #if 0
   // TODO: Fix to enhance performance
@@ -48,6 +62,7 @@ size_t PacketConverter::convert(char* in, size_t in_len, char* out,
   cap_time[strlen(cap_time) - 1] = '\0';
 #endif
 
+#if 0
   ADD_STREAM("%d ", pp->ts.tv_sec);
 
   if (!invoke(get_l2_process(), this,
@@ -59,6 +74,9 @@ size_t PacketConverter::convert(char* in, size_t in_len, char* out,
   *ptr = 0;
 
   return conv_len + 1;
+#endif
+
+  return 0;
 }
 
 bool (PacketConverter::*PacketConverter::get_l2_process())(
@@ -310,12 +328,17 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset)
  * LogConverter
  */
 
-size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
+size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len,
+                             ForwardMsg& fm)
 {
   if (in == nullptr) {
     return 0;
   }
 
+  int64_t current_time = 100000;
+  std::vector<unsigned char> binary_data(in, in + in_len);
+  fm.entries.push_back(std::make_tuple(1, current_time, binary_data));
+#if 0
   if (in_len < out_len) {
     memcpy(out, in, in_len + 1);
     return in_len;
@@ -324,6 +347,8 @@ size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
     out[out_len - 1] = '\0';
     return out_len - 1;
   }
+#endif
+  return 0;
 }
 
 /**
@@ -331,7 +356,7 @@ size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len)
  */
 
 size_t NullConverter::convert(char* in, size_t in_len, char* out,
-                              size_t out_len)
+                              size_t out_len, ForwardMsg& fm)
 {
   memcpy(out, in, in_len + 1);
 

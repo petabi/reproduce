@@ -7,14 +7,16 @@
 #include <sstream>
 #include <string>
 
+#include "forward_proto.h"
+
 /**
  * Converter
  */
 
 class Converter {
 public:
-  virtual size_t convert(char* in, size_t in_len, char* out,
-                         size_t out_len) = 0;
+  virtual size_t convert(char* in, size_t in_len, char* out, size_t out_len,
+                         ForwardMsg& fm) = 0;
 };
 
 /**
@@ -45,7 +47,8 @@ public:
   PacketConverter(PacketConverter&&) = delete;
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter() = default;
-  size_t convert(char* in, size_t in_len, char* out, size_t out_len) override;
+  size_t convert(char* in, size_t in_len, char* out, size_t out_len,
+                 ForwardMsg& fm) override;
 
 private:
   int conv_len = 0;
@@ -81,7 +84,8 @@ public:
   LogConverter(LogConverter&&) = delete;
   LogConverter& operator=(const LogConverter&&) = delete;
   ~LogConverter() = default;
-  size_t convert(char* in, size_t in_len, char* out, size_t out_len) override;
+  size_t convert(char* in, size_t in_len, char* out, size_t out_len,
+                 ForwardMsg& fm) override;
 };
 
 /**
@@ -96,7 +100,8 @@ public:
   NullConverter(NullConverter&&) = delete;
   NullConverter& operator=(const NullConverter&&) = delete;
   ~NullConverter() = default;
-  size_t convert(char* in, size_t in_len, char* out, size_t out_len) override;
+  size_t convert(char* in, size_t in_len, char* out, size_t out_len,
+                 ForwardMsg& fm) override;
 };
 
 #endif

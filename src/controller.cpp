@@ -102,12 +102,22 @@ void Controller::run_single()
 
   report.start();
 
+  ForwardMsg fm;
+
+// TODO:
+#define FORWARD_ENTRY_MAX 3
+  fm.tag = "test";
+  fm.option["key"] = "value";
+
+  std::stringstream ss;
+
   while (!stop) {
     imessage_len = message_size;
     ret = invoke(get_next_data, this, imessage, imessage_len);
     if (ret == ControllerResult::Success) {
       omessage_len =
-          conv->convert(imessage, imessage_len, omessage, message_size);
+          conv->convert(imessage, imessage_len, omessage, message_size, fm);
+
     } else if (ret == ControllerResult::Fail) {
       Util::eprint("failed to convert input data");
       break;
@@ -122,29 +132,51 @@ void Controller::run_single()
       break;
     }
 
+    offset++;
+
+    if (fm.entries.size() < FORWARD_ENTRY_MAX) {
+      continue;
+    }
+    msgpack::pack(ss, fm);
+#ifdef DEBUG
+    msgpack::object_handle oh =
+        msgpack::unpack(ss.str().data(), ss.str().size());
+    msgpack::object obj = oh.get();
+    Util::dprint(F, "[", sent_count, "]", " unpacked message : ", obj);
+#endif
+    if (!prod->produce(ss.str(), true)) {
+      break;
+    }
+    fm.entries.clear();
+    ss.str("");
+
+#if 0
     if (omessage_len <= 0) {
       report.fail();
       continue;
     }
-    offset++;
-
-    if (!prod->produce(omessage)) {
-      break;
-    }
-
+#endif
     report.process(imessage_len, omessage_len);
-
     sent_count = report.get_sent_count();
-    Util::dprint(F, "[", sent_count, "]", " message : ", omessage);
 
     if (check_count(sent_count)) {
       break;
     }
   }
 
+  if (fm.entries.size() > 0) {
+    msgpack::pack(ss, fm);
+#ifdef DEBUG
+    msgpack::object_handle oh =
+        msgpack::unpack(ss.str().data(), ss.str().size());
+    msgpack::object obj = oh.get();
+    Util::dprint(F, "[", sent_count, "]", " unpacked message : ", obj);
+#endif
+    prod->produce(ss.str(), true);
+    fm.entries.clear();
+    ss.str("");
+  }
   write_offset(conf->input + "_" + conf->offset_prefix, offset);
-
-  prod->produce("", true);
   report.end();
 }
 
