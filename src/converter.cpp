@@ -44,12 +44,14 @@ size_t PacketConverter::convert(char* in, size_t in_len, char* out,
 
   std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
                                          in + in_len);
-  fm.entries.push_back(std::make_tuple(1, pp->ts.tv_sec, binary_data));
+  std::map<std::string, std::vector<unsigned char>> time_pkt;
+  time_pkt.insert(std::make_pair("message", binary_data));
+  fm.entries.push_back(std::make_tuple(pp->ts.tv_sec, time_pkt));
 
 #ifdef DEBUG
   std::stringstream ss;
   ss << std::hex;
-  for (int i = 0; i < binary_data.size(); ++i) {
+  for (size_t i = 0; i < binary_data.size(); ++i) {
     ss << std::setw(2) << std::setfill('0') << (int)binary_data[i] << ' ';
   }
   Util::dprint(F, "Binary packet data : ", ss.str());
@@ -335,9 +337,10 @@ size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len,
     return 0;
   }
 
-  int64_t current_time = 100000;
   std::vector<unsigned char> binary_data(in, in + in_len);
-  fm.entries.push_back(std::make_tuple(1, current_time, binary_data));
+  std::map<std::string, std::vector<unsigned char>> time_log;
+  time_log.insert(std::make_pair("message", binary_data));
+  fm.entries.push_back(std::make_tuple(1, time_log));
 #if 0
   if (in_len < out_len) {
     memcpy(out, in, in_len + 1);
