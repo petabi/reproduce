@@ -80,7 +80,7 @@ void Controller::run_single()
   char omessage[message_size];
   size_t imessage_len = 0, omessage_len = 0;
   ControllerResult ret;
-  size_t sent_count = 0;
+  size_t conv_cnt = 0, sent_cnt = 0;
   uint32_t offset = 0;
   Report report(conf);
 
@@ -101,15 +101,13 @@ void Controller::run_single()
   }
 
   report.start();
-
   ForwardMsg fm;
 
-// TODO:
-#define FORWARD_ENTRY_MAX 3
-  fm.tag = "test";
-  fm.option["key"] = "value";
-
+  // TODO:
+#define FORWARD_ENTRY_MAX 1000000
   std::stringstream ss;
+  fm.tag = "REproduce";
+  fm.option["option"] = "optional";
 
   while (!stop) {
     imessage_len = message_size;
@@ -132,8 +130,10 @@ void Controller::run_single()
       break;
     }
 
-    offset++;
+    conv_cnt++;
 
+    // TODO: ForwardMsg class contains the following actions:
+    // It can get the size by providing an interface to insert into the list.
     if (fm.entries.size() < FORWARD_ENTRY_MAX) {
       continue;
     }
@@ -142,7 +142,7 @@ void Controller::run_single()
     msgpack::object_handle oh =
         msgpack::unpack(ss.str().data(), ss.str().size());
     msgpack::object obj = oh.get();
-    Util::dprint(F, "[", sent_count, "]", " unpacked message : ", obj);
+    Util::dprint(F, "[", sent_cnt, "]", " unpacked message : ", obj);
 #endif
     if (!prod->produce(ss.str(), true)) {
       break;
@@ -157,9 +157,9 @@ void Controller::run_single()
     }
 #endif
     report.process(imessage_len, omessage_len);
-    sent_count = report.get_sent_count();
+    sent_cnt = report.get_sent_count();
 
-    if (check_count(sent_count)) {
+    if (check_count(conv_cnt)) {
       break;
     }
   }
@@ -170,13 +170,13 @@ void Controller::run_single()
     msgpack::object_handle oh =
         msgpack::unpack(ss.str().data(), ss.str().size());
     msgpack::object obj = oh.get();
-    Util::dprint(F, "[", sent_count, "]", " unpacked message : ", obj);
+    Util::dprint(F, "[", sent_cnt, "]", " unpacked message : ", obj);
 #endif
     prod->produce(ss.str(), true);
     fm.entries.clear();
     ss.str("");
   }
-  write_offset(conf->input + "_" + conf->offset_prefix, offset);
+  write_offset(conf->input + "_" + conf->offset_prefix, offset + conv_cnt);
   report.end();
 }
 
@@ -346,7 +346,7 @@ uint32_t Controller::open_nic(const std::string& devname)
                         conf->packet_filter);
   }
 
-  Util::dprint(F, "capture rule setting completed" + conf->packet_filter);
+  Util::dprint(F, "capture rule setting completed : " + conf->packet_filter);
 
   return pcap_datalink(pcd);
 }
@@ -360,21 +360,29 @@ void Controller::close_nic()
 
 uint32_t Controller::open_pcap(const string& filename)
 {
-  pcapfile = fopen(filename.c_str(), "r");
-  if (pcapfile == nullptr) {
-    throw runtime_error("failed to open input file: " + filename);
+  struct bpf_program fp;
+  char errbuf[PCAP_ERRBUF_SIZE];
+
+  pcd = pcap_open_offline(filename.c_str(), errbuf);
+
+  if (pcd == nullptr) {
+    throw runtime_error("failed to initialize the pcap file mode: " + filename +
+                        " : " + errbuf);
   }
 
-  struct pcap_file_header pfh;
-  size_t pfh_len = sizeof(pfh);
-  if (fread(&pfh, 1, pfh_len, pcapfile) != pfh_len) {
-    throw runtime_error("Invalid input pcap file: " + filename);
-  }
-  if (pfh.magic != 0xa1b2c3d4) {
-    throw runtime_error("Invalid input pcap file: " + filename);
+  if (pcap_compile(pcd, &fp, conf->packet_filter.c_str(), 0, 0) == -1) {
+    throw runtime_error("failed to compile the capture rules: " +
+                        conf->packet_filter);
   }
 
-  return pfh.linktype;
+  if (pcap_setfilter(pcd, &fp) == -1) {
+    throw runtime_error("failed to set the capture rules: " +
+                        conf->packet_filter);
+  }
+
+  Util::dprint(F, "capture rule setting completed : " + conf->packet_filter);
+
+  return pcap_datalink(pcd);
 }
 
 void Controller::close_pcap()
@@ -472,28 +480,31 @@ ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
 
 ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 {
-  size_t offset = 0;
+  pcap_pkthdr* pkthdr;
+  pcap_sf_pkthdr sfhdr;
+  const u_char* pkt_data;
   size_t pp_len = sizeof(pcap_sf_pkthdr);
+  auto ptr = reinterpret_cast<u_char*>(imessage);
+  int res = 0;
 
-  offset = fread(imessage, 1, pp_len, pcapfile);
-  if (offset != pp_len) {
-    fseek(pcapfile, -offset, SEEK_CUR);
-    return ControllerResult::No_more;
-  }
-
-  auto* pp = reinterpret_cast<pcap_sf_pkthdr*>(imessage);
-  if (pp->caplen > max_packet_length) {
-    Util::eprint("The captured packet size is abnormally large: ", pp->caplen);
+  res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
+  if (res == -1) {
     return ControllerResult::Fail;
   }
-
-  offset = fread(reinterpret_cast<char*>(imessage + static_cast<int>(pp_len)),
-                 1, pp->caplen, pcapfile);
-  if (offset != pp->caplen) {
-    fseek(pcapfile, -(offset + pp_len), SEEK_CUR);
+  if (res == -2) {
     return ControllerResult::No_more;
   }
-  imessage_len = pp->caplen + pp_len;
+  sfhdr.caplen = pkthdr->caplen;
+  sfhdr.len = pkthdr->len;
+  sfhdr.ts.tv_sec = pkthdr->ts.tv_sec;
+  // TODO: fix to satisfy both 32bit and 64bit systems
+  // sfhdr.ts.tv_usec = pkthdr->??
+
+  memcpy(ptr, reinterpret_cast<u_char*>(&sfhdr), pp_len);
+  ptr += pp_len;
+  memcpy(ptr, pkt_data, sfhdr.caplen);
+
+  imessage_len = sfhdr.caplen + pp_len;
 
   return ControllerResult::Success;
 }
@@ -560,15 +571,16 @@ bool Controller::skip_pcap(const size_t count_skip)
     return true;
   }
 
-  struct pcap_sf_pkthdr pp;
+  pcap_pkthdr* pkthdr;
+  const u_char* pkt_data;
+  int res = 0;
   size_t count = 0;
-  size_t pp_len = sizeof(pp);
 
   while (count < count_skip) {
-    if (fread(&pp, 1, pp_len, pcapfile) != pp_len) {
+    res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
+    if (res < 0) {
       return false;
     }
-    fseek(pcapfile, pp.caplen, SEEK_CUR);
     count++;
   }
 
@@ -606,9 +618,9 @@ bool Controller::skip_log(const size_t count_skip)
 
 bool Controller::skip_null(const size_t count_skip) { return true; }
 
-bool Controller::check_count(const size_t sent_count) const noexcept
+bool Controller::check_count(const size_t sent_cnt) const noexcept
 {
-  if (conf->count_send == 0 || sent_count < conf->count_send) {
+  if (conf->count_send == 0 || sent_cnt < conf->count_send) {
     return false;
   }
 

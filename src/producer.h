@@ -19,6 +19,7 @@ class Producer {
 public:
   virtual bool produce(const std::string& message, bool flush = false) = 0;
   virtual ~Producer() = 0;
+  virtual size_t get_max_bytes() = 0;
 };
 
 /**
@@ -46,6 +47,7 @@ public:
   ~KafkaProducer() override;
   bool produce(const std::string& message,
                bool flush = false) noexcept override;
+  size_t get_max_bytes() noexcept override;
 
 private:
   std::shared_ptr<Config> conf;
@@ -88,6 +90,7 @@ public:
   ~FileProducer() override;
   bool produce(const std::string& message,
                bool flush = false) noexcept override;
+  size_t get_max_bytes() noexcept override;
 
 private:
   std::shared_ptr<Config> conf;
@@ -110,6 +113,7 @@ public:
   ~NullProducer() override;
   bool produce(const std::string& message,
                bool flush = false) noexcept override;
+  size_t get_max_bytes() noexcept override;
 
 private:
   std::shared_ptr<Config> conf;

@@ -386,6 +386,14 @@ bool KafkaProducer::produce(const string& message, bool flush) noexcept
   return true;
 }
 
+size_t KafkaProducer::get_max_bytes() noexcept
+{
+  string message_max_bytes;
+  kafka_gconf->get("message.max.bytes", message_max_bytes);
+
+  return stoull(message_max_bytes);
+}
+
 KafkaProducer::~KafkaProducer()
 {
   if (queue_data.size()) {
@@ -438,6 +446,8 @@ bool FileProducer::open() noexcept
   return true;
 }
 
+size_t FileProducer::get_max_bytes() noexcept { return 0; }
+
 /**
  * NullProducer
  */
@@ -450,5 +460,7 @@ bool NullProducer::produce(const string& message, bool flush) noexcept
 {
   return true;
 }
+
+size_t NullProducer::get_max_bytes() noexcept { return 0; }
 
 // vim: et:ts=2:sw=2
