@@ -4,7 +4,7 @@ static constexpr char fix_mark[] = R"(["",[],{"":""}])";
 
 PackMsg::PackMsg() { bytes = sizeof(fix_mark); }
 
-PackMsg::~PackMsg() {}
+PackMsg::~PackMsg() = default;
 
 void PackMsg::pack(std::stringstream& ss) { msgpack::pack(ss, fm); }
 
