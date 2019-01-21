@@ -15,6 +15,7 @@
 
 class Converter {
 public:
+  virtual ~Converter() = default;
   virtual size_t convert(char* in, size_t in_len, char* out, size_t out_len,
                          PackMsg& pm) = 0;
   size_t id = 0;
@@ -47,7 +48,7 @@ public:
   PacketConverter& operator=(const PacketConverter&) = delete;
   PacketConverter(PacketConverter&&) = delete;
   PacketConverter& operator=(const PacketConverter&&) = delete;
-  ~PacketConverter() = default;
+  ~PacketConverter() override = default;
   size_t convert(char* in, size_t in_len, char* out, size_t out_len,
                  PackMsg& pm) override;
 
@@ -84,7 +85,7 @@ public:
   LogConverter& operator=(const LogConverter&) = delete;
   LogConverter(LogConverter&&) = delete;
   LogConverter& operator=(const LogConverter&&) = delete;
-  ~LogConverter() = default;
+  ~LogConverter() override = default;
   size_t convert(char* in, size_t in_len, char* out, size_t out_len,
                  PackMsg& pm) override;
 };
@@ -100,7 +101,7 @@ public:
   NullConverter& operator=(const NullConverter&) = delete;
   NullConverter(NullConverter&&) = delete;
   NullConverter& operator=(const NullConverter&&) = delete;
-  ~NullConverter() = default;
+  ~NullConverter() override = default;
   size_t convert(char* in, size_t in_len, char* out, size_t out_len,
                  PackMsg& pm) override;
 };
