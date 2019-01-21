@@ -1,6 +1,6 @@
 #include "forward_proto.h"
 
-static constexpr char fix_mark[] = "[\"\",[],{\"\":\"\"}]";
+static constexpr char fix_mark[] = R"(["",[],{"":""}])";
 
 PackMsg::PackMsg() { bytes = sizeof(fix_mark); }
 
@@ -21,7 +21,7 @@ void PackMsg::entry(const size_t& id, const std::string& str,
   msg.insert(std::make_pair(str, vec));
   fm.entries.push_back(std::make_tuple(id, msg));
   bytes += (sizeof(id) + str.length() + vec.size() +
-            std::string("[,{\"\":\"\"}],").length());
+            std::string(R"([,{"":""}],)").length());
 }
 
 void PackMsg::option(const std::string& option, const std::string& value)
