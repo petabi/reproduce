@@ -81,7 +81,10 @@ void Controller::run_single()
   char omessage[message_size];
   size_t imessage_len = 0, omessage_len = 0;
   ControllerResult ret;
-  size_t conv_cnt = 0, sent_cnt = 0;
+  size_t conv_cnt = 0;
+#ifdef DEBUG
+  size_t sent_cnt = 0;
+#endif
   uint32_t offset = 0;
   Report report(conf);
   std::stringstream ss;
@@ -154,7 +157,9 @@ void Controller::run_single()
     }
 #endif
     report.process(imessage_len, omessage_len);
+#ifdef DEBUG
     sent_cnt = report.get_sent_count();
+#endif
 
     if (check_count(conv_cnt)) {
       break;
