@@ -8,6 +8,8 @@ using namespace std;
  * KafkaProducer
  */
 
+static constexpr size_t default_produce_max_bytes = 100000;
+
 enum class KafkaConfType {
   Global = 1,
   Topic,
@@ -248,9 +250,6 @@ void KafkaProducer::set_kafka_conf_file(const string& conf_file)
 
 void KafkaProducer::set_kafka_threshold()
 {
-  // TODO: optimize redundancy_kbytes, redundancy_counts
-  const size_t redundancy_kbytes = conf->queue_size;
-  const size_t redundancy_counts = 1;
   string queue_buffering_max_kbytes, queue_buffering_max_messages,
       message_max_bytes;
 
@@ -258,6 +257,11 @@ void KafkaProducer::set_kafka_threshold()
   kafka_gconf->get("queue.buffering.max.messages",
                    queue_buffering_max_messages);
   kafka_gconf->get("message.max.bytes", message_max_bytes);
+#if 0
+  // TODO: optimize redundancy_kbytes, redundancy_counts
+  const size_t redundancy_kbytes = conf->queue_size;
+  const size_t redundancy_counts = 1;
+
   if (conf->queue_size > stoul(message_max_bytes)) {
     throw runtime_error("Queue size too large. Increase message.max.bytes "
                         "value in the config file or lower queue value: " +
@@ -270,6 +274,7 @@ void KafkaProducer::set_kafka_threshold()
     queue_threshold = stoul(queue_buffering_max_messages) - redundancy_counts;
   }
   Util::dprint(F, "queue_threshold=", queue_threshold);
+#endif
 }
 
 void KafkaProducer::show_kafka_conf() const
@@ -446,7 +451,10 @@ bool FileProducer::open() noexcept
   return true;
 }
 
-size_t FileProducer::get_max_bytes() noexcept { return 0; }
+size_t FileProducer::get_max_bytes() noexcept
+{
+  return default_produce_max_bytes;
+}
 
 /**
  * NullProducer
@@ -461,6 +469,9 @@ bool NullProducer::produce(const string& message, bool flush) noexcept
   return true;
 }
 
-size_t NullProducer::get_max_bytes() noexcept { return 0; }
+size_t NullProducer::get_max_bytes() noexcept
+{
+  return default_produce_max_bytes;
+}
 
 // vim: et:ts=2:sw=2

@@ -8,6 +8,7 @@
 #include <pcap/pcap.h>
 
 #include "controller.h"
+#include "forward_proto.h"
 
 using namespace std;
 
@@ -83,6 +84,7 @@ void Controller::run_single()
   size_t conv_cnt = 0, sent_cnt = 0;
   uint32_t offset = 0;
   Report report(conf);
+  std::stringstream ss;
 
   if (signal(SIGINT, signal_handler) == SIG_ERR ||
       signal(SIGTERM, signal_handler) == SIG_ERR ||
@@ -101,20 +103,17 @@ void Controller::run_single()
   }
 
   report.start();
-  ForwardMsg fm;
+  PackMsg pm;
 
-  // TODO:
-#define FORWARD_ENTRY_MAX 1000000
-  std::stringstream ss;
-  fm.tag = "REproduce";
-  fm.option["option"] = "optional";
+  pm.tag("REproduce");
+  pm.option("option", "optional");
 
   while (!stop) {
     imessage_len = message_size;
     ret = invoke(get_next_data, this, imessage, imessage_len);
     if (ret == ControllerResult::Success) {
       omessage_len =
-          conv->convert(imessage, imessage_len, omessage, message_size, fm);
+          conv->convert(imessage, imessage_len, omessage, message_size, pm);
 
     } else if (ret == ControllerResult::Fail) {
       Util::eprint("failed to convert input data");
@@ -132,23 +131,21 @@ void Controller::run_single()
 
     conv_cnt++;
 
-    // TODO: ForwardMsg class contains the following actions:
-    // It can get the size by providing an interface to insert into the list.
-    if (fm.entries.size() < FORWARD_ENTRY_MAX) {
+    if (pm.get_bytes() < prod->get_max_bytes()) {
       continue;
     }
-    msgpack::pack(ss, fm);
+    pm.pack(ss);
 #ifdef DEBUG
-    msgpack::object_handle oh =
-        msgpack::unpack(ss.str().data(), ss.str().size());
-    msgpack::object obj = oh.get();
-    Util::dprint(F, "[", sent_cnt, "]", " unpacked message : ", obj);
+    Util::dprint(F, "[", sent_cnt, "]",
+                 " unpacked message : ", pm.get_string(ss));
 #endif
     if (!prod->produce(ss.str(), true)) {
       break;
     }
-    fm.entries.clear();
+    pm.clear();
     ss.str("");
+    pm.tag("REproduce");
+    pm.option("option", "optional");
 
 #if 0
     if (omessage_len <= 0) {
@@ -164,16 +161,14 @@ void Controller::run_single()
     }
   }
 
-  if (fm.entries.size() > 0) {
-    msgpack::pack(ss, fm);
+  if (pm.get_entries() > 0) {
+    pm.pack(ss);
 #ifdef DEBUG
-    msgpack::object_handle oh =
-        msgpack::unpack(ss.str().data(), ss.str().size());
-    msgpack::object obj = oh.get();
-    Util::dprint(F, "[", sent_cnt, "]", " unpacked message : ", obj);
+    Util::dprint(F, "[", sent_cnt, "]",
+                 " unpacked message : ", pm.get_string(ss));
 #endif
     prod->produce(ss.str(), true);
-    fm.entries.clear();
+    pm.clear();
     ss.str("");
   }
   write_offset(conf->input + "_" + conf->offset_prefix, offset + conv_cnt);

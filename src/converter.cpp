@@ -35,18 +35,15 @@ using namespace std;
 PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
 
 size_t PacketConverter::convert(char* in, size_t in_len, char* out,
-                                size_t out_len, ForwardMsg& fm)
+                                size_t out_len, PackMsg& pm)
 {
   // TODO: How to check the bounds of the buffer?
   conv_len = 0;
   ptr = out;
-  auto* pp = reinterpret_cast<pcap_sf_pkthdr*>(in);
 
   std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
                                          in + in_len);
-  std::map<std::string, std::vector<unsigned char>> time_pkt;
-  time_pkt.insert(std::make_pair("message", binary_data));
-  fm.entries.push_back(std::make_tuple(pp->ts.tv_sec, time_pkt));
+  pm.entry(id++, "message", binary_data);
 
 #ifdef DEBUG
   std::stringstream ss;
@@ -58,6 +55,7 @@ size_t PacketConverter::convert(char* in, size_t in_len, char* out,
 #endif
 
 #if 0
+  auto* pp = reinterpret_cast<pcap_sf_pkthdr*>(in);
   // TODO: Fix to enhance performance
   char* cap_time = nullptr;
   cap_time = (char*)ctime((const time_t*)&sec);
@@ -331,16 +329,14 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset)
  */
 
 size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len,
-                             ForwardMsg& fm)
+                             PackMsg& pm)
 {
   if (in == nullptr) {
     return 0;
   }
 
   std::vector<unsigned char> binary_data(in, in + in_len);
-  std::map<std::string, std::vector<unsigned char>> time_log;
-  time_log.insert(std::make_pair("message", binary_data));
-  fm.entries.push_back(std::make_tuple(1, time_log));
+  pm.entry(id++, "message", binary_data);
 #if 0
   if (in_len < out_len) {
     memcpy(out, in, in_len + 1);
@@ -359,7 +355,7 @@ size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len,
  */
 
 size_t NullConverter::convert(char* in, size_t in_len, char* out,
-                              size_t out_len, ForwardMsg& fm)
+                              size_t out_len, PackMsg& pm)
 {
   memcpy(out, in, in_len + 1);
 

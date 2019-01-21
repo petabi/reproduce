@@ -16,7 +16,8 @@
 class Converter {
 public:
   virtual size_t convert(char* in, size_t in_len, char* out, size_t out_len,
-                         ForwardMsg& fm) = 0;
+                         PackMsg& pm) = 0;
+  size_t id = 0;
 };
 
 /**
@@ -48,7 +49,7 @@ public:
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter() = default;
   size_t convert(char* in, size_t in_len, char* out, size_t out_len,
-                 ForwardMsg& fm) override;
+                 PackMsg& pm) override;
 
 private:
   int conv_len = 0;
@@ -85,7 +86,7 @@ public:
   LogConverter& operator=(const LogConverter&&) = delete;
   ~LogConverter() = default;
   size_t convert(char* in, size_t in_len, char* out, size_t out_len,
-                 ForwardMsg& fm) override;
+                 PackMsg& pm) override;
 };
 
 /**
@@ -101,7 +102,7 @@ public:
   NullConverter& operator=(const NullConverter&&) = delete;
   ~NullConverter() = default;
   size_t convert(char* in, size_t in_len, char* out, size_t out_len,
-                 ForwardMsg& fm) override;
+                 PackMsg& pm) override;
 };
 
 #endif
