@@ -19,7 +19,7 @@ void PackMsg::entry(const size_t& id, const std::string& str,
 {
   std::map<std::string, std::vector<unsigned char>> msg;
   msg.insert(std::make_pair(str, vec));
-  fm.entries.push_back(std::make_tuple(id, msg));
+  fm.entries.emplace_back(id, msg);
   bytes += (sizeof(id) + str.length() + vec.size() +
             std::string(R"([,{"":""}],)").length());
 }
