@@ -34,13 +34,8 @@ using namespace std;
 
 PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
 
-size_t PacketConverter::convert(char* in, size_t in_len, char* out,
-                                size_t out_len, PackMsg& pm)
+Conv::Status PacketConverter::convert(char* in, size_t in_len, PackMsg& pm)
 {
-  // TODO: How to check the bounds of the buffer?
-  conv_len = 0;
-  ptr = out;
-
   std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
                                          in + in_len);
   pm.entry(id++, "message", binary_data);
@@ -54,6 +49,7 @@ size_t PacketConverter::convert(char* in, size_t in_len, char* out,
   Util::dprint(F, "Binary packet data : ", ss.str());
 #endif
 
+// TODO: Detailed inspection
 #if 0
   auto* pp = reinterpret_cast<pcap_sf_pkthdr*>(in);
   // TODO: Fix to enhance performance
@@ -70,13 +66,9 @@ size_t PacketConverter::convert(char* in, size_t in_len, char* out,
     return 0;
   }
 
-  // TODO: payload process
-  *ptr = 0;
-
-  return conv_len + 1;
 #endif
 
-  return 0;
+  return Conv::Status::Success;
 }
 
 bool (PacketConverter::*PacketConverter::get_l2_process())(
@@ -328,11 +320,10 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset)
  * LogConverter
  */
 
-size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len,
-                             PackMsg& pm)
+Conv::Status LogConverter::convert(char* in, size_t in_len, PackMsg& pm)
 {
   if (in == nullptr) {
-    return 0;
+    return Conv::Status::Fail;
   }
 
   std::vector<unsigned char> binary_data(in, in + in_len);
@@ -347,19 +338,16 @@ size_t LogConverter::convert(char* in, size_t in_len, char* out, size_t out_len,
     return out_len - 1;
   }
 #endif
-  return 0;
+  return Conv::Status::Success;
 }
 
 /**
  * NullConverter
  */
 
-size_t NullConverter::convert(char* in, size_t in_len, char* out,
-                              size_t out_len, PackMsg& pm)
+Conv::Status NullConverter::convert(char* in, size_t in_len, PackMsg& pm)
 {
-  memcpy(out, in, in_len + 1);
-
-  return in_len;
+  return Conv::Status::Success;
 }
 
 // vim: et:ts=2:sw=2

@@ -2,7 +2,7 @@
 
 static constexpr char fix_mark[] = R"(["",[],{"":""}])";
 
-PackMsg::PackMsg() { bytes = sizeof(fix_mark); }
+PackMsg::PackMsg() : bytes{sizeof(fix_mark)} {}
 
 PackMsg::~PackMsg() = default;
 

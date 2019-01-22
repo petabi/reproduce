@@ -9,6 +9,10 @@
 
 #include "forward_proto.h"
 
+namespace Conv {
+enum class Status { Fail = -2, Pass = -1, Success = 0 };
+}
+
 /**
  * Converter
  */
@@ -16,8 +20,7 @@
 class Converter {
 public:
   virtual ~Converter() = default;
-  virtual size_t convert(char* in, size_t in_len, char* out, size_t out_len,
-                         PackMsg& pm) = 0;
+  virtual Conv::Status convert(char* in, size_t in_len, PackMsg& pm) = 0;
   size_t id = 0;
 };
 
@@ -49,8 +52,7 @@ public:
   PacketConverter(PacketConverter&&) = delete;
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter() override = default;
-  size_t convert(char* in, size_t in_len, char* out, size_t out_len,
-                 PackMsg& pm) override;
+  Conv::Status convert(char* in, size_t in_len, PackMsg& pm) override;
 
 private:
   int conv_len = 0;
@@ -86,8 +88,7 @@ public:
   LogConverter(LogConverter&&) = delete;
   LogConverter& operator=(const LogConverter&&) = delete;
   ~LogConverter() override = default;
-  size_t convert(char* in, size_t in_len, char* out, size_t out_len,
-                 PackMsg& pm) override;
+  Conv::Status convert(char* in, size_t in_len, PackMsg& pm) override;
 };
 
 /**
@@ -102,8 +103,7 @@ public:
   NullConverter(NullConverter&&) = delete;
   NullConverter& operator=(const NullConverter&&) = delete;
   ~NullConverter() override = default;
-  size_t convert(char* in, size_t in_len, char* out, size_t out_len,
-                 PackMsg& pm) override;
+  Conv::Status convert(char* in, size_t in_len, PackMsg& pm) override;
 };
 
 #endif

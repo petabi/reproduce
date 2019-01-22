@@ -7,8 +7,6 @@ using namespace std;
 
 static constexpr double kbytes = 1024.0;
 static constexpr double mbytes = kbytes * kbytes;
-static constexpr double kpackets = 1000.0;
-static constexpr double mpackets = kpackets * kpackets;
 
 Report::Report(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
@@ -21,24 +19,20 @@ void Report::start() noexcept
   time_start = std::chrono::steady_clock::now();
 }
 
-void Report::process(const size_t orig_length,
-                     const size_t sent_length) noexcept
+void Report::process(const size_t bytes) noexcept
 {
-  if (orig_length > orig_byte_max) {
-    orig_byte_max = orig_length;
-  } else if (orig_length < orig_byte_min || orig_byte_min == 0) {
-    orig_byte_min = orig_length;
+  if (!conf->mode_eval) {
+    return;
   }
-  orig_byte += orig_length;
 
-  if (sent_length > sent_byte_max) {
-    sent_byte_max = sent_length;
-  } else if (sent_length < sent_byte_min || sent_byte_min == 0) {
-    sent_byte_min = sent_length;
+  if (bytes > max_bytes) {
+    max_bytes = bytes;
+  } else if (bytes < min_bytes || min_bytes == 0) {
+    min_bytes = bytes;
   }
-  sent_byte += sent_length;
+  sum_bytes += bytes;
 
-  sent_count++;
+  count++;
 }
 
 void Report::end() noexcept
@@ -52,12 +46,10 @@ void Report::end() noexcept
       time_now - time_start);
 
   if (time_diff.count()) {
-    perf_kbps = static_cast<double>(sent_byte) / kbytes / time_diff.count();
-    perf_kpps = static_cast<double>(sent_count) / kpackets / time_diff.count();
+    perf_kbps = static_cast<double>(sum_bytes) / kbytes / time_diff.count();
   }
-  if (sent_count) {
-    orig_byte_avg = static_cast<double>(orig_byte) / sent_count;
-    sent_byte_avg = static_cast<double>(sent_byte) / sent_count;
+  if (count) {
+    avg_bytes = static_cast<double>(sum_bytes) / count;
   }
 
   cout.precision(2);
@@ -107,24 +99,13 @@ void Report::end() noexcept
     cout << "Output(NONE)\t: \n";
     break;
   }
-  cout << "Input Length\t: " << orig_byte_min << "/" << orig_byte_max << "/"
-       << orig_byte_avg << "(Min/Max/Avg)\n";
-  cout << "Output Length\t: " << sent_byte_min << "/" << sent_byte_max << "/"
-       << sent_byte_avg << "(Min/Max/Avg)\n";
-  cout << "Sent Bytes\t: " << sent_byte << "("
-       << static_cast<double>(sent_byte) / mbytes << "M)\n";
-  cout << "Sent Count\t: " << sent_count << "("
-       << static_cast<double>(sent_count) / mpackets << "M)\n";
-  cout << "Fail Count\t: " << fail_count << "("
-       << static_cast<double>(fail_count) / mpackets << "M)\n";
+  cout << "Process Count\t: " << count << "(" << sum_bytes << "bytes)\n";
+  cout << "Input Data\t: " << min_bytes << "/" << max_bytes << "/" << avg_bytes
+       << "(Min/Max/Avg)\n";
   cout << "Elapsed Time\t: " << time_diff.count() << "s\n";
-  cout << "Performance\t: " << perf_kbps / kbytes << "MBps/" << perf_kpps
-       << "Kpps\n";
+  cout << "Performance\t: " << static_cast<double>(st.st_size) / mbytes
+       << "MBps\n";
   cout << "--------------------------------------------------\n";
 }
-
-void Report::fail() noexcept { fail_count++; }
-
-size_t Report::get_sent_count() const noexcept { return sent_count; }
 
 // vim: et:ts=2:sw=2

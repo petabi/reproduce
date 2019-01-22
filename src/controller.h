@@ -15,7 +15,9 @@
 #include "report.h"
 #include "util.h"
 
-enum class ControllerResult { Fail = -2, No_more = -1, Success = 0 };
+namespace GetData {
+enum class Status { Fail = -2, No_more = -1, Success = 0 };
+}
 
 class Controller {
 public:
@@ -35,8 +37,8 @@ private:
   static pcap_t* pcd;
   FILE* pcapfile{nullptr};
   std::ifstream logfile;
-  ControllerResult (Controller::*get_next_data)(char* imessage,
-                                                size_t& imessage_len);
+  GetData::Status (Controller::*get_next_data)(char* imessage,
+                                               size_t& imessage_len);
   bool (Controller::*skip_data)(const size_t count_skip);
   void run_split();
   void run_single();
@@ -52,10 +54,10 @@ private:
   void close_log();
   uint32_t read_offset(const std::string& filename) const;
   void write_offset(const std::string& filename, uint32_t offset) const;
-  ControllerResult get_next_nic(char* imessage, size_t& imessage_len);
-  ControllerResult get_next_pcap(char* imessage, size_t& imessage_len);
-  ControllerResult get_next_log(char* imessage, size_t& imessage_len);
-  ControllerResult get_next_null(char* imessage, size_t& imessage_len);
+  GetData::Status get_next_nic(char* imessage, size_t& imessage_len);
+  GetData::Status get_next_pcap(char* imessage, size_t& imessage_len);
+  GetData::Status get_next_log(char* imessage, size_t& imessage_len);
+  GetData::Status get_next_null(char* imessage, size_t& imessage_len);
   std::string get_next_file(DIR* dir) const;
   bool skip_pcap(const size_t count_skip);
   bool skip_log(const size_t count_skip);

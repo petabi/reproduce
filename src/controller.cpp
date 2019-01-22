@@ -79,9 +79,7 @@ void Controller::run_split()
 void Controller::run_single()
 {
   char imessage[message_size];
-  char omessage[message_size];
-  size_t imessage_len = 0, omessage_len = 0;
-  ControllerResult ret;
+  size_t imessage_len = 0;
   size_t conv_cnt = 0;
 #ifdef DEBUG
   size_t sent_cnt = 0;
@@ -114,15 +112,16 @@ void Controller::run_single()
 
   while (!stop) {
     imessage_len = message_size;
-    ret = invoke(get_next_data, this, imessage, imessage_len);
-    if (ret == ControllerResult::Success) {
-      omessage_len =
-          conv->convert(imessage, imessage_len, omessage, message_size, pm);
-
-    } else if (ret == ControllerResult::Fail) {
+    GetData::Status gstat = invoke(get_next_data, this, imessage, imessage_len);
+    if (gstat == GetData::Status::Success) {
+      Conv::Status cstat = conv->convert(imessage, imessage_len, pm);
+      if (cstat != Conv::Status::Success) {
+        // TODO: handling exceptions due to convert failures
+      }
+    } else if (gstat == GetData::Status::Fail) {
       Util::eprint("failed to convert input data");
       break;
-    } else if (ret == ControllerResult::No_more) {
+    } else if (gstat == GetData::Status::No_more) {
       if (conf->input_type != InputType::Nic && conf->mode_grow) {
         // TODO: optimize time interval
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
@@ -134,6 +133,7 @@ void Controller::run_single()
     }
 
     conv_cnt++;
+    report.process(imessage_len);
 
     if (pm.get_bytes() < prod->get_max_bytes()) {
       continue;
@@ -141,7 +141,7 @@ void Controller::run_single()
     pm.pack(ss);
 #ifdef DEBUG
     Util::dprint(F, "[", sent_cnt, "]",
-                 " unpacked message : ", pm.get_string(ss));
+                 " unpacked message: ", pm.get_string(ss));
 #endif
     if (!prod->produce(ss.str(), true)) {
       break;
@@ -150,17 +150,6 @@ void Controller::run_single()
     ss.str("");
     pm.tag("REproduce");
     pm.option("option", "optional");
-
-#if 0
-    if (omessage_len <= 0) {
-      report.fail();
-      continue;
-    }
-#endif
-    report.process(imessage_len, omessage_len);
-#ifdef DEBUG
-    sent_cnt = report.get_sent_count();
-#endif
 
     if (check_count(conv_cnt)) {
       break;
@@ -171,7 +160,7 @@ void Controller::run_single()
     pm.pack(ss);
 #ifdef DEBUG
     Util::dprint(F, "[", sent_cnt, "]",
-                 " unpacked message : ", pm.get_string(ss));
+                 " unpacked message: ", pm.get_string(ss));
 #endif
     prod->produce(ss.str(), true);
     pm.clear();
@@ -322,15 +311,15 @@ uint32_t Controller::open_nic(const std::string& devname)
   char errbuf[PCAP_ERRBUF_SIZE];
 
   if (pcap_lookupnet(devname.c_str(), &net, &mask, errbuf) == -1) {
-    throw runtime_error("failed to lookup the network: " + devname + " : " +
+    throw runtime_error("failed to lookup the network: " + devname + ": " +
                         errbuf);
   }
 
   pcd = pcap_open_live(devname.c_str(), BUFSIZ, 0, -1, errbuf);
 
   if (pcd == nullptr) {
-    throw runtime_error("failed to initialize the nic mode: " + devname +
-                        " : " + errbuf);
+    throw runtime_error("failed to initialize the nic mode: " + devname + ": " +
+                        errbuf);
   }
 
   if (pcap_setnonblock(pcd, false, errbuf) != 0) {
@@ -347,7 +336,7 @@ uint32_t Controller::open_nic(const std::string& devname)
                         conf->packet_filter);
   }
 
-  Util::dprint(F, "capture rule setting completed : " + conf->packet_filter);
+  Util::dprint(F, "capture rule setting completed: " + conf->packet_filter);
 
   return pcap_datalink(pcd);
 }
@@ -368,7 +357,7 @@ uint32_t Controller::open_pcap(const string& filename)
 
   if (pcd == nullptr) {
     throw runtime_error("failed to initialize the pcap file mode: " + filename +
-                        " : " + errbuf);
+                        ": " + errbuf);
   }
 
   if (pcap_compile(pcd, &fp, conf->packet_filter.c_str(), 0, 0) == -1) {
@@ -381,7 +370,7 @@ uint32_t Controller::open_pcap(const string& filename)
                         conf->packet_filter);
   }
 
-  Util::dprint(F, "capture rule setting completed : " + conf->packet_filter);
+  Util::dprint(F, "capture rule setting completed: " + conf->packet_filter);
 
   return pcap_datalink(pcd);
 }
@@ -446,7 +435,7 @@ void Controller::write_offset(const std::string& filename,
   }
 }
 
-ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
+GetData::Status Controller::get_next_nic(char* imessage, size_t& imessage_len)
 {
   pcap_pkthdr* pkthdr;
   pcap_sf_pkthdr sfhdr;
@@ -456,13 +445,13 @@ ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
   int res = 0;
 
   if (stop) {
-    return ControllerResult::No_more;
+    return GetData::Status::No_more;
   } else {
     do {
       res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
     } while (res == 0 && !stop);
     if (res < 0 && !stop) {
-      return ControllerResult::Fail;
+      return GetData::Status::Fail;
     }
   }
   sfhdr.caplen = pkthdr->caplen;
@@ -477,10 +466,10 @@ ControllerResult Controller::get_next_nic(char* imessage, size_t& imessage_len)
 
   imessage_len = sfhdr.caplen + pp_len;
 
-  return ControllerResult::Success;
+  return GetData::Status::Success;
 }
 
-ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
+GetData::Status Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 {
   pcap_pkthdr* pkthdr;
   pcap_sf_pkthdr sfhdr;
@@ -491,10 +480,10 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 
   res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
   if (res == -1) {
-    return ControllerResult::Fail;
+    return GetData::Status::Fail;
   }
   if (res == -2) {
-    return ControllerResult::No_more;
+    return GetData::Status::No_more;
   }
   sfhdr.caplen = pkthdr->caplen;
   sfhdr.len = pkthdr->len;
@@ -508,10 +497,10 @@ ControllerResult Controller::get_next_pcap(char* imessage, size_t& imessage_len)
 
   imessage_len = sfhdr.caplen + pp_len;
 
-  return ControllerResult::Success;
+  return GetData::Status::Success;
 }
 
-ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
+GetData::Status Controller::get_next_log(char* imessage, size_t& imessage_len)
 {
   static size_t count = 0;
   static bool trunc = false;
@@ -521,10 +510,10 @@ ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
   if (!logfile.getline(imessage, imessage_len)) {
     if (logfile.eof()) {
       logfile.clear();
-      return ControllerResult::No_more;
+      return GetData::Status::No_more;
     }
     if (logfile.bad()) {
-      return ControllerResult::Fail;
+      return GetData::Status::Fail;
     }
     if (logfile.fail()) {
       Util::eprint("The message is truncated [", count, " line(", imessage_len,
@@ -541,10 +530,10 @@ ControllerResult Controller::get_next_log(char* imessage, size_t& imessage_len)
     }
   }
 
-  return ControllerResult::Success;
+  return GetData::Status::Success;
 }
 
-ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
+GetData::Status Controller::get_next_null(char* imessage, size_t& imessage_len)
 {
   static constexpr char sample_data[] =
       "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 "
@@ -555,7 +544,7 @@ ControllerResult Controller::get_next_null(char* imessage, size_t& imessage_len)
   memcpy(imessage, sample_data, strlen(sample_data) + 1);
   imessage_len = strlen(imessage);
 
-  return ControllerResult::Success;
+  return GetData::Status::Success;
 }
 
 std::string Controller::get_next_file(DIR* dir) const
