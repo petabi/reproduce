@@ -12,9 +12,9 @@
 class ForwardMsg {
 public:
   std::string tag;
-  // clang-format off
-  std::vector<std::tuple<size_t, std::map<std::string, std::vector<unsigned char> > > > entries;
-  // clang-format on
+  std::vector<
+      std::tuple<size_t, std::map<std::string, std::vector<unsigned char>>>>
+      entries;
   std::map<std::string, std::string> option;
   MSGPACK_DEFINE(tag, entries, option);
 };

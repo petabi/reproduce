@@ -391,7 +391,7 @@ bool KafkaProducer::produce(const string& message, bool flush) noexcept
   return true;
 }
 
-size_t KafkaProducer::get_max_bytes() noexcept
+size_t KafkaProducer::get_max_bytes() const noexcept
 {
   string message_max_bytes;
   kafka_gconf->get("message.max.bytes", message_max_bytes);
@@ -451,7 +451,7 @@ bool FileProducer::open() noexcept
   return true;
 }
 
-size_t FileProducer::get_max_bytes() noexcept
+size_t FileProducer::get_max_bytes() const noexcept
 {
   return default_produce_max_bytes;
 }
@@ -469,7 +469,7 @@ bool NullProducer::produce(const string& message, bool flush) noexcept
   return true;
 }
 
-size_t NullProducer::get_max_bytes() noexcept
+size_t NullProducer::get_max_bytes() const noexcept
 {
   return default_produce_max_bytes;
 }
