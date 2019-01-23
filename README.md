@@ -246,3 +246,14 @@ Performance     : 70.22MBps/419.14Kpps
 |   3   | Decimal | Destination Port Address | 53      |
 |   4   | Decimal | Length                   | 1048    |
 |   5   | Decimal | Checksum                 | 30584   |
+
+#### Building Docker Images
+try this in a directory that has a Dockerfile:
+```
+docker build -t reproduce .
+```
+#### Running Docker Images
+Run with the following command
+```
+docker run --mount type=bind,source=[the directory containing the target],target=/data reproduce:latest -i [the target file] -b localhost:9092 -t topic
+```
