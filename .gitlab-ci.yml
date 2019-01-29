@@ -4,7 +4,7 @@ test:
   before_script:
   - apt-get update -yqq
   - apt-get install -yqq build-essential cmake clang-format clang-tidy
-  - apt-get install -yqq libmsgpack-dev libpcap-dev librdkafka-dev
+  - apt-get install -yqq libmsgpack-dev libpcap-dev librdkafka-dev libhyperscan-dev
   script:
   - if [ `find src tests \( -name \*.c -o -name \*.cpp -o -name \*.h \) | xargs clang-format -output-replacements-xml | grep -c "<replacement "` -ne "0" ]; then echo "Run clang-format." && false; fi
   - mkdir build && cd build

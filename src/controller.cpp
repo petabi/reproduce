@@ -246,23 +246,47 @@ bool Controller::set_converter()
   case InputType::Nic:
     l2_type = open_nic(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
+    if (!conf->pattern_file.empty()) {
+      if (conv->get_matcher() == nullptr) {
+        conv->set_matcher(conf->pattern_file, Mode::BLOCK);
+      }
+    }
     get_next_data = &Controller::get_next_nic;
     skip_data = &Controller::skip_null;
     Util::iprint("input=", conf->input, ", input type=NIC");
+    if (conv->get_matcher() != nullptr) {
+      Util::iprint("pattern file=", conf->pattern_file);
+    }
     break;
   case InputType::Pcap:
     l2_type = open_pcap(conf->input);
     conv = make_unique<PacketConverter>(l2_type);
+    if (!conf->pattern_file.empty()) {
+      if (conv->get_matcher() == nullptr) {
+        conv->set_matcher(conf->pattern_file, Mode::BLOCK);
+      }
+    }
     get_next_data = &Controller::get_next_pcap;
     skip_data = &Controller::skip_pcap;
     Util::iprint("input=", conf->input, ", input type=PCAP");
+    if (conv->get_matcher() != nullptr) {
+      Util::iprint("pattern file=", conf->pattern_file);
+    }
     break;
   case InputType::Log:
     open_log(conf->input);
     conv = make_unique<LogConverter>();
+    if (!conf->pattern_file.empty()) {
+      if (conv->get_matcher() == nullptr) {
+        conv->set_matcher(conf->pattern_file, Mode::BLOCK);
+      }
+    }
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
     Util::iprint("input=", conf->input, ", input type=LOG");
+    if (conv->get_matcher() != nullptr) {
+      Util::iprint("pattern file=", conf->pattern_file);
+    }
     break;
   case InputType::Dir:
     Util::iprint("input=", conf->input, ", input type=DIR");
@@ -444,16 +468,15 @@ GetData::Status Controller::get_next_nic(char* imessage, size_t& imessage_len)
   auto ptr = reinterpret_cast<u_char*>(imessage);
   int res = 0;
 
+  do {
+    res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
+  } while (res == 0 && !stop);
   if (stop) {
     return GetData::Status::No_more;
-  } else {
-    do {
-      res = pcap_next_ex(pcd, &pkthdr, &pkt_data);
-    } while (res == 0 && !stop);
-    if (res < 0 && !stop) {
-      return GetData::Status::Fail;
-    }
+  } else if (res < 0) {
+    return GetData::Status::Fail;
   }
+
   sfhdr.caplen = pkthdr->caplen;
   sfhdr.len = pkthdr->len;
   sfhdr.ts.tv_sec = pkthdr->ts.tv_sec;

@@ -28,6 +28,7 @@ public:
   std::string kafka_broker;
   std::string kafka_topic;
   std::string kafka_conf;
+  std::string pattern_file;
 
   // internal
   size_t count_send{0};

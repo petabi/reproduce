@@ -32,6 +32,7 @@ void Config::help() const noexcept
   cout << "  -k: kafka config file."
        << " (Ex: kafka.conf)\n"
        << "      it overrides default kafka config to user kafka config\n";
+  cout << "  -m: match [Pattern FILE]\n";
   cout << "  -o: output [TEXTFILE/none]\n";
   cout << "      If no 'o' option is given, output is kafka\n";
   cout << "  -p: queue period time. how much time keep queued data."
@@ -54,7 +55,7 @@ void Config::help() const noexcept
 bool Config::set(int argc, char** argv)
 {
   int o;
-  while ((o = getopt(argc, argv, "b:c:ef:ghi:k:o:p:q:r:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:ef:ghi:k:m:o:p:q:r:s:t:")) != -1) {
     switch (o) {
     case 'b':
       kafka_broker = optarg;
@@ -79,6 +80,9 @@ bool Config::set(int argc, char** argv)
       break;
     case 'k':
       kafka_conf = optarg;
+      break;
+    case 'm':
+      pattern_file = optarg;
       break;
     case 'o':
       output = optarg;

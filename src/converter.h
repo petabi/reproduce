@@ -8,6 +8,7 @@
 #include <string>
 
 #include "forward_proto.h"
+#include "matcher.h"
 
 namespace Conv {
 enum class Status { Fail = -2, Pass = -1, Success = 0 };
@@ -22,6 +23,11 @@ public:
   virtual ~Converter() = default;
   virtual Conv::Status convert(char* in, size_t in_len, PackMsg& pm) = 0;
   size_t id = 0;
+  void set_matcher(const std::string& filename, const Mode& mode);
+  Matcher* get_matcher() { return matc.get(); }
+
+protected:
+  std::unique_ptr<Matcher> matc{nullptr};
 };
 
 /**
@@ -55,25 +61,25 @@ public:
   Conv::Status convert(char* in, size_t in_len, PackMsg& pm) override;
 
 private:
-  int conv_len = 0;
-  char* ptr;
-  int length;
+  bool match;
   uint32_t l2_type;
   uint16_t l3_type;
   uint8_t l4_type;
-  bool (PacketConverter::*get_l2_process())(unsigned char* offset);
-  bool (PacketConverter::*get_l3_process())(unsigned char* offset);
-  bool (PacketConverter::*get_l4_process())(unsigned char* offset);
-  bool l2_ethernet_process(unsigned char* offset);
-  bool l2_null_process(unsigned char* offset);
-  bool l3_ipv4_process(unsigned char* offset);
-  bool l3_arp_process(unsigned char* offset);
-  bool l3_null_process(unsigned char* offset);
-  bool l4_icmp_process(unsigned char* offset);
-  bool l4_udp_process(unsigned char* offset);
-  bool l4_tcp_process(unsigned char* offset);
-  bool l4_null_process(unsigned char* offset);
-  bool add_conv_len();
+  bool (PacketConverter::*get_l2_process())(unsigned char* offset,
+                                            size_t length);
+  bool (PacketConverter::*get_l3_process())(unsigned char* offset,
+                                            size_t length);
+  bool (PacketConverter::*get_l4_process())(unsigned char* offset,
+                                            size_t length);
+  bool l2_ethernet_process(unsigned char* offset, size_t length);
+  bool l2_null_process(unsigned char* offset, size_t length);
+  bool l3_ipv4_process(unsigned char* offset, size_t length);
+  bool l3_arp_process(unsigned char* offset, size_t length);
+  bool l3_null_process(unsigned char* offset, size_t length);
+  bool l4_icmp_process(unsigned char* offset, size_t length);
+  bool l4_udp_process(unsigned char* offset, size_t length);
+  bool l4_tcp_process(unsigned char* offset, size_t length);
+  bool l4_null_process(unsigned char* offset, size_t length);
 };
 
 /**
