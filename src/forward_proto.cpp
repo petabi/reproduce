@@ -1,3 +1,8 @@
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include "forward_proto.h"
 
 static constexpr char fix_mark[] = R"(["",[],{"":""}])";
