@@ -30,8 +30,7 @@ private:
   enum class MatchResult { TRUE, FALSE, ERROR };
   MatchResult scan_block(const char* content, size_t content_length,
                          const match_event_handler& onEvent);
-  void databases_from_file(const std::string& filename,
-                           hs_database_t** hs_db_ptr);
+  void databases_from_file(const std::string& filename);
   void parse_file(const std::string& filename,
                   std::vector<std::string>& patterns,
                   std::vector<unsigned int>& flags,

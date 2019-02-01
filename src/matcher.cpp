@@ -3,7 +3,7 @@
 
 Matcher::Matcher(const std::string& filename, const Mode& _mode) : mode(_mode)
 {
-  databases_from_file(filename.c_str(), &hs_db);
+  databases_from_file(filename.c_str());
   if (hs_alloc_scratch(hs_db, &scratch) != HS_SUCCESS) {
     throw std::runtime_error("failed to allocate pattern scratch space");
   }
@@ -45,7 +45,9 @@ bool Matcher::reload(const std::string& filename)
 {
   hs_free_database(hs_db);
   hs_free_scratch(scratch);
-  databases_from_file(filename.c_str(), &hs_db);
+  hs_db = nullptr;
+  scratch = nullptr;
+  databases_from_file(filename.c_str());
   if (hs_alloc_scratch(hs_db, &scratch) != HS_SUCCESS) {
     Util::eprint("failed to reload pattern file: ", filename);
     return false;
@@ -84,8 +86,7 @@ Matcher::MatchResult Matcher::scan_block(const char* content,
   return MatchResult::FALSE;
 }
 
-void Matcher::databases_from_file(const std::string& filename,
-                                  hs_database_t** hs_db_ptr)
+void Matcher::databases_from_file(const std::string& filename)
 {
   // hs_compile_multi requires three parallel arrays containing the patterns,
   // flags and ids that we want to work with. To achieve this we use
@@ -111,11 +112,11 @@ void Matcher::databases_from_file(const std::string& filename,
                std::to_string(patterns.size()));
 
   if (mode == Mode::BLOCK) {
-    *hs_db_ptr = build_database(cstr_patterns, flags, ids, HS_MODE_BLOCK);
+    hs_db = build_database(cstr_patterns, flags, ids, HS_MODE_BLOCK);
   } else {
     // TODO: Stream mode implementation
 #if 0
-    *hs_db_ptr = build_database(cstr_patterns, flags, ids, HS_MODE_STREAM);
+    hs_db = build_database(cstr_patterns, flags, ids, HS_MODE_STREAM);
 #endif
   }
 }
@@ -133,7 +134,6 @@ void Matcher::parse_file(const std::string& filename,
   for (unsigned int i = 1; !in_file.eof(); ++i) {
     std::string line;
     getline(in_file, line);
-
     if (line.empty() || line[0] == '#') {
       continue;
     }
@@ -199,7 +199,6 @@ Matcher::build_database(const std::vector<const char*>& expressions,
     hs_free_compile_error(compile_err);
     throw std::runtime_error("failed to compile the pattern file");
   }
-
   return db;
 }
 

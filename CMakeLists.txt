@@ -13,3 +13,9 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
                ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_subdirectory(src)
+
+find_package(GTest)
+if(GTEST_FOUND)
+  enable_testing()
+  add_subdirectory(tests)
+endif()

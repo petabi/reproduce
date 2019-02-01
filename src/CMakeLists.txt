@@ -9,3 +9,11 @@ target_include_directories(${PROJECT_NAME}
   PRIVATE ${LIBRDKAFKA_INCLUDE_DIR} ${LIBHS_INCLUDE} ${CMAKE_SOURCE_DIR}/ext ${PROJECT_BINARY_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRDKAFKA_LIB} ${PCAP_LIB} ${MSGPACK_LIB} ${HS_LIB})
 #install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR})
+
+add_library(libreproduce controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp forward_proto.cpp matcher.cpp)
+set_target_properties(libreproduce PROPERTIES
+  OUTPUT_NAME reproduce
+  POSITION_INDEPENDENT_CODE ON)
+target_include_directories(libreproduce INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(libreproduce PRIVATE PRIVATE ${LIBRDKAFKA_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/ext ${PROJECT_BINARY_DIR})
+target_link_libraries(libreproduce PRIVATE ${LIBRDKAFKA_LIB} ${PCAP_LIB} ${MSGPACK_LIB} ${HS_LIB})
