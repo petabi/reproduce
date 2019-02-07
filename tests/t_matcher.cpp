@@ -37,10 +37,8 @@ TEST(test_matcher, test_matcher_basic)
 // Test fails to identify /a+b{2}.c?/is
 TEST(test_matcher, DISABLED_test_matcher_difficult_regex)
 {
-  std::vector<std::string> signatures = { R"(/a+b{2}.c?/is)",
-                                         R"(a(b[cd]|e[fg]).)",
-                                         R"(z\d{2}y\W+x\s*)"
-  };
+  std::vector<std::string> signatures = {
+      R"(/a+b{2}.c?/is)", R"(a(b[cd]|e[fg]).)", R"(z\d{2}y\W+x\s*)"};
   std::string sample_file = "mysample.rules";
   std::ofstream sample_out(sample_file);
   for (const auto& sig : signatures) {
