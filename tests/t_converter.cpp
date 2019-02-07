@@ -74,14 +74,3 @@ TEST(test_converter, test_log_converter)
   EXPECT_EQ(mystatus, Conv::Status::Success);
   EXPECT_EQ(pmsg.get_entries(), 1);
 }
-
-TEST(test_converter, test_null_converter)
-{
-  std::string msg = "No message shall match!";
-  NullConverter ncon;
-  PackMsg pmsg;
-  Conv::Status mystatus =
-      ncon.convert(reinterpret_cast<char*>(msg.data()), msg.size(), pmsg);
-  EXPECT_EQ(mystatus, Conv::Status::Success);
-  EXPECT_EQ(pmsg.get_entries(), 0); // Is zero correct here?
-}

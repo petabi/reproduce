@@ -97,21 +97,6 @@ public:
   Conv::Status convert(char* in, size_t in_len, PackMsg& pm) override;
 };
 
-/**
- * NullConverter
- */
-
-class NullConverter : public Converter {
-public:
-  NullConverter() = default;
-  NullConverter(const NullConverter&) = delete;
-  NullConverter& operator=(const NullConverter&) = delete;
-  NullConverter(NullConverter&&) = delete;
-  NullConverter& operator=(const NullConverter&&) = delete;
-  ~NullConverter() override = default;
-  Conv::Status convert(char* in, size_t in_len, PackMsg& pm) override;
-};
-
 #endif
 
 // vim: et:ts=2:sw=2

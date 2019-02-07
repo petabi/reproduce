@@ -179,13 +179,6 @@ InputType Controller::get_input_type() const
   const unsigned char mn_pcapng_little[4] = {0x4D, 0x3C, 0x2B, 0x1A};
   const unsigned char mn_pcapng_big[4] = {0x1A, 0x2B, 0x3C, 0x4D};
 
-  // TODO: Check whether input is a network interface
-  // return NIC;
-
-  if (conf->input.empty()) {
-    return InputType::None;
-  }
-
   DIR* dir_chk = nullptr;
   dir_chk = opendir(conf->input.c_str());
   if (dir_chk != nullptr) {
@@ -290,12 +283,6 @@ bool Controller::set_converter()
     break;
   case InputType::Dir:
     Util::iprint("input=", conf->input, ", input type=DIR");
-    break;
-  case InputType::None:
-    conv = make_unique<NullConverter>();
-    get_next_data = &Controller::get_next_null;
-    skip_data = &Controller::skip_null;
-    Util::iprint("input=", conf->input, ", input type=NONE");
     break;
   default:
     return false;
@@ -552,20 +539,6 @@ GetData::Status Controller::get_next_log(char* imessage, size_t& imessage_len)
       trunc = false;
     }
   }
-
-  return GetData::Status::Success;
-}
-
-GetData::Status Controller::get_next_null(char* imessage, size_t& imessage_len)
-{
-  static constexpr char sample_data[] =
-      "1531980827 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 "
-      "10240 "
-      "58477 64 127 47112 59.7.91.107 123.141.115.52 ip_opt TCP 62555 80 "
-      "86734452 2522990538 20 A 16425 7168 0";
-
-  memcpy(imessage, sample_data, strlen(sample_data) + 1);
-  imessage_len = strlen(imessage);
 
   return GetData::Status::Success;
 }

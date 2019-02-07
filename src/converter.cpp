@@ -284,13 +284,4 @@ Conv::Status LogConverter::convert(char* in, size_t in_len, PackMsg& pm)
   return Conv::Status::Success;
 }
 
-/**
- * NullConverter
- */
-
-Conv::Status NullConverter::convert(char* in, size_t in_len, PackMsg& pm)
-{
-  return Conv::Status::Success;
-}
-
 // vim: et:ts=2:sw=2

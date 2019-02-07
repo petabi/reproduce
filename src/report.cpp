@@ -76,9 +76,6 @@ void Report::end() noexcept
   case InputType::Nic:
     cout << "Input(NIC)\t: " << conf->input << '\n';
     break;
-  case InputType::None:
-    cout << "Input(NONE)\t: \n";
-    break;
   default:
     break;
   }

@@ -29,7 +29,6 @@ public:
   ~PackMsg();
 
   void pack(std::stringstream& ss);
-  std::string unpack(const std::stringstream& ss);
   void tag(const std::string& str);
   void entry(const size_t& id, const std::string& str,
              const std::vector<unsigned char>& vec);

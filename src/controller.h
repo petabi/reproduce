@@ -57,7 +57,6 @@ private:
   GetData::Status get_next_nic(char* imessage, size_t& imessage_len);
   GetData::Status get_next_pcap(char* imessage, size_t& imessage_len);
   GetData::Status get_next_log(char* imessage, size_t& imessage_len);
-  GetData::Status get_next_null(char* imessage, size_t& imessage_len);
   std::string get_next_file(DIR* dir) const;
   bool skip_pcap(const size_t count_skip);
   bool skip_log(const size_t count_skip);
