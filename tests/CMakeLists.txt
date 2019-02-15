@@ -54,3 +54,13 @@ if(HAVE_CXX_NO_ZERO_AS_NULL_POINTER_CONSTANT)
 endif()
 target_link_libraries(test_producer libreproduce GTest::GTest GTest::Main)
 gtest_discover_tests(test_producer)
+
+add_executable(test_entropy t_entropy.cpp)
+target_include_directories(test_entropy PRIVATE ${PROJECT_BINARY_DIR})
+target_compile_options(test_entropy PRIVATE -Wno-global-constructors)
+if(HAVE_CXX_NO_ZERO_AS_NULL_POINTER_CONSTANT)
+  target_compile_options(test_entropy PUBLIC
+    -Wno-zero-as-null-pointer-constant)
+endif()
+target_link_libraries(test_entropy libreproduce GTest::GTest GTest::Main)
+gtest_discover_tests(test_entropy)

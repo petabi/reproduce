@@ -4,13 +4,13 @@ find_library(PCAP_LIB pcap)
 find_library(MSGPACK_LIB msgpackc)
 find_path(LIBHS_INCLUDE hs/hs.h)
 find_library(HS_LIB hs)
-add_executable(${PROJECT_NAME} main.cpp controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp forward_proto.cpp matcher.cpp)
+add_executable(${PROJECT_NAME} main.cpp controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp forward_proto.cpp matcher.cpp entropy_calculator.cpp)
 target_include_directories(${PROJECT_NAME}
   PRIVATE ${LIBRDKAFKA_INCLUDE_DIR} ${LIBHS_INCLUDE} ${CMAKE_SOURCE_DIR}/ext ${PROJECT_BINARY_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRDKAFKA_LIB} ${PCAP_LIB} ${MSGPACK_LIB} ${HS_LIB})
 #install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR})
 
-add_library(libreproduce controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp forward_proto.cpp matcher.cpp)
+add_library(libreproduce controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp forward_proto.cpp matcher.cpp entropy_calculator.cpp)
 set_target_properties(libreproduce PROPERTIES
   OUTPUT_NAME reproduce
   POSITION_INDEPENDENT_CODE ON)
