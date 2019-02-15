@@ -38,6 +38,10 @@ void Converter::set_matcher(const std::string& filename, const Mode& mode)
   matc = make_unique<Matcher>(filename, mode);
 }
 
+size_t Converter::get_id() const { return id; }
+
+void Converter::set_id(const size_t _id) { id = _id; }
+
 /**
  * PacketConverter
  */

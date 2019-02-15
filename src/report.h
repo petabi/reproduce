@@ -14,20 +14,26 @@ public:
   Report& operator=(const Report&) = delete;
   Report(Report&&) = delete;
   Report& operator=(Report&&) = delete;
-  ~Report() = default;
+  ~Report();
 
-  void start() noexcept;
+  void start(const size_t id) noexcept;
   void process(const size_t bytes) noexcept;
-  void end() noexcept;
+  void skip(const size_t bytes) noexcept;
+  void end(const size_t id) noexcept;
   std::shared_ptr<Config> conf;
 
 private:
+  std::ofstream report_file;
+  size_t start_id{0};
+  size_t end_id{0};
   size_t sum_bytes{0};
   size_t min_bytes{0};
   size_t max_bytes{0};
   double avg_bytes{0.0};
-  size_t count{0};
-  double perf_kbps{0.0};
+  size_t skip_bytes{0};
+  size_t skip_cnt{0};
+  size_t process_cnt{0};
+  size_t total_cnt{0};
   std::chrono::time_point<std::chrono::steady_clock> time_start{
       (std::chrono::milliseconds::zero())};
   std::chrono::time_point<std::chrono::steady_clock> time_now{

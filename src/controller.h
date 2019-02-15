@@ -34,6 +34,7 @@ private:
   std::shared_ptr<Config> conf;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
+  size_t conv_id = 0;
   static pcap_t* pcd;
   FILE* pcapfile{nullptr};
   std::ifstream logfile;
@@ -44,7 +45,7 @@ private:
   void run_single();
   InputType get_input_type() const;
   OutputType get_output_type() const;
-  bool set_converter();
+  bool set_converter(const size_t id);
   bool set_producer();
   uint32_t open_nic(const std::string& devname);
   void close_nic();

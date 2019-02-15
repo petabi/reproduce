@@ -22,7 +22,7 @@ Controller::Controller(Config _conf)
 {
   conf = make_shared<Config>(_conf);
 
-  if (!set_converter()) {
+  if (!set_converter(0)) {
     throw runtime_error("failed to set the converter");
   }
   if (!set_producer()) {
@@ -65,7 +65,10 @@ void Controller::run_split()
       break;
     }
     conf->input = dir_path + filename;
-    if (!set_converter()) {
+    if (conv) {
+      conv_id = conv->get_id();
+    }
+    if (!set_converter(conv_id)) {
       closedir(dir);
       throw runtime_error("failed to set the converter");
     }
@@ -81,9 +84,7 @@ void Controller::run_single()
   char imessage[message_size];
   size_t imessage_len = 0;
   size_t conv_cnt = 0;
-#ifdef DEBUG
   size_t sent_cnt = 0;
-#endif
   uint32_t offset = 0;
   Report report(conf);
   std::stringstream ss;
@@ -104,7 +105,7 @@ void Controller::run_single()
     Util::eprint("failed to skip: ", offset);
   }
 
-  report.start();
+  report.start(conv->get_id());
   PackMsg pm;
 
   pm.tag("REproduce");
@@ -117,6 +118,7 @@ void Controller::run_single()
       Conv::Status cstat = conv->convert(imessage, imessage_len, pm);
       if (cstat != Conv::Status::Success) {
         // TODO: handling exceptions due to convert failures
+        report.skip(imessage_len);
       }
     } else if (gstat == GetData::Status::Fail) {
       Util::eprint("failed to convert input data");
@@ -139,6 +141,7 @@ void Controller::run_single()
       continue;
     }
     pm.pack(ss);
+    sent_cnt++;
 #ifdef DEBUG
     Util::dprint(F, "[", sent_cnt, "]",
                  " unpacked message: ", pm.get_string(ss));
@@ -167,7 +170,7 @@ void Controller::run_single()
     ss.str("");
   }
   write_offset(conf->input + "_" + conf->offset_prefix, offset + conv_cnt);
-  report.end();
+  report.end(conv->get_id() - 1);
 }
 
 InputType Controller::get_input_type() const
@@ -230,7 +233,7 @@ OutputType Controller::get_output_type() const
   return OutputType::File;
 }
 
-bool Controller::set_converter()
+bool Controller::set_converter(const size_t id)
 {
   conf->input_type = get_input_type();
   uint32_t l2_type;
@@ -286,6 +289,9 @@ bool Controller::set_converter()
     break;
   default:
     return false;
+  }
+  if (conv) {
+    conv->set_id(id);
   }
 
   return true;

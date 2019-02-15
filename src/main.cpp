@@ -12,7 +12,9 @@ int main(int argc, char** argv)
     }
 
     Controller ctrl(conf);
+    cout << "reproduce start\n";
     ctrl.run();
+    cout << "reproduce end\n";
   } catch (exception const& e) {
     cerr << "[EXCEPTION] " << e.what() << "\n";
   }

@@ -22,11 +22,13 @@ class Converter {
 public:
   virtual ~Converter() = default;
   virtual Conv::Status convert(char* in, size_t in_len, PackMsg& pm) = 0;
-  size_t id = 0;
   void set_matcher(const std::string& filename, const Mode& mode);
+  size_t get_id() const;
+  void set_id(const size_t _id);
   Matcher* get_matcher() { return matc.get(); }
 
 protected:
+  size_t id = 0;
   std::unique_ptr<Matcher> matc{nullptr};
 };
 
