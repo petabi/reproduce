@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(reproduce VERSION 0.7.1 LANGUAGES CXX)
+project(reproduce VERSION 0.8.0 LANGUAGES CXX)
 message("== Project Name: ${PROJECT_NAME}")
 message("== Project Version: ${PROJECT_VERSION}")
 set(CMAKE_CXX_STANDARD 17)
