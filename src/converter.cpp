@@ -17,17 +17,14 @@
 #include "udp.h"
 
 #include "converter.h"
+#include "sessions.h"
 #include "util.h"
 
 using namespace std;
 
-inline bool BOUNDARY_SAFE(size_t& remain_size, const size_t& struct_size)
+inline bool BOUNDARY_SAFE(const size_t& remain_size, const size_t& struct_size)
 {
-  if (remain_size < struct_size) {
-    return false;
-  }
-
-  return true;
+  return (remain_size > struct_size);
 }
 
 /**
@@ -55,7 +52,13 @@ Conv::Status PacketConverter::convert(char* in, size_t in_len, PackMsg& pm)
   if (!BOUNDARY_SAFE(in_len, sizeof(pcap_sf_pkthdr))) {
     return Conv::Status::Fail;
   }
-
+  dst = 0;
+  ip_hl = 0;
+  l4_hl = 0;
+  src = 0;
+  dport = 0;
+  sport = 0;
+  proto = 0;
   match = false;
   if (!invoke(get_l2_process(), this,
               reinterpret_cast<unsigned char*>(in + sizeof(pcap_sf_pkthdr)),
@@ -65,15 +68,21 @@ Conv::Status PacketConverter::convert(char* in, size_t in_len, PackMsg& pm)
   if (match == true) {
     return Conv::Status::Pass;
   }
-  std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
-                                         in + in_len);
-  pm.entry(id++, "message", binary_data);
+  if (l3_type == ETHERTYPE_IP) {
+    update_pack_message(pm, in, in_len);
+  } else {
+    std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
+                                           in + in_len);
+    pm.entry(id++, "message", binary_data);
+  }
 
 #ifdef DEBUG
+  std::vector<unsigned char> binary_data_db(in + sizeof(pcap_sf_pkthdr),
+                                            in + in_len);
   std::stringstream ss;
   ss << std::hex;
-  for (size_t i = 0; i < binary_data.size(); ++i) {
-    ss << std::setw(2) << std::setfill('0') << (int)binary_data[i] << ' ';
+  for (size_t i = 0; i < binary_data_db.size(); ++i) {
+    ss << std::setw(2) << std::setfill('0') << (int)binary_data_db[i] << ' ';
   }
   Util::dprint(F, "Binary packet data : ", ss.str());
 #endif
@@ -146,28 +155,17 @@ bool PacketConverter::l2_ethernet_process(unsigned char* offset, size_t length)
 
 bool PacketConverter::l3_ipv4_process(unsigned char* offset, size_t length)
 {
-  if (!BOUNDARY_SAFE(length, IP_MINLEN)) {
-    return false;
-  }
-
   auto iph = reinterpret_cast<ip*>(offset);
-  size_t opt = 0;
-  offset += IP_MINLEN;
-
-  opt = IP_HL(iph->ip_vhl) * 4 - IP_MINLEN;
-  if (opt != 0) {
-    if (!BOUNDARY_SAFE(length, IP_MINLEN + opt)) {
-      return false;
-    }
-    offset += opt;
-  }
-
-  l4_type = iph->ip_p;
-  if (!invoke(get_l4_process(), this, offset, length - (IP_MINLEN + opt))) {
+  ip_hl = IP_HL(iph->ip_vhl) * 4;
+  if (!BOUNDARY_SAFE(length, ip_hl) || ip_hl < IP_MINLEN) {
     return false;
   }
-
-  return true;
+  offset += ip_hl;
+  l4_type = iph->ip_p;
+  proto = iph->ip_p;
+  src = ntohl(*(reinterpret_cast<uint32_t*>(iph->ip_src)));
+  dst = ntohl(*(reinterpret_cast<uint32_t*>(iph->ip_dst)));
+  return invoke(get_l4_process(), this, offset, length - ip_hl);
 }
 
 bool PacketConverter::l3_arp_process(unsigned char* offset, size_t length)
@@ -231,15 +229,16 @@ bool PacketConverter::l4_null_process(unsigned char* offset, size_t length)
 
 bool PacketConverter::l4_tcp_process(unsigned char* offset, size_t length)
 {
-  if (!BOUNDARY_SAFE(length, sizeof(TCP_MINLEN))) {
+  auto tcph = reinterpret_cast<tcphdr*>(offset);
+  l4_hl = TCP_HLEN(tcph->th_offx2) * 4;
+  if (!BOUNDARY_SAFE(length, l4_hl) || l4_hl < TCP_MINLEN) {
     return false;
   }
-
-  // auto tcph = reinterpret_cast<tcphdr*>(offset);
-  // TODO: exclude tcp option field from offset
-  offset += TCP_MINLEN;
+  offset += l4_hl;
+  sport = ntohs(tcph->th_sport);
+  dport = ntohs(tcph->th_dport);
   if (matc) {
-    match = matc->match(reinterpret_cast<char*>(offset), length);
+    match = matc->match(reinterpret_cast<char*>(offset), length - l4_hl);
   }
 
   return true;
@@ -247,10 +246,16 @@ bool PacketConverter::l4_tcp_process(unsigned char* offset, size_t length)
 
 bool PacketConverter::l4_udp_process(unsigned char* offset, size_t length)
 {
-  // auto udph = reinterpret_cast<udphdr*>(offset);
-  offset += sizeof(struct udphdr);
+  auto udph = reinterpret_cast<udphdr*>(offset);
+  l4_hl = sizeof(struct udphdr);
+  if (!BOUNDARY_SAFE(length, l4_hl) || l4_hl < sizeof(struct udphdr)) {
+    return false;
+  }
+  sport = ntohs(udph->uh_sport);
+  dport = ntohs(udph->uh_dport);
+  offset += l4_hl;
   if (matc) {
-    match = matc->match(reinterpret_cast<char*>(offset), length);
+    match = matc->match(reinterpret_cast<char*>(offset), length - l4_hl);
   }
 
   return true;
@@ -258,12 +263,37 @@ bool PacketConverter::l4_udp_process(unsigned char* offset, size_t length)
 
 bool PacketConverter::l4_icmp_process(unsigned char* offset, size_t length)
 {
-#if 0
-  // FIXME: more header processing
-  auto icmph = reinterpret_cast<icmp*>(offset);
+  l4_hl = ICMP_MINLEN;
+  if (!BOUNDARY_SAFE(length, l4_hl) || l4_hl < ICMP_MINLEN) {
+    return false;
+  }
   offset += ICMP_MINLEN;
-#endif
+  if (matc) {
+    match = matc->match(reinterpret_cast<char*>(offset), length - l4_hl);
+  }
   return true;
+}
+
+void PacketConverter::update_pack_message(PackMsg& pm, const char* in,
+                                          size_t in_len)
+{
+  if (in == nullptr && in_len == 0) {
+    id = sessions.make_next_message(pm, id);
+    return;
+  }
+  if (in == nullptr || in_len == 0) {
+    return;
+  }
+  size_t data_offset =
+      sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl;
+  sessions.update_session(src, dst, proto, sport, dport, in + data_offset,
+                          in_len - data_offset);
+  size_t estimated_data =
+      (sessions.size() * (session_extra_bytes + message_n_label_bytes)) +
+      sessions.get_number_bytes_in_sessions() + pm.get_bytes();
+  if (estimated_data >= pm.get_max_bytes()) {
+    id = sessions.make_next_message(pm, id);
+  }
 }
 
 /**

@@ -18,6 +18,9 @@ void Config::help() const noexcept
   cout << "[USAGE] " << program_name << " [OPTIONS]\n";
   cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]\n";
   cout << "  -c: send count\n";
+  cout << "  -E: entropy ratio. The amount of maximum entropy allowed for a\n";
+  cout << "      session (0.0 < entropy ratio <= 1.0). Default is 0.9.\n";
+  cout << "      Only relevant for network packets.\n";
   cout << "  -e: evaluation mode. output statistical result of transmission\n"
           "      after job is terminated or stopped\n";
   cout << "  -f: tcpdump filter (when input is NIC)\n";
@@ -55,13 +58,20 @@ void Config::help() const noexcept
 bool Config::set(int argc, char** argv)
 {
   int o;
-  while ((o = getopt(argc, argv, "b:c:ef:ghi:k:m:o:p:q:r:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:eE:f:ghi:k:m:o:p:q:r:s:t:")) != -1) {
     switch (o) {
     case 'b':
       kafka_broker = optarg;
       break;
     case 'c':
       count_send = strtoul(optarg, nullptr, 0);
+      break;
+    case 'E':
+      entropy_ratio = strtof(optarg, nullptr);
+      if (entropy_ratio <= 0.0 || entropy_ratio > 1.0) {
+        cerr << "Waring: Entropy ratio is out of range. Defaulting to 0.9.\n";
+      }
+      entropy_ratio = 0.9;
       break;
     case 'e':
       mode_eval = true;

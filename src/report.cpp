@@ -64,7 +64,7 @@ template <typename T> inline std::string PRINT_PRETTY_BYTES(T bytes)
   if (n < 1) {
     n = static_cast<double>(bytes) / kbytes;
     if (n < 1) {
-      std::string(std::to_string(bytes) + "B");
+      return std::string(std::to_string(bytes) + "B");
     } else {
       return std::string(std::to_string(n) + "KB");
     }

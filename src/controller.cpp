@@ -107,7 +107,7 @@ void Controller::run_single()
 
   report.start(conv->get_id());
   PackMsg pm;
-
+  pm.set_max_bytes(prod->get_max_bytes());
   pm.tag("REproduce");
   pm.option("option", "optional");
 
@@ -136,7 +136,6 @@ void Controller::run_single()
 
     conv_cnt++;
     report.process(imessage_len);
-
     if (pm.get_bytes() < prod->get_max_bytes()) {
       continue;
     }
@@ -158,7 +157,9 @@ void Controller::run_single()
       break;
     }
   }
-
+  if (conv->remaining_data()) {
+    conv->update_pack_message(pm);
+  }
   if (pm.get_entries() > 0) {
     pm.pack(ss);
 #ifdef DEBUG
@@ -253,6 +254,7 @@ bool Controller::set_converter(const size_t id)
     if (conv->get_matcher() != nullptr) {
       Util::iprint("pattern file=", conf->pattern_file);
     }
+    conv->set_allowed_entropy_ratio(conf->entropy_ratio);
     break;
   case InputType::Pcap:
     l2_type = open_pcap(conf->input);
@@ -268,6 +270,7 @@ bool Controller::set_converter(const size_t id)
     if (conv->get_matcher() != nullptr) {
       Util::iprint("pattern file=", conf->pattern_file);
     }
+    conv->set_allowed_entropy_ratio(conf->entropy_ratio);
     break;
   case InputType::Log:
     open_log(conf->input);

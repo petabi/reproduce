@@ -30,6 +30,8 @@ public:
   std::string kafka_conf;
   std::string pattern_file;
 
+  float entropy_ratio = 0.9; // entropy break point to drop a seesion
+
   // internal
   size_t count_send{0};
   InputType input_type;

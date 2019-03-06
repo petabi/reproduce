@@ -9,6 +9,7 @@
 
 #include "forward_proto.h"
 #include "matcher.h"
+#include "sessions.h"
 
 namespace Conv {
 enum class Status { Fail = -2, Pass = -1, Success = 0 };
@@ -22,10 +23,18 @@ class Converter {
 public:
   virtual ~Converter() = default;
   virtual Conv::Status convert(char* in, size_t in_len, PackMsg& pm) = 0;
-  void set_matcher(const std::string& filename, const Mode& mode);
+
   size_t get_id() const;
-  void set_id(const size_t _id);
   Matcher* get_matcher() { return matc.get(); }
+  virtual bool remaining_data() const { return false; }
+  virtual void set_allowed_entropy_ratio(float e) {}
+  void set_id(const size_t _id);
+  void set_matcher(const std::string& filename, const Mode& mode);
+  virtual void update_pack_message(PackMsg& pm, const char* in = nullptr,
+                                   size_t in_len = 0)
+  {
+    return;
+  }
 
 protected:
   size_t id = 0;
@@ -61,12 +70,31 @@ public:
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter() override = default;
   Conv::Status convert(char* in, size_t in_len, PackMsg& pm) override;
+  bool remaining_data() const override
+  {
+    return sessions.get_number_bytes_in_sessions() > 0;
+  }
+  void set_allowed_entropy_ratio(float e) override
+  {
+    sessions.set_allowed_entropy_ratio(e);
+  }
+  void update_pack_message(PackMsg& pm, const char* in = nullptr,
+                           size_t in_len = 0) override;
 
 private:
   bool match;
+  uint32_t dst = 0;
+  uint32_t ip_hl = 0;
+  uint32_t l4_hl = 0;
   uint32_t l2_type;
+  uint32_t src = 0;
+  uint16_t dport = 0;
   uint16_t l3_type;
+  uint16_t sport = 0;
   uint8_t l4_type;
+  uint8_t proto = 0;
+  Sessions sessions;
+
   bool (PacketConverter::*get_l2_process())(unsigned char* offset,
                                             size_t length);
   bool (PacketConverter::*get_l3_process())(unsigned char* offset,

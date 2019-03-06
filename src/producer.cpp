@@ -8,8 +8,6 @@ using namespace std;
  * KafkaProducer
  */
 
-static constexpr size_t default_produce_max_bytes = 100000;
-
 enum class KafkaConfType {
   Global = 1,
   Topic,
@@ -401,7 +399,7 @@ size_t KafkaProducer::get_max_bytes() const noexcept
 
 KafkaProducer::~KafkaProducer()
 {
-  if (queue_data.size()) {
+  if (queue_data.size() > 0) {
     produce("", true);
   }
 

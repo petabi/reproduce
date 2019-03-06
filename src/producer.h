@@ -15,6 +15,8 @@
  * Producer
  */
 
+static constexpr size_t default_produce_max_bytes = 100000;
+
 class Producer {
 public:
   virtual bool produce(const std::string& message, bool flush = false) = 0;
