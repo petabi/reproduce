@@ -143,10 +143,18 @@ bool PacketConverter::l2_ethernet_process(unsigned char* offset, size_t length)
 
   auto eh = reinterpret_cast<ether_header*>(offset);
 
-  offset += sizeof(struct ether_header);
+  offset += sizeof(ether_header);
+  length -= sizeof(ether_header);
 
   l3_type = htons(eh->ether_type);
-  if (!invoke(get_l3_process(), this, offset, length - sizeof(ether_header))) {
+
+  if (l3_type == 0x8100) { // IEEE 802.1Q VLAN tagging
+    l3_type = ntohs(*(reinterpret_cast<uint16_t*>(offset + 2)));
+    length -= 4;
+    offset += 4;
+  }
+
+  if (!invoke(get_l3_process(), this, offset, length)) {
     return false;
   }
 
