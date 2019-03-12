@@ -89,8 +89,9 @@ TEST(test_converter, test_vlan_converter)
   std::string mypmstring = pmsg.get_string(mystream);
   EXPECT_EQ(mystatus, Conv::Status::Success);
   std::string msg =
-      "abcdefghijklmnabcdefghijklmnabcdefghijklmnabcdefghijklmnabcdefghijklmnab"
-      "cdefghijklmnabcdefghijklmnabcdefghijklmnabcdefghijklmnee";
+      "\"message\":"
+      "\"abcdefghijklmnabcdefghijklmnabcdefghijklmnabcdefghijklmnabcdefghijklmn"
+      "abcdefghijklmnabcdefghijklmnabcdefghijklmnabcdefghijklmnee\"";
   EXPECT_TRUE(mypmstring.find(msg) != std::string::npos);
 }
 
