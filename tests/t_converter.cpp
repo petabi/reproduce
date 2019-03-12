@@ -87,7 +87,6 @@ TEST(test_converter, test_vlan_converter)
   pmsg.pack(mystream);
   EXPECT_EQ(pmsg.get_entries(), 1);
   std::string mypmstring = pmsg.get_string(mystream);
-  std::cout << "mypmstring " << mypmstring << "\n";
   EXPECT_EQ(mystatus, Conv::Status::Success);
   std::string msg =
       "abcdefghijklmnabcdefghijklmnabcdefghijklmnabcdefghijklmnabcdefghijklmnab"
