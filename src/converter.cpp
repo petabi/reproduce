@@ -152,6 +152,7 @@ bool PacketConverter::l2_ethernet_process(unsigned char* offset, size_t length)
     l3_type = ntohs(*(reinterpret_cast<uint16_t*>(offset + 2)));
     length -= 4;
     offset += 4;
+    vlan = 4;
   }
 
   if (!invoke(get_l3_process(), this, offset, length)) {
@@ -293,7 +294,7 @@ void PacketConverter::update_pack_message(PackMsg& pm, const char* in,
     return;
   }
   size_t data_offset =
-      sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl;
+      sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl + vlan;
   sessions.update_session(src, dst, proto, sport, dport, in + data_offset,
                           in_len - data_offset);
   size_t estimated_data =

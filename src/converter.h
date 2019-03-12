@@ -93,6 +93,7 @@ private:
   uint16_t sport = 0;
   uint8_t l4_type;
   uint8_t proto = 0;
+  uint8_t vlan = 0;
   Sessions sessions;
 
   bool (PacketConverter::*get_l2_process())(unsigned char* offset,
