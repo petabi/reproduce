@@ -146,7 +146,7 @@ bool PacketConverter::l2_ethernet_process(unsigned char* offset, size_t length)
   offset += sizeof(ether_header);
   length -= sizeof(ether_header);
 
-  l3_type = htons(eh->ether_type);
+  l3_type = ntohs(eh->ether_type);
 
   if (l3_type == 0x8100) { // IEEE 802.1Q VLAN tagging
     l3_type = ntohs(*(reinterpret_cast<uint16_t*>(offset + 2)));
@@ -184,8 +184,8 @@ bool PacketConverter::l3_arp_process(unsigned char* offset, size_t length)
   auto arph = reinterpret_cast<arp_pkthdr*>(offset);
   uint16_t hrd = 0, pro = 0;
   offset += sizeof(arph);
-  hrd = htons(arph->ar_hrd);
-  pro = htons(arph->ar_pro);
+  hrd = ntohs(arph->ar_hrd);
+  pro = ntohs(arph->ar_pro);
 
   if ((pro != ETHERTYPE_IP && pro != ETHERTYPE_TRAIL) || arph->ar_pln != 4 ||
       arph->ar_hln != 6) {
@@ -200,7 +200,7 @@ bool PacketConverter::l3_arp_process(unsigned char* offset, size_t length)
   offset += arph->ar_hln;
   unsigned char* ip_tpa = offset;
 
-  switch (htons(arph->ar_op)) {
+  switch (ntohs(arph->ar_op)) {
   case ARPOP_REQUEST:
     break;
   case ARPOP_REPLY:
