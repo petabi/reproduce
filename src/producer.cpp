@@ -64,11 +64,14 @@ void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
     break;
   }
 #endif
+  auto* pacp = reinterpret_cast<produce_ack_cnt*>(message.msg_opaque());
   if (message.err() != 0) {
     Util::eprint("Message Produce Fail: ", message.errstr());
   } else {
-    *(reinterpret_cast<size_t*>(message.msg_opaque())) += 1;
-    Util::iprint("Message Produce Success: ", message.len(), " bytes");
+    pacp->ack_cnt += 1;
+    Util::iprint("Message Produce Success: ", message.len(),
+                 " bytes, Total Produce ", pacp->ack_cnt, "/",
+                 pacp->produce_cnt, "acked");
   }
 
   if (message.key()) {
@@ -282,15 +285,15 @@ void KafkaProducer::show_kafka_conf() const
     list<string>* dump;
     if (pass == 0) {
       dump = kafka_gconf->dump();
-      Util::iprint("### Global Config");
+      Util::dprint(F, "### Global Config");
     } else {
       dump = kafka_tconf->dump();
-      Util::iprint("### Topic Config");
+      Util::dprint(F, "### Topic Config");
     }
     for (auto it = dump->cbegin(); it != dump->cend();) {
       string key = *it++;
       string value = *it++;
-      Util::iprint(key, "=", value);
+      Util::dprint(F, key, "=", value);
     }
   }
 }
@@ -300,8 +303,8 @@ void KafkaProducer::wait_queue(const int count) noexcept
   if (kafka_producer->outq_len() <= count) {
     return;
   }
-  Util::iprint("waiting for delivery of messages: ",
-               kafka_producer->outq_len());
+  Util::dprint(
+      F, "waiting for delivery of messages: ", kafka_producer->outq_len());
   do {
     // FIXME: test effects of timeout (original 1000)
     kafka_producer->poll(100);
@@ -310,27 +313,26 @@ void KafkaProducer::wait_queue(const int count) noexcept
 
 bool KafkaProducer::produce_core(const string& message) noexcept
 {
-  static size_t produce_cnt = 0, produce_ack_cnt = 0;
   // Produce message
   RdKafka::ErrorCode resp = kafka_producer->produce(
       kafka_topic.get(), RdKafka::Topic::PARTITION_UA,
       RdKafka::Producer::RK_MSG_COPY /* Copy payload */,
       const_cast<char*>(message.c_str()), message.size(), nullptr,
-      reinterpret_cast<void*>(&produce_ack_cnt));
+      reinterpret_cast<void*>(&(this->pac)));
 
   kafka_producer->poll(0);
   switch (resp) {
   case RdKafka::ERR_NO_ERROR:
-    produce_cnt++;
-    Util::iprint("A message queue entry success(", queue_data_cnt,
-                 "converted data, ", message.size(), "bytes, ", produce_ack_cnt,
-                 "/", produce_cnt, "acked)");
+    pac.produce_cnt++;
+    Util::dprint(F, "A message queue entry success(", queue_data_cnt,
+                 "converted data, ", message.size(), "bytes, ", pac.ack_cnt,
+                 "/", pac.produce_cnt, "acked)");
     break;
 
   default:
     Util::eprint("A message queue entry failed(", queue_data_cnt,
-                 "converted data, ", message.size(), "bytes, ", produce_ack_cnt,
-                 "/", produce_cnt, "acked): ", RdKafka::err2str(resp));
+                 "converted data, ", message.size(), "bytes, ", pac.ack_cnt,
+                 "/", pac.produce_cnt, "acked): ", RdKafka::err2str(resp));
     return false;
   }
 
@@ -399,8 +401,8 @@ size_t KafkaProducer::get_max_bytes() const noexcept
 
 KafkaProducer::~KafkaProducer()
 {
-  if (queue_data.size() > 0) {
-    produce("", true);
+  if (queue_data.size()) {
+    this->produce("", true);
   }
 
   if (!RdKafka::wait_destroyed(1000)) {

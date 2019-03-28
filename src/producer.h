@@ -27,6 +27,10 @@ public:
 /**
  * KafkaProducer
  */
+struct produce_ack_cnt {
+  size_t produce_cnt = 0;
+  size_t ack_cnt = 0;
+};
 
 class RdDeliveryReportCb : public RdKafka::DeliveryReportCb {
 public:
@@ -39,6 +43,7 @@ public:
 };
 
 class KafkaProducer : public Producer {
+
 public:
   KafkaProducer() = delete;
   KafkaProducer(std::shared_ptr<Config>);
@@ -52,6 +57,7 @@ public:
   size_t get_max_bytes() const noexcept override;
 
 private:
+  produce_ack_cnt pac;
   std::shared_ptr<Config> conf;
   std::unique_ptr<RdKafka::Conf> kafka_gconf;
   std::unique_ptr<RdKafka::Conf> kafka_tconf;

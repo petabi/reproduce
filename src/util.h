@@ -90,10 +90,10 @@ template <typename T> void Util::iprint(T tail)
 {
   std::ostringstream logstream;
   logstream << tail << "\n";
-#ifdef DEBUG
   std::cout << logstream.str();
-#endif
+#ifdef DEBUG
   syslog(LOG_INFO, "%s", (logstream.str()).c_str());
+#endif
 }
 
 template <typename T, typename... Ts> void Util::iprint(T head, Ts... tail)
@@ -101,20 +101,20 @@ template <typename T, typename... Ts> void Util::iprint(T head, Ts... tail)
   std::ostringstream logstream;
   logstream << head;
   print(logstream, tail...);
-#ifdef DEBUG
   std::cout << logstream.str();
-#endif
+#ifdef DEBUG
   syslog(LOG_INFO, "%s", (logstream.str()).c_str());
+#endif
 }
 
 template <typename T> void Util::eprint(T tail)
 {
   std::ostringstream logstream;
   logstream << tail << "\n";
-#ifdef DEBUG
   std::cout << logstream.str();
-#endif
+#ifdef DEBUG
   syslog(LOG_ERR, "%s", (logstream.str()).c_str());
+#endif
 }
 
 template <typename T, typename... Ts> void Util::eprint(T head, Ts... tail)
@@ -122,10 +122,10 @@ template <typename T, typename... Ts> void Util::eprint(T head, Ts... tail)
   std::ostringstream logstream;
   logstream << head;
   print(logstream, tail...);
-#ifdef DEBUG
   std::cout << logstream.str();
-#endif
+#ifdef DEBUG
   syslog(LOG_ERR, "%s", (logstream.str()).c_str());
+#endif
 }
 
 #endif

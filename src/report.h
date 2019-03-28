@@ -33,7 +33,6 @@ private:
   size_t skip_bytes{0};
   size_t skip_cnt{0};
   size_t process_cnt{0};
-  size_t total_cnt{0};
   std::chrono::time_point<std::chrono::steady_clock> time_start{
       (std::chrono::milliseconds::zero())};
   std::chrono::time_point<std::chrono::steady_clock> time_now{
