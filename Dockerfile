@@ -12,15 +12,15 @@ RUN \
 
 FROM pkgsrc as builder
 RUN \
+    apt-get update -yqq && \
     apt-get install -y cmake
 COPY ./ /work/
-RUN ls -la /work/
 WORKDIR /work/
 RUN mkdir build && cd build && cmake .. && make
 
-FROM pkgsrc as reproduce
+FROM pkgsrc
 ARG CONFIG
-COPY --from=builder /work/build/src/reproduce /usr/pkg/bin/.
-VOLUME  /data
+COPY --from=builder /work/build/src/reproduce /usr/local/bin/
+VOLUME /data
 WORKDIR /data
-ENTRYPOINT ["reproduce"]
+ENTRYPOINT ["/usr/local/bin/reproduce"]
