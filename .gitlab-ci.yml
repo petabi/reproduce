@@ -1,6 +1,14 @@
-image: "ubuntu:18.10"
+stages:
+  - build
+  - package
 
-test:
+merge:
+  stage: build
+  only:
+  - merge_requests
+  image: ubuntu:18.10
+  except:
+  - tags
   before_script:
   - apt-get update -yqq
   - apt-get install -yqq build-essential cmake clang-format clang-tidy
@@ -12,3 +20,16 @@ test:
   - make VERBOSE=1
   - make test
   - clang-tidy -p=. ../src/*.cpp
+
+release:
+  stage: package
+  only:
+  - tags
+  image: docker:stable
+  services:
+  - docker:dind
+  script:
+  - export DOCKER_HOST=tcp://docker:2375/
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
+  - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
+  - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
