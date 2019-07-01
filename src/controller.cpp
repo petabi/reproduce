@@ -5,6 +5,8 @@
 #include <cstring>
 #include <functional>
 #include <thread>
+#include <vector>
+#include <algorithm>
 
 #include <pcap/pcap.h>
 
@@ -22,7 +24,7 @@ Controller::Controller(Config _conf)
 {
   conf = make_shared<Config>(_conf);
 
-  if (!set_converter(0)) {
+  if (!set_converter(1)) {
     throw runtime_error("failed to set the converter");
   }
   if (!set_producer()) {
@@ -48,35 +50,34 @@ void Controller::run()
 
 void Controller::run_split()
 {
+  std::vector<string> files;
   string filename;
   string dir_path = conf->input;
-  if (dir_path[dir_path.length() - 1] != '/') {
-    dir_path += '/';
-  }
-  DIR* dir = opendir(dir_path.c_str());
-  if (dir == nullptr) {
-    throw runtime_error("failed to open the directory: " + dir_path);
-  }
-  while (!stop) {
-    filename = get_next_file(dir);
-    if (filename == "." || filename == "..") {
-      continue;
-    } else if (filename.empty()) {
-      break;
-    }
-    conf->input = dir_path + filename;
-    if (conv) {
-      conv_id = conv->get_id();
-    }
-    if (!set_converter(conv_id)) {
-      closedir(dir);
+
+	files = traverse_directory(dir_path, conf->file_prefix);
+
+	if (!files.empty()) {
+		sort(files.begin(), files.end());
+	} else {
+		throw runtime_error("no file exists");
+	}
+
+	for(size_t i=0; i < files.size(); i++) {
+		conf->input = files[i];
+
+		if (conv) {
+			conv_id = conv->get_id();
+		}
+
+		if (!set_converter(conv_id)) {
       throw runtime_error("failed to set the converter");
     }
+
     this->run();
+
     close_pcap();
     close_log();
-  }
-  closedir(dir);
+	}
 }
 
 void Controller::run_single()
@@ -294,7 +295,7 @@ bool Controller::set_converter(const size_t id)
     return false;
   }
   if (conv) {
-    conv->set_id(id);
+    conv->set_id((static_cast<uint64_t>(conf->datasource_id) << 48) | id);
   }
 
   return true;
@@ -552,14 +553,49 @@ GetData::Status Controller::get_next_log(char* imessage, size_t& imessage_len)
   return GetData::Status::Success;
 }
 
-std::string Controller::get_next_file(DIR* dir) const
+
+std::vector<std::string> Controller::traverse_directory(std::string _path, std::string _prefix)
 {
-  struct dirent* dirp = readdir(dir);
-  if (dirp == nullptr) {
-    return "";
-  }
-  return dirp->d_name;
+	std::vector<std::string> _files;
+	struct dirent* dp;
+	std::string filename;
+	DIR* dir;
+
+	if (_path.length() == 0)
+		return {};
+
+	if (_path[_path.length()-1] == '/')
+		_path.erase(_path.length()-1, 1);
+
+	if ((dir = opendir(_path.c_str())) == nullptr)
+		return {};
+
+	while((dp = readdir(dir)) != NULL) {
+		filename = dp->d_name;
+
+		if (filename.compare(".") == 0 || filename.compare("..") == 0) {
+			continue;
+		}
+
+		if (dp->d_type == DT_REG) {
+				if (_prefix.length() > 0 && filename.compare(0, _prefix.length(), _prefix) != 0) {
+					continue;
+				}
+			_files.push_back(_path+"/"+filename);
+		}
+		if (dp->d_type == DT_DIR) {
+			std::vector<std::string> subfolder;
+
+			subfolder = traverse_directory(_path+"/"+filename, _prefix);
+			_files.insert(_files.end(), subfolder.begin(), subfolder.end());
+		}
+	}
+
+	closedir(dir);
+
+	return _files;
 }
+
 
 bool Controller::skip_pcap(const size_t count_skip)
 {

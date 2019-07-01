@@ -109,6 +109,11 @@ void Report::end(size_t id) noexcept
   report_file.precision(2);
   report_file << fixed;
   report_file << "--------------------------------------------------\n";
+
+  time_t current_time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+  report_file << left << setw(arrange_var) << "Time: " << std::ctime(&current_time);
+
+
   struct stat st;
   size_t process_bytes = 0;
   switch (conf->input_type) {
@@ -135,8 +140,9 @@ void Report::end(size_t id) noexcept
     report_file << '\n';
   }
 
-  report_file << left << setw(arrange_var) << "Input ID: " << start_id << " ~ "
-              << end_id << "\n";
+  report_file << left << setw(arrange_var) << "Datasource ID: " << conf->datasource_id << "\n";
+  report_file << left << setw(arrange_var) << "Input ID: " << (start_id & 0x0000FFFFFFFFFFFF) << " ~ "
+              << (end_id & 0x0000FFFFFFFFFFFF) << "\n";
 
   switch (conf->output_type) {
   case OutputType::File:
@@ -171,7 +177,6 @@ void Report::end(size_t id) noexcept
               << PRINT_PRETTY_BYTES(static_cast<double>(process_bytes) /
                                     time_diff.count())
               << "ps\n";
-  report_file << "--------------------------------------------------\n";
 
   if (report_file.is_open()) {
     report_file.close();

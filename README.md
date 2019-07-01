@@ -41,14 +41,18 @@ REproduce outputs the converted result in a form specified by the user(Stdout, F
 
 ### Program Usage
 
-```./REproduce [OPTIONS]```
+```> reproduce [OPTIONS]```
 
 ### OPTIONS
 
 ```
   -b: kafka broker list, [host1:port1,host2:port2,..] (default: localhost:9092)
   -c: send count
+  -d: data source id. (default: 1)
   -e: evaluation mode. output statistical result of transmission after job is terminated or stopped
+  -E: entropy ratio. The amount of maximum entropy allowed for a
+      session (0.0 < entropy ratio <= 1.0). Default is 0.9.
+      Only relevant for network packets.
   -f: packet filter syntax when input is NIC
       (reference : https://www.tcpdump.org/manpages/pcap-filter.7.html)
   -g: follow the growing input file
@@ -58,6 +62,8 @@ REproduce outputs the converted result in a form specified by the user(Stdout, F
       If DIR is given, the g option is not supported.
   -k: kafka config file (Ex: kafka.conf)
       it overrides default kafka config to user kafka config
+  -m: match [Pattern FILE]
+  -n: prefix of file name to send multiple files or directory
   -o: output [TEXTFILE/none]
       If no 'o' option is given, output is kafka
   -p: queue period time. how much time keep queued data. (default: 3)
@@ -98,35 +104,37 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 ### Examples
 
 * Convert pcap file and send it to kafka server:
-    * ```./REproduce -i test.pcap -b 192.168.10.1:9092 -t sample_topic```
+    * ```reproduce -i test.pcap -b 192.168.10.1:9092 -t sample_topic```
 * Convert log file and send it to kafka server:
-    * ```./REproduce -i LOG_20180906 -b 192.168.10.1:9092 -t sample_topic```
+    * ```reproduce -i LOG_20180906 -b 192.168.10.1:9092 -t sample_topic```
 * Save result file after converting pcap file:
-    * ```./REproduce -i test.pcap -o result.txt```
+    * ```reproduce -i test.pcap -o result.txt```
 * Skip 10000 packets and convert 1000 packets in pcap file and evaluate performance:
-    * ```./REproduce -i test.pcap -s 10000 -c 1000 -o none -e```
+    * ```reproduce -i test.pcap -s 10000 -c 1000 -o none -e```
 * Convert it while following, If the content of the input file continue to grow
-    * ```./REproduce -i test.pcap -g```
+    * ```reproduce -i test.pcap -g```
 * Convert only udp packets of traffic to and from network interface enp0s3
-    * ```./REproduce -i enp0s3 -f "udp" -o none
+    * ```reproduce -i enp0s3 -f "udp" -o none```
 * When transmitting to kafka once, queue up to 10Kbytes, and if transmission interval is delayed more than 2 seconds, send immediately
-    * ```./REproduce -i test.pcap -q 10240 -p 2
+    * ```reproduce -i test.pcap -q 10240 -p 2```
+* Send all log files beginning with 'msg' prefix in the '/data/LOG' directory and it's subdirectory
+    * ```reproduce -i /data/LOG -n msg -b 192.168.4.5:9092 -t syslog -e```
 
 ### Report Example
 
 ```
 root@bada-unbuntu:~/REproduce# ./REproduce -i test.pcap -e -c 10000000
 --------------------------------------------------
-Input(PCAP)     : test.pcap(976.56M)
-Output(KAFKA)   : localhost:9092(pcap)
-Input Length    : 42/60/59.14(Min/Max/Avg)
-Output Length   : 107/187/175.66(Min/Max/Avg)
-Sent Bytes      : 1756646132(1675.27M)
-Sent Count      : 10000000(10.00M)
-Fail Count      : 0(0.00M)
-Elapsed Time    : 23.86s
-Performance     : 70.22MBps/419.14Kpps
---------------------------------------------------
+Time:                       Mon Jul  1 14:34:23 2019
+Input(PCAP):                test.pcap(976.56M)
+Datasource ID:              1
+Input ID:                   1 ~ 10000000
+Output(KAFKA):              localhost:9092(pcap)
+Statistics(Min/Max/Avg):    60/4428/121.97bytes
+Process Count:              6905184(803.185116MB)
+Skip Count:                 0(0B)
+Elapsed Time:               23.86s
+Performance:                70.22MBps/419.14Kpps
 ```
 
 ## Performance

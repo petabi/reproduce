@@ -37,7 +37,7 @@ public:
   }
 
 protected:
-  size_t id = 0;
+  size_t id = 1;
   std::unique_ptr<Matcher> matc{nullptr};
 };
 

@@ -29,6 +29,9 @@ public:
   std::string kafka_topic;
   std::string kafka_conf;
   std::string pattern_file;
+  std::string file_prefix;	// prefix for file name to send when you want to send multiple files or directory
+
+  uint16_t datasource_id=0;
 
   float entropy_ratio = 0.9; // entropy break point to drop a seesion
 
