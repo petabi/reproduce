@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <csignal>
@@ -6,7 +7,6 @@
 #include <functional>
 #include <thread>
 #include <vector>
-#include <algorithm>
 
 #include <pcap/pcap.h>
 
@@ -54,22 +54,22 @@ void Controller::run_split()
   string filename;
   string dir_path = conf->input;
 
-	files = traverse_directory(dir_path, conf->file_prefix);
+  files = traverse_directory(dir_path, conf->file_prefix);
 
-	if (!files.empty()) {
-		sort(files.begin(), files.end());
-	} else {
-		throw runtime_error("no file exists");
-	}
+  if (!files.empty()) {
+    sort(files.begin(), files.end());
+  } else {
+    throw runtime_error("no file exists");
+  }
 
-	for(size_t i=0; i < files.size(); i++) {
-		conf->input = files[i];
+  for (size_t i = 0; i < files.size(); i++) {
+    conf->input = files[i];
 
-		if (conv) {
-			conv_id = conv->get_id();
-		}
+    if (conv) {
+      conv_id = conv->get_id();
+    }
 
-		if (!set_converter(conv_id)) {
+    if (!set_converter(conv_id)) {
       throw runtime_error("failed to set the converter");
     }
 
@@ -77,7 +77,7 @@ void Controller::run_split()
 
     close_pcap();
     close_log();
-	}
+  }
 }
 
 void Controller::run_single()
@@ -553,49 +553,49 @@ GetData::Status Controller::get_next_log(char* imessage, size_t& imessage_len)
   return GetData::Status::Success;
 }
 
-
-std::vector<std::string> Controller::traverse_directory(std::string _path, std::string _prefix)
+std::vector<std::string> Controller::traverse_directory(std::string _path,
+                                                        std::string _prefix)
 {
-	std::vector<std::string> _files;
-	struct dirent* dp;
-	std::string filename;
-	DIR* dir;
+  std::vector<std::string> _files;
+  struct dirent* dp;
+  std::string filename;
+  DIR* dir;
 
-	if (_path.length() == 0)
-		return {};
+  if (_path.length() == 0)
+    return {};
 
-	if (_path[_path.length()-1] == '/')
-		_path.erase(_path.length()-1, 1);
+  if (_path[_path.length() - 1] == '/')
+    _path.erase(_path.length() - 1, 1);
 
-	if ((dir = opendir(_path.c_str())) == nullptr)
-		return {};
+  if ((dir = opendir(_path.c_str())) == nullptr)
+    return {};
 
-	while((dp = readdir(dir)) != NULL) {
-		filename = dp->d_name;
+  while ((dp = readdir(dir)) != NULL) {
+    filename = dp->d_name;
 
-		if (filename.compare(".") == 0 || filename.compare("..") == 0) {
-			continue;
-		}
+    if (filename.compare(".") == 0 || filename.compare("..") == 0) {
+      continue;
+    }
 
-		if (dp->d_type == DT_REG) {
-				if (_prefix.length() > 0 && filename.compare(0, _prefix.length(), _prefix) != 0) {
-					continue;
-				}
-			_files.push_back(_path+"/"+filename);
-		}
-		if (dp->d_type == DT_DIR) {
-			std::vector<std::string> subfolder;
+    if (dp->d_type == DT_REG) {
+      if (_prefix.length() > 0 &&
+          filename.compare(0, _prefix.length(), _prefix) != 0) {
+        continue;
+      }
+      _files.push_back(_path + "/" + filename);
+    }
+    if (dp->d_type == DT_DIR) {
+      std::vector<std::string> subfolder;
 
-			subfolder = traverse_directory(_path+"/"+filename, _prefix);
-			_files.insert(_files.end(), subfolder.begin(), subfolder.end());
-		}
-	}
+      subfolder = traverse_directory(_path + "/" + filename, _prefix);
+      _files.insert(_files.end(), subfolder.begin(), subfolder.end());
+    }
+  }
 
-	closedir(dir);
+  closedir(dir);
 
-	return _files;
+  return _files;
 }
-
 
 bool Controller::skip_pcap(const size_t count_skip)
 {

@@ -31,7 +31,8 @@ void Config::help() const noexcept
   cout << "  -g: follow the growing input file\n";
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/DIR/NIC]\n";
-  cout << "      If no 'i' option is given, input is internal sample data and\n";
+  cout
+      << "      If no 'i' option is given, input is internal sample data and\n";
   cout << "      If DIR is given, the g option is not supported.\n";
   cout << "  -k: kafka config file."
        << " (Ex: kafka.conf)\n"
@@ -50,7 +51,8 @@ void Config::help() const noexcept
        << "      conversion. The offset file name is managed by [input \n"
        << "      file]_[prefix]. Except when the input is a NIC.\n";
   cout << "  -s: skip count\n";
-  cout << "  -t: kafka topic If the broker does not have a corresponding "
+  cout
+      << "  -t: kafka topic If the broker does not have a corresponding "
          "topic,\n"
       << "      the broker fails unless there is a setting that automatically\n"
       << "      creates the topic.\n";

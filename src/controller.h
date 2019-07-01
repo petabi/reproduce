@@ -60,7 +60,8 @@ private:
   GetData::Status get_next_pcap(char* imessage, size_t& imessage_len);
   GetData::Status get_next_log(char* imessage, size_t& imessage_len);
   std::string get_next_file(DIR* dir) const;
-  std::vector<std::string> traverse_directory(std::string _path, std::string _prefix);
+  std::vector<std::string> traverse_directory(std::string _path,
+                                              std::string _prefix);
   bool skip_pcap(const size_t count_skip);
   bool skip_log(const size_t count_skip);
   bool skip_null(const size_t count_skip);
