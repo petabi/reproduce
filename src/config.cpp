@@ -178,7 +178,7 @@ void Config::show() const noexcept
   Util::dprint(F, "kafka_broker=", kafka_broker);
   Util::dprint(F, "kafka_topic=", kafka_topic);
   Util::dprint(F, "kafka_conf=", kafka_conf);
-  Util::dprint(F, "file_prefix==", file_prefix);
+  Util::dprint(F, "file_prefix=", file_prefix);
   Util::dprint(F, "datasource_id=", datasource_id);
 }
 
