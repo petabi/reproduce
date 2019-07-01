@@ -62,8 +62,8 @@ void Controller::run_split()
     throw runtime_error("no file exists");
   }
 
-  for (size_t i = 0; i < files.size(); i++) {
-    conf->input = files[i];
+  for (const auto& file : files) {
+    conf->input = file;
 
     if (conv) {
       conv_id = conv->get_id();
@@ -558,7 +558,7 @@ std::vector<std::string> Controller::traverse_directory(std::string _path,
 {
   std::vector<std::string> _files;
   struct dirent* dp;
-  std::string filename;
+  std::string filename, filepath;
   DIR* dir;
 
   if (_path.length() == 0)
@@ -570,8 +570,12 @@ std::vector<std::string> Controller::traverse_directory(std::string _path,
   if ((dir = opendir(_path.c_str())) == nullptr)
     return {};
 
-  while ((dp = readdir(dir)) != NULL) {
+  while ((dp = readdir(dir)) != nullptr) {
     filename = dp->d_name;
+
+    filepath = _path;
+    filepath.append("/");
+    filepath.append(filename);
 
     if (filename.compare(".") == 0 || filename.compare("..") == 0) {
       continue;
@@ -582,12 +586,12 @@ std::vector<std::string> Controller::traverse_directory(std::string _path,
           filename.compare(0, _prefix.length(), _prefix) != 0) {
         continue;
       }
-      _files.push_back(_path + "/" + filename);
+      _files.push_back(filepath);
     }
     if (dp->d_type == DT_DIR) {
       std::vector<std::string> subfolder;
 
-      subfolder = traverse_directory(_path + "/" + filename, _prefix);
+      subfolder = traverse_directory(filepath, _prefix);
       _files.insert(_files.end(), subfolder.begin(), subfolder.end());
     }
   }
