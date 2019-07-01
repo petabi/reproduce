@@ -50,11 +50,9 @@ void Controller::run()
 
 void Controller::run_split()
 {
-  std::vector<string> files;
   string filename;
   string dir_path = conf->input;
-
-  files = traverse_directory(dir_path, conf->file_prefix);
+  std::vector<string> files = traverse_directory(dir_path, conf->file_prefix);
 
   if (!files.empty()) {
     sort(files.begin(), files.end());
@@ -558,7 +556,6 @@ std::vector<std::string> Controller::traverse_directory(std::string _path,
 {
   std::vector<std::string> _files;
   struct dirent* dp;
-  std::string filename, filepath;
   DIR* dir;
 
   if (_path.length() == 0)
@@ -571,9 +568,9 @@ std::vector<std::string> Controller::traverse_directory(std::string _path,
     return {};
 
   while ((dp = readdir(dir)) != nullptr) {
-    filename = dp->d_name;
+    std::string filename = dp->d_name;
+    std::string filepath = _path;
 
-    filepath = _path;
     filepath.append("/");
     filepath.append(filename);
 
