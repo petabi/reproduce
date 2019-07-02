@@ -4,6 +4,7 @@
 #include <csignal>
 #include <cstdarg>
 #include <cstring>
+#include <filesystem>
 #include <functional>
 #include <thread>
 #include <vector>
@@ -14,6 +15,7 @@
 #include "forward_proto.h"
 
 using namespace std;
+namespace fs = std::filesystem;
 
 static constexpr size_t max_packet_length = 65535;
 static constexpr size_t message_size = 102400;
@@ -551,49 +553,23 @@ GetData::Status Controller::get_next_log(char* imessage, size_t& imessage_len)
   return GetData::Status::Success;
 }
 
-std::vector<std::string> Controller::traverse_directory(std::string _path,
-                                                        std::string _prefix)
+std::vector<std::string>
+Controller::traverse_directory(std::string _path, const std::string& _prefix)
 {
   std::vector<std::string> _files;
-  struct dirent* dp;
-  DIR* dir;
 
-  if (_path.length() == 0)
-    return {};
+  for (auto entry = fs::recursive_directory_iterator(_path);
+       entry != fs::recursive_directory_iterator(); ++entry) {
 
-  if (_path[_path.length() - 1] == '/')
-    _path.erase(_path.length() - 1, 1);
-
-  if ((dir = opendir(_path.c_str())) == nullptr)
-    return {};
-
-  while ((dp = readdir(dir)) != nullptr) {
-    std::string filename = dp->d_name;
-    std::string filepath = _path;
-
-    filepath.append("/");
-    filepath.append(filename);
-
-    if (filename.compare(".") == 0 || filename.compare("..") == 0) {
+    if (_prefix.length() > 0 && entry->path().filename().string().compare(
+                                    0, _prefix.length(), _prefix) != 0) {
       continue;
     }
 
-    if (dp->d_type == DT_REG) {
-      if (_prefix.length() > 0 &&
-          filename.compare(0, _prefix.length(), _prefix) != 0) {
-        continue;
-      }
-      _files.push_back(filepath);
-    }
-    if (dp->d_type == DT_DIR) {
-      std::vector<std::string> subfolder;
-
-      subfolder = traverse_directory(filepath, _prefix);
-      _files.insert(_files.end(), subfolder.begin(), subfolder.end());
+    if (fs::is_regular_file(entry->path())) {
+      _files.push_back(entry->path());
     }
   }
-
-  closedir(dir);
 
   return _files;
 }
