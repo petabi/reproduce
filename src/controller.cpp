@@ -15,7 +15,6 @@
 #include "forward_proto.h"
 
 using namespace std;
-namespace fs = std::filesystem;
 
 static constexpr size_t max_packet_length = 65535;
 static constexpr size_t message_size = 102400;
@@ -554,19 +553,19 @@ GetData::Status Controller::get_next_log(char* imessage, size_t& imessage_len)
 }
 
 std::vector<std::string>
-Controller::traverse_directory(std::string _path, const std::string& _prefix)
+Controller::traverse_directory(std::string& _path, const std::string& _prefix)
 {
   std::vector<std::string> _files;
 
-  for (auto entry = fs::recursive_directory_iterator(_path);
-       entry != fs::recursive_directory_iterator(); ++entry) {
+  for (auto entry = std::filesystem::recursive_directory_iterator(_path);
+       entry != std::filesystem::recursive_directory_iterator(); ++entry) {
 
     if (_prefix.length() > 0 && entry->path().filename().string().compare(
                                     0, _prefix.length(), _prefix) != 0) {
       continue;
     }
 
-    if (fs::is_regular_file(entry->path())) {
+    if (std::filesystem::is_regular_file(entry->path())) {
       _files.push_back(entry->path());
     }
   }
