@@ -32,10 +32,11 @@ public:
   void run();
 
 private:
+  uint64_t read_count{0};
   std::shared_ptr<Config> conf;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
-  size_t conv_id = 1;
+  uint64_t conv_id = 1;
   static pcap_t* pcd;
   FILE* pcapfile{nullptr};
   std::ifstream logfile;

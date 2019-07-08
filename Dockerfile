@@ -4,7 +4,9 @@ ENV \
     PKG_PATH=https://pkg.petabi.com/Ubuntu-18.04/All
 RUN \
     apt-get update -yqq && \
-    apt-get install -yqq build-essential curl
+    apt-get install -yqq build-essential curl g++-8 && \
+	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-8 80 --slave /usr/bin/g++ g++ /usr/bin/g++-8 && \
+	update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 70 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 RUN \
     curl -SL https://pkg.petabi.com/Ubuntu-18.04/bootstrap.tar.gz \
     | tar -zxp -C / && \

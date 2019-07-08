@@ -9,7 +9,7 @@
 using namespace std;
 
 static constexpr size_t default_queue_period = 3;
-static constexpr size_t default_datasource_id = 1;
+static constexpr uint64_t default_datasource_id = 0x0001000000000000;
 static constexpr size_t default_queue_size = 900000;
 
 void Config::help() const noexcept
@@ -19,7 +19,7 @@ void Config::help() const noexcept
   cout << "[USAGE] " << program_name << " [OPTIONS]\n";
   cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]\n";
   cout << "  -c: send count\n";
-  cout << "  -d: data source id\n";
+  cout << "  -d: data source id (1 ~ 65535). Default: 1\n";
   cout << "  -E: entropy ratio. The amount of maximum entropy allowed for a\n";
   cout << "      session (0.0 < entropy ratio <= 1.0). Default is 0.9.\n";
   cout << "      Only relevant for network packets.\n";
@@ -71,14 +71,20 @@ bool Config::set(int argc, char** argv)
       count_send = strtoul(optarg, nullptr, 0);
       break;
     case 'd':
-      datasource_id = static_cast<uint16_t>(stoul(optarg, nullptr, 0));
+      datasource_id = static_cast<uint64_t>(stoul(optarg, nullptr, 0));
+      if (datasource_id <= 0 || datasource_id > 65535) {
+        cerr << "Waring: datasource id is out of range. Defaulting to 1\n";
+        datasource_id = default_datasource_id;
+      } else {
+        datasource_id = datasource_id << 48;
+      }
       break;
     case 'E':
       entropy_ratio = strtof(optarg, nullptr);
       if (entropy_ratio <= 0.0 || entropy_ratio > 1.0) {
         cerr << "Waring: Entropy ratio is out of range. Defaulting to 0.9.\n";
+        entropy_ratio = 0.9;
       }
-      entropy_ratio = 0.9;
       break;
     case 'e':
       mode_eval = true;
@@ -142,9 +148,6 @@ void Config::set_default() noexcept
   }
   if (queue_period == 0) {
     queue_period = default_queue_period;
-  }
-  if (datasource_id == 0) {
-    datasource_id = default_datasource_id;
   }
 }
 

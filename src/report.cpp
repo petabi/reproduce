@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <sys/stat.h>
@@ -5,11 +6,13 @@
 #include <pcap/pcap.h>
 
 #include "report.h"
+#include "util.h"
 
 using namespace std;
 
 static constexpr double kbytes = 1024.0;
 static constexpr double mbytes = kbytes * kbytes;
+constexpr char filename_bind[] = "/report/report.txt";
 constexpr char filename[] = "report.txt";
 
 Report::Report(shared_ptr<Config> _conf) : conf(move(_conf)) {}
@@ -21,7 +24,7 @@ Report::~Report()
   }
 }
 
-void Report::start(size_t id) noexcept
+void Report::start(uint64_t id) noexcept
 {
   if (!conf->mode_eval) {
     return;
@@ -88,14 +91,24 @@ inline std::string PRINT_PRETTY_BYTES(size_t bytes)
   return std::string(std::to_string(n) + "MB");
 }
 #endif
-void Report::end(size_t id) noexcept
+void Report::end(uint64_t id) noexcept
 {
   constexpr int arrange_var = 28;
   if (!conf->mode_eval) {
     return;
   }
 
-  report_file.open(filename, ios::out | ios::app);
+  report_file.open(filename_bind, ios::out | ios::app);
+  if (!report_file) {
+    Util::eprint("Failed to open report file: ", filename_bind);
+    report_file.open(filename, ios::out | ios::app);
+
+    if (report_file) {
+      Util::eprint("report file opened in the current directory");
+    } else {
+      return;
+    }
+  }
 
   end_id = id;
   time_now = std::chrono::steady_clock::now();
@@ -142,10 +155,9 @@ void Report::end(size_t id) noexcept
   }
 
   report_file << left << setw(arrange_var)
-              << "Datasource ID: " << conf->datasource_id << "\n";
-  report_file << left << setw(arrange_var)
-              << "Input ID: " << (start_id & 0x0000FFFFFFFFFFFF) << " ~ "
-              << (end_id & 0x0000FFFFFFFFFFFF) << "\n";
+              << "Datasource ID: " << (conf->datasource_id >> 48) << "\n";
+  report_file << left << setw(arrange_var) << "Input ID: " << start_id << " ~ "
+              << end_id << "\n";
 
   switch (conf->output_type) {
   case OutputType::File:

@@ -16,16 +16,16 @@ public:
   Report& operator=(Report&&) = delete;
   ~Report();
 
-  void start(const size_t id) noexcept;
+  void start(const uint64_t id) noexcept;
   void process(const size_t bytes) noexcept;
   void skip(const size_t bytes) noexcept;
-  void end(const size_t id) noexcept;
+  void end(const uint64_t id) noexcept;
   std::shared_ptr<Config> conf;
 
 private:
   std::ofstream report_file;
-  size_t start_id{0};
-  size_t end_id{0};
+  uint64_t start_id{0};
+  uint64_t end_id{0};
   size_t sum_bytes{0};
   size_t min_bytes{0};
   size_t max_bytes{0};

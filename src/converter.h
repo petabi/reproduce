@@ -22,13 +22,14 @@ enum class Status { Fail = -2, Pass = -1, Success = 0 };
 class Converter {
 public:
   virtual ~Converter() = default;
-  virtual Conv::Status convert(char* in, size_t in_len, PackMsg& pm) = 0;
+  virtual Conv::Status convert(uint64_t event_id, char* in, size_t in_len,
+                               PackMsg& pm) = 0;
 
-  size_t get_id() const;
+  uint64_t get_id() const;
   Matcher* get_matcher() { return matc.get(); }
   virtual bool remaining_data() const { return false; }
   virtual void set_allowed_entropy_ratio(float e) {}
-  void set_id(const size_t _id);
+  void set_id(const uint64_t _id);
   void set_matcher(const std::string& filename, const Mode& mode);
   virtual void update_pack_message(PackMsg& pm, const char* in = nullptr,
                                    size_t in_len = 0)
@@ -37,7 +38,7 @@ public:
   }
 
 protected:
-  size_t id = 1;
+  uint64_t id = 1;
   std::unique_ptr<Matcher> matc{nullptr};
 };
 
@@ -69,7 +70,8 @@ public:
   PacketConverter(PacketConverter&&) = delete;
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter() override = default;
-  Conv::Status convert(char* in, size_t in_len, PackMsg& pm) override;
+  Conv::Status convert(uint64_t event_id, char* in, size_t in_len,
+                       PackMsg& pm) override;
   bool remaining_data() const override
   {
     return sessions.get_number_bytes_in_sessions() > 0;
@@ -125,7 +127,8 @@ public:
   LogConverter(LogConverter&&) = delete;
   LogConverter& operator=(const LogConverter&&) = delete;
   ~LogConverter() override = default;
-  Conv::Status convert(char* in, size_t in_len, PackMsg& pm) override;
+  Conv::Status convert(uint64_t event_id, char* in, size_t in_len,
+                       PackMsg& pm) override;
 };
 
 #endif

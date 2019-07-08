@@ -42,10 +42,10 @@ TEST(test_converter, test_packet_converter)
   PackMsg pmsg;
   pmsg.set_max_bytes(241);
   for (int i = 0; i < 45; ++i) {
-    Conv::Status mystatus = pktcon.convert(
+    Conv::Status mystatus = pktcon.convert(1,
         reinterpret_cast<char*>(mypkt1.data()), mypkt1.size(), pmsg);
     EXPECT_EQ(mystatus, Conv::Status::Pass);
-    mystatus = pktcon.convert(reinterpret_cast<char*>(mypkt2.data()),
+    mystatus = pktcon.convert(2, reinterpret_cast<char*>(mypkt2.data()),
                               mypkt2.size(), pmsg);
     EXPECT_EQ(mystatus, Conv::Status::Success);
   }
@@ -81,7 +81,7 @@ TEST(test_converter, test_vlan_converter)
   PacketConverter pktcon(1);
   PackMsg pmsg;
   pmsg.set_max_bytes(234);
-  Conv::Status mystatus = pktcon.convert(reinterpret_cast<char*>(mypkt1.data()),
+  Conv::Status mystatus = pktcon.convert(1, reinterpret_cast<char*>(mypkt1.data()),
                                          mypkt1.size(), pmsg);
   std::stringstream mystream;
   pmsg.pack(mystream);
@@ -113,10 +113,10 @@ TEST(test_converter, test_log_converter)
   std::remove(sample_file.c_str());
   PackMsg pmsg;
   Conv::Status mystatus =
-      logcon.convert(reinterpret_cast<char*>(msg1.data()), msg1.size(), pmsg);
+      logcon.convert(1, reinterpret_cast<char*>(msg1.data()), msg1.size(), pmsg);
   EXPECT_EQ(mystatus, Conv::Status::Pass);
   mystatus =
-      logcon.convert(reinterpret_cast<char*>(msg2.data()), msg2.size(), pmsg);
+      logcon.convert(2, reinterpret_cast<char*>(msg2.data()), msg2.size(), pmsg);
   EXPECT_EQ(mystatus, Conv::Status::Success);
   EXPECT_EQ(pmsg.get_entries(), 1);
 }
@@ -164,11 +164,11 @@ TEST(test_converter, test_entropy)
   pktcon.set_allowed_entropy_ratio(0.75);
   PackMsg pmsg;
   pmsg.set_max_bytes(256);
-  Conv::Status mystatus = pktcon.convert(reinterpret_cast<char*>(mypkt1.data()),
+  Conv::Status mystatus = pktcon.convert(1, reinterpret_cast<char*>(mypkt1.data()),
                                          mypkt1.size(), pmsg);
   EXPECT_EQ(mystatus, Conv::Status::Success);
   EXPECT_EQ(pmsg.get_entries(), 0);
-  mystatus = pktcon.convert(reinterpret_cast<char*>(mypkt2.data()),
+  mystatus = pktcon.convert(2, reinterpret_cast<char*>(mypkt2.data()),
                             mypkt2.size(), pmsg);
   EXPECT_EQ(mystatus, Conv::Status::Success);
   EXPECT_EQ(pmsg.get_entries(), 1);

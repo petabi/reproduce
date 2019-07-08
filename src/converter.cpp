@@ -35,16 +35,17 @@ void Converter::set_matcher(const std::string& filename, const Mode& mode)
   matc = make_unique<Matcher>(filename, mode);
 }
 
-size_t Converter::get_id() const { return id; }
+uint64_t Converter::get_id() const { return id; }
 
-void Converter::set_id(const size_t _id) { id = _id; }
+void Converter::set_id(const uint64_t _id) { id = _id; }
 
 /**
  * PacketConverter
  */
 PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
 
-Conv::Status PacketConverter::convert(char* in, size_t in_len, PackMsg& pm)
+Conv::Status PacketConverter::convert(uint64_t event_id, char* in,
+                                      size_t in_len, PackMsg& pm)
 {
   if (in == nullptr) {
     return Conv::Status::Fail;
@@ -73,7 +74,7 @@ Conv::Status PacketConverter::convert(char* in, size_t in_len, PackMsg& pm)
   } else {
     std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
                                            in + in_len);
-    pm.entry(id++, "message", binary_data);
+    pm.entry(event_id, "message", binary_data);
   }
 
 #ifdef DEBUG
@@ -309,7 +310,8 @@ void PacketConverter::update_pack_message(PackMsg& pm, const char* in,
  * LogConverter
  */
 
-Conv::Status LogConverter::convert(char* in, size_t in_len, PackMsg& pm)
+Conv::Status LogConverter::convert(uint64_t event_id, char* in, size_t in_len,
+                                   PackMsg& pm)
 {
   if (in == nullptr) {
     return Conv::Status::Fail;
@@ -322,7 +324,7 @@ Conv::Status LogConverter::convert(char* in, size_t in_len, PackMsg& pm)
   }
 
   std::vector<unsigned char> binary_data(in, in + in_len);
-  pm.entry(id++, "message", binary_data);
+  pm.entry(event_id, "message", binary_data);
 
   return Conv::Status::Success;
 }

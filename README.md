@@ -48,7 +48,7 @@ REproduce outputs the converted result in a form specified by the user(Stdout, F
 ```
   -b: kafka broker list, [host1:port1,host2:port2,..] (default: localhost:9092)
   -c: send count
-  -d: data source id. (default: 1)
+  -d: data source id (1~65535). (default: 1)
   -e: evaluation mode. output statistical result of transmission after job is terminated or stopped
   -E: entropy ratio. The amount of maximum entropy allowed for a
       session (0.0 < entropy ratio <= 1.0). Default is 0.9.
@@ -121,6 +121,10 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
     * ```reproduce -i /data/LOG -n msg -b 192.168.4.5:9092 -t syslog -e```
 
 ### Report Example
+
+REproduce creates or opens ```/report/report.txt``` first.
+If it failed, it will try to open ```./report.txt```.
+
 
 ```
 root@bada-unbuntu:~/REproduce# ./REproduce -i test.pcap -e -c 10000000
@@ -263,5 +267,6 @@ docker build -t reproduce .
 #### Running Docker Images
 Run with the following command
 ```
-docker run --mount type=bind,source=[the directory containing the target],target=/data reproduce:latest -i [the target file] -b localhost:9092 -t topic
+docker run --mount type=bind,source=[the directory containing the target],target=/data \
+           --mount type=bind,source=[report or log directory],target=/report reproduce:latest -i [the target file] -b localhost:9092 -t topic
 ```

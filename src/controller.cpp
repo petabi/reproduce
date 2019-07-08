@@ -84,7 +84,9 @@ void Controller::run_single()
   char imessage[message_size];
   size_t imessage_len = 0;
   size_t conv_cnt = 0;
+#ifdef DEBUG
   size_t sent_cnt = 0;
+#endif
   uint32_t offset = 0;
   Report report(conf);
   std::stringstream ss;
@@ -101,11 +103,16 @@ void Controller::run_single()
   } else {
     offset = read_offset(conf->input + "_" + conf->offset_prefix);
   }
+
   if (!invoke(skip_data, this, static_cast<size_t>(offset))) {
     Util::eprint("failed to skip: ", offset);
   }
 
-  report.start(conv->get_id());
+  if (offset > 0) {
+    read_count = static_cast<uint64_t>(offset);
+  }
+
+  report.start(read_count + 1);
   PackMsg pm;
   pm.set_max_bytes(prod->get_max_bytes());
   pm.tag("REproduce");
@@ -115,7 +122,9 @@ void Controller::run_single()
     imessage_len = message_size;
     GetData::Status gstat = invoke(get_next_data, this, imessage, imessage_len);
     if (gstat == GetData::Status::Success) {
-      Conv::Status cstat = conv->convert(imessage, imessage_len, pm);
+      read_count++;
+      Conv::Status cstat = conv->convert(read_count | conf->datasource_id,
+                                         imessage, imessage_len, pm);
       if (cstat != Conv::Status::Success) {
         // TODO: handling exceptions due to convert failures
         report.skip(imessage_len);
@@ -140,8 +149,8 @@ void Controller::run_single()
       continue;
     }
     pm.pack(ss);
-    sent_cnt++;
 #ifdef DEBUG
+    sent_cnt++;
     Util::dprint(F, "[", sent_cnt, "]",
                  " unpacked message: ", pm.get_string(ss));
 #endif
@@ -171,7 +180,7 @@ void Controller::run_single()
     ss.str("");
   }
   write_offset(conf->input + "_" + conf->offset_prefix, offset + conv_cnt);
-  report.end(conv->get_id() - 1);
+  report.end(read_count);
 }
 
 InputType Controller::get_input_type() const
@@ -234,7 +243,7 @@ OutputType Controller::get_output_type() const
   return OutputType::File;
 }
 
-bool Controller::set_converter(const size_t id)
+bool Controller::set_converter(const uint64_t id)
 {
   conf->input_type = get_input_type();
   uint32_t l2_type;
@@ -294,7 +303,7 @@ bool Controller::set_converter(const size_t id)
     return false;
   }
   if (conv) {
-    conv->set_id((static_cast<uint64_t>(conf->datasource_id) << 48) | id);
+    conv->set_id(id);
   }
 
   return true;

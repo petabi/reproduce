@@ -4,6 +4,18 @@ This file documents all notable changes to this project. The format of this file
 is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## [unreleased] 2019-07-08
+
+### Changed
+- The event_id for pcap changed to the number of packets read from that PCAP file.
+  In previous version event_id was session number.
+- `report.txt` file will be created in `/report/` directory if it is exist, like `/report/report.txt`.
+  If not, REproduce will try to open in the current directory where REproduce is running in.
+  If you want to run REproduce in Docker, you should bind the `/report` to see the report file from the host.
+- Dockerfile changed to use g++-8
+
+
 ## [unreleased] 2019-06-28
 
 ### Added
