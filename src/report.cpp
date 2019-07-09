@@ -12,8 +12,6 @@ using namespace std;
 
 static constexpr double kbytes = 1024.0;
 static constexpr double mbytes = kbytes * kbytes;
-constexpr char filename_bind[] = "/report/report.txt";
-constexpr char filename[] = "report.txt";
 
 Report::Report(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
@@ -98,17 +96,15 @@ void Report::end(uint64_t id) noexcept
     return;
   }
 
-  report_file.open(filename_bind, ios::out | ios::app);
-  if (!report_file) {
-    Util::eprint("Failed to open report file: ", filename_bind);
-    report_file.open(filename, ios::out | ios::app);
-
-    if (report_file) {
-      Util::eprint("report file opened in the current directory");
-    } else {
-      return;
-    }
+  const std::string filename = "report.txt";
+  std::filesystem::path filepath = "/report";
+  if (std::filesystem::is_directory(filepath)) {
+    filepath /= filename;
+  } else {
+    filepath = filename;
   }
+
+  report_file.open(filepath, ios::out | ios::app);
 
   end_id = id;
   time_now = std::chrono::steady_clock::now();
