@@ -141,6 +141,26 @@ Elapsed Time:               23.86s
 Performance:                70.22MBps/419.14Kpps
 ```
 
+### Sessions Information Example
+
+REproduce creates or opens ```/report/sessions.txt``` or ```./sessions.txt```.
+
+* Fields: event_id, sip, dip, proto, sport, dport
+* You can get the packet number by removing the upper 16 bits (datasource_id) from the event_id
+
+```
+root@bada-unbuntu:~/REproduce# tail -f /report/sessions.txt
+281474976840922,316206727,3530930811,6,443,64015
+281474976840923,2540037634,3530917189,6,80,63841
+281474976840965,3547547186,3422459274,6,5001,63819
+281474976840983,1890545971,3530923615,6,14811,10681
+281474976841013,2877264388,3530918422,6,51305,5500
+281474976841017,1749831047,3530917189,6,80,63848
+281474976841024,3551661079,3422459095,1,0,0
+281474976841027,1360408062,3530921781,6,53345,51000
+```
+
+
 ## Performance
 
 ### Test environment

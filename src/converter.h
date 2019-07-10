@@ -31,8 +31,8 @@ public:
   virtual void set_allowed_entropy_ratio(float e) {}
   void set_id(const uint64_t _id);
   void set_matcher(const std::string& filename, const Mode& mode);
-  virtual void update_pack_message(PackMsg& pm, const char* in = nullptr,
-                                   size_t in_len = 0)
+  virtual void update_pack_message(uint64_t event_id, PackMsg& pm,
+                                   const char* in = nullptr, size_t in_len = 0)
   {
     return;
   }
@@ -80,7 +80,8 @@ public:
   {
     sessions.set_allowed_entropy_ratio(e);
   }
-  void update_pack_message(PackMsg& pm, const char* in = nullptr,
+  void update_pack_message(uint64_t event_id, PackMsg& pm,
+                           const char* in = nullptr,
                            size_t in_len = 0) override;
 
 private:

@@ -5,7 +5,19 @@ is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [unreleased] 2019-07-08
+
+## [unreleased] 2019-07-10
+
+### Added
+
+- When REproduce send PCAP, it will save session information into `/report/sessions.txt` file.
+  If the '/report' directory does not exist, REproduce will try to open in the current directory where REproduce is running in.
+  The session information is appended at the end of the file.
+  You should clear it before REproduce run if you want to get clean data.
+
+
+
+## [0.9.3] 2019-07-08
 
 ### Changed
 - The event_id for pcap changed to the number of packets read from that PCAP file.
@@ -16,7 +28,8 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Dockerfile changed to use g++-8
 
 
-## [unreleased] 2019-06-28
+
+## [0.9.3] 2019-06-28
 
 ### Added
 

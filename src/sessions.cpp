@@ -1,5 +1,9 @@
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -7,6 +11,36 @@
 #include "entropy_calculator.h"
 #include "forward_proto.h"
 #include "sessions.h"
+
+using namespace std;
+
+Sessions::~Sessions()
+{
+  if (session_file.is_open()) {
+    session_file.close();
+  }
+}
+
+void Sessions::save_session(uint64_t event_id, uint32_t src, uint32_t dst,
+                            uint8_t proto, uint16_t sport, uint16_t dport)
+{
+  if (!session_file.is_open()) {
+    const std::string filename = "sessions.txt";
+    std::filesystem::path filepath = "/report";
+    if (std::filesystem::is_directory(filepath)) {
+      filepath /= filename;
+    } else {
+      filepath = filename;
+    }
+    session_file.open(filepath, ios::out | ios::app);
+  }
+
+  if (session_file.is_open()) {
+    session_file << event_id << "," << src << "," << dst << ","
+                 << (static_cast<uint16_t>(proto)) << "," << sport << ","
+                 << dport << endl;
+  }
+}
 
 size_t Sessions::make_next_message(PackMsg& msg, size_t next_id)
 {
@@ -56,9 +90,9 @@ size_t Sessions::make_next_message(PackMsg& msg, size_t next_id)
   return next_id;
 }
 
-void Sessions::update_session(uint32_t src, uint32_t dst, uint8_t proto,
-                              uint16_t sport, uint16_t dport, const char* data,
-                              size_t len)
+void Sessions::update_session(uint64_t event_id, uint32_t src, uint32_t dst,
+                              uint8_t proto, uint16_t sport, uint16_t dport,
+                              const char* data, size_t len)
 {
   uint64_t hash = hash_key(src, dst, proto, sport, dport);
   auto it = session_map.find(hash);
@@ -79,6 +113,7 @@ void Sessions::update_session(uint32_t src, uint32_t dst, uint8_t proto,
     if (read_len < max_sample_size) {
       session_map[hash].data.reserve(max_sample_size);
     }
+    save_session(event_id, src, dst, proto, sport, dport);
   }
   message_data += read_len;
 }

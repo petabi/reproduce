@@ -167,7 +167,7 @@ void Controller::run_single()
     }
   }
   if (conv->remaining_data()) {
-    conv->update_pack_message(pm);
+    conv->update_pack_message(read_count | conf->datasource_id, pm, nullptr, 0);
   }
   if (pm.get_entries() > 0) {
     pm.pack(ss);

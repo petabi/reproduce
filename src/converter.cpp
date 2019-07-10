@@ -70,7 +70,7 @@ Conv::Status PacketConverter::convert(uint64_t event_id, char* in,
     return Conv::Status::Pass;
   }
   if (l3_type == ETHERTYPE_IP) {
-    update_pack_message(pm, in, in_len);
+    update_pack_message(event_id, pm, in, in_len);
   } else {
     std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
                                            in + in_len);
@@ -284,8 +284,8 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset, size_t length)
   return true;
 }
 
-void PacketConverter::update_pack_message(PackMsg& pm, const char* in,
-                                          size_t in_len)
+void PacketConverter::update_pack_message(uint64_t event_id, PackMsg& pm,
+                                          const char* in, size_t in_len)
 {
   if (in == nullptr && in_len == 0) {
     id = sessions.make_next_message(pm, id);
@@ -296,8 +296,8 @@ void PacketConverter::update_pack_message(PackMsg& pm, const char* in,
   }
   size_t data_offset =
       sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl + vlan;
-  sessions.update_session(src, dst, proto, sport, dport, in + data_offset,
-                          in_len - data_offset);
+  sessions.update_session(event_id, src, dst, proto, sport, dport,
+                          in + data_offset, in_len - data_offset);
   size_t estimated_data =
       (sessions.size() * (session_extra_bytes + message_n_label_bytes)) +
       sessions.get_number_bytes_in_sessions() + pm.get_bytes();
