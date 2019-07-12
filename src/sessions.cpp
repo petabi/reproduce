@@ -16,6 +16,7 @@ using namespace std;
 size_t Sessions::make_next_message(PackMsg& msg, uint64_t event_id)
 {
   std::vector<uint64_t> removal;
+  uint64_t eid = event_id;
   for (auto& s : session_map) {
     if (s.second.status != Sampling_status::sample ||
         s.second.data.size() < min_sample_size) {
@@ -37,6 +38,7 @@ size_t Sessions::make_next_message(PackMsg& msg, uint64_t event_id)
                 s.second.dst, s.second.sport, s.second.dport, s.second.proto);
       s.second.bytes_sampled += s.second.data.size();
       s.second.age = 0;
+      eid++;
       if (s.second.bytes_sampled >= max_sample_size) {
         s.second.status = Sampling_status::no_sampling;
       }
@@ -58,7 +60,7 @@ size_t Sessions::make_next_message(PackMsg& msg, uint64_t event_id)
       session_map.erase(r);
     }
   }
-  return 0;
+  return eid;
 }
 
 bool Sessions::update_session(uint32_t src, uint32_t dst, uint8_t proto,
