@@ -1,6 +1,5 @@
 #include <cstddef>
 #include <cstdint>
-#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -14,35 +13,7 @@
 
 using namespace std;
 
-Sessions::~Sessions()
-{
-  if (session_file.is_open()) {
-    session_file.close();
-  }
-}
-
-void Sessions::save_session(uint64_t event_id, uint32_t src, uint32_t dst,
-                            uint8_t proto, uint16_t sport, uint16_t dport)
-{
-  if (!session_file.is_open()) {
-    const std::string filename = "sessions.txt";
-    std::filesystem::path filepath = "/report";
-    if (std::filesystem::is_directory(filepath)) {
-      filepath /= filename;
-    } else {
-      filepath = filename;
-    }
-    session_file.open(filepath, ios::out | ios::app);
-  }
-
-  if (session_file.is_open()) {
-    session_file << event_id << "," << src << "," << dst << ","
-                 << (static_cast<uint16_t>(proto)) << "," << sport << ","
-                 << dport << endl;
-  }
-}
-
-size_t Sessions::make_next_message(PackMsg& msg, size_t next_id)
+size_t Sessions::make_next_message(PackMsg& msg, uint64_t event_id)
 {
   std::vector<uint64_t> removal;
   for (auto& s : session_map) {
@@ -62,7 +33,7 @@ size_t Sessions::make_next_message(PackMsg& msg, size_t next_id)
            message_n_label_bytes) > msg.get_max_bytes()) {
         continue;
       }
-      msg.entry(next_id++, message_label, s.second.data, s.second.src,
+      msg.entry(event_id, message_label, s.second.data, s.second.src,
                 s.second.dst, s.second.sport, s.second.dport, s.second.proto);
       s.second.bytes_sampled += s.second.data.size();
       s.second.age = 0;
@@ -87,13 +58,14 @@ size_t Sessions::make_next_message(PackMsg& msg, size_t next_id)
       session_map.erase(r);
     }
   }
-  return next_id;
+  return 0;
 }
 
-void Sessions::update_session(uint64_t event_id, uint32_t src, uint32_t dst,
-                              uint8_t proto, uint16_t sport, uint16_t dport,
-                              const char* data, size_t len)
+bool Sessions::update_session(uint32_t src, uint32_t dst, uint8_t proto,
+                              uint16_t sport, uint16_t dport, const char* data,
+                              size_t len)
 {
+  bool newsession = false;
   uint64_t hash = hash_key(src, dst, proto, sport, dport);
   auto it = session_map.find(hash);
   size_t read_len = std::min(len, max_sample_size);
@@ -101,7 +73,7 @@ void Sessions::update_session(uint64_t event_id, uint32_t src, uint32_t dst,
     if (it->second.status != Sampling_status::sample ||
         (it->second.bytes_sampled + it->second.data.size()) >=
             max_sample_size) {
-      return;
+      return newsession;
     }
     read_len = std::min(read_len, max_sample_size - (it->second.bytes_sampled +
                                                      it->second.data.size()));
@@ -113,7 +85,8 @@ void Sessions::update_session(uint64_t event_id, uint32_t src, uint32_t dst,
     if (read_len < max_sample_size) {
       session_map[hash].data.reserve(max_sample_size);
     }
-    save_session(event_id, src, dst, proto, sport, dport);
+    newsession = true;
   }
   message_data += read_len;
+  return newsession;
 }

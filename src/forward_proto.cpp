@@ -20,7 +20,7 @@ void PackMsg::tag(const std::string& str)
   bytes += str.length();
 }
 
-void PackMsg::entry(const size_t& id, const std::string& str,
+void PackMsg::entry(const uint64_t& id, const std::string& str,
                     const std::vector<unsigned char>& vec)
 {
   std::map<std::string, std::vector<unsigned char>> msg;
@@ -30,7 +30,7 @@ void PackMsg::entry(const size_t& id, const std::string& str,
             std::string(R"([,{"":""}],)").length());
 }
 
-void PackMsg::entry(const size_t& id, const std::string& str,
+void PackMsg::entry(const uint64_t& id, const std::string& str,
                     const std::vector<unsigned char>& vec, uint32_t src,
                     uint32_t dst, uint16_t sport, uint16_t dport, uint8_t proto)
 {

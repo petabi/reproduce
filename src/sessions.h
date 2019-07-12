@@ -43,22 +43,17 @@ class Sessions {
 public:
   bool empty() const { return session_map.empty(); }
   size_t get_number_bytes_in_sessions() const { return message_data; }
-  size_t make_next_message(PackMsg& msg, size_t next_id);
-  void update_session(uint64_t event_id, uint32_t src, uint32_t dst,
-                      uint8_t proto, uint16_t sport, uint16_t dport,
-                      const char* data, size_t len);
+  size_t make_next_message(PackMsg& msg, uint64_t event_id);
+  bool update_session(uint32_t src, uint32_t dst, uint8_t proto, uint16_t sport,
+                      uint16_t dport, const char* data, size_t len);
   void set_allowed_entropy_ratio(float e) { entropy_ratio = e; }
   size_t size() const { return session_map.size(); }
-  void save_session(uint64_t event_id, uint32_t src, uint32_t dst,
-                    uint8_t proto, uint16_t sport, uint16_t dport);
-  ~Sessions();
 
   static constexpr size_t max_age = 128;
   static constexpr size_t max_sample_size = 2048;
   static constexpr size_t min_sample_size = 128;
 
 private:
-  std::ofstream session_file;
   Entropy_calculator e_calc;
   size_t message_data = 0;
   float entropy_ratio =

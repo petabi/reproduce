@@ -33,6 +33,7 @@ public:
 
 private:
   uint64_t read_count{0};
+  time_t launch_time{0};
   std::shared_ptr<Config> conf;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;

@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <functional>
 #include <thread>
+#include <time.h>
 #include <vector>
 
 #include <pcap/pcap.h>
@@ -180,7 +181,7 @@ void Controller::run_single()
     ss.str("");
   }
   write_offset(conf->input + "_" + conf->offset_prefix, offset + conv_cnt);
-  report.end(read_count);
+  report.end(read_count, launch_time);
 }
 
 InputType Controller::get_input_type() const
@@ -248,10 +249,14 @@ bool Controller::set_converter(const uint64_t id)
   conf->input_type = get_input_type();
   uint32_t l2_type;
 
+  if (launch_time == 0) {
+    launch_time = time(0);
+  }
+
   switch (conf->input_type) {
   case InputType::Nic:
     l2_type = open_nic(conf->input);
-    conv = make_unique<PacketConverter>(l2_type);
+    conv = make_unique<PacketConverter>(l2_type, launch_time);
     if (!conf->pattern_file.empty()) {
       if (conv->get_matcher() == nullptr) {
         conv->set_matcher(conf->pattern_file, Mode::BLOCK);
@@ -267,7 +272,7 @@ bool Controller::set_converter(const uint64_t id)
     break;
   case InputType::Pcap:
     l2_type = open_pcap(conf->input);
-    conv = make_unique<PacketConverter>(l2_type);
+    conv = make_unique<PacketConverter>(l2_type, launch_time);
     if (!conf->pattern_file.empty()) {
       if (conv->get_matcher() == nullptr) {
         conv->set_matcher(conf->pattern_file, Mode::BLOCK);

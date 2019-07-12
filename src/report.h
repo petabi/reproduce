@@ -19,7 +19,7 @@ public:
   void start(const uint64_t id) noexcept;
   void process(const size_t bytes) noexcept;
   void skip(const size_t bytes) noexcept;
-  void end(const uint64_t id) noexcept;
+  void end(const uint64_t id, const time_t launch_time) noexcept;
   std::shared_ptr<Config> conf;
 
 private:
@@ -33,6 +33,7 @@ private:
   size_t skip_bytes{0};
   size_t skip_cnt{0};
   size_t process_cnt{0};
+  bool open_report_file(const time_t launch_time);
   std::chrono::time_point<std::chrono::steady_clock> time_start{
       (std::chrono::milliseconds::zero())};
   std::chrono::time_point<std::chrono::steady_clock> time_now{

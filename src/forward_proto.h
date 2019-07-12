@@ -45,9 +45,9 @@ public:
 
   void pack(std::stringstream& ss);
   void tag(const std::string& str);
-  void entry(const size_t& id, const std::string& str,
+  void entry(const uint64_t& id, const std::string& str,
              const std::vector<unsigned char>& vec);
-  void entry(const size_t& id, const std::string& str,
+  void entry(const uint64_t& id, const std::string& str,
              const std::vector<unsigned char>& vec, uint32_t src, uint32_t dst,
              uint16_t sport, uint16_t dport, uint8_t proto);
   void option(const std::string& option, const std::string& value);

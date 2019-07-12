@@ -89,22 +89,33 @@ inline std::string PRINT_PRETTY_BYTES(size_t bytes)
   return std::string(std::to_string(n) + "MB");
 }
 #endif
-void Report::end(uint64_t id) noexcept
+
+bool Report::open_report_file(const time_t launch_time)
+{
+  struct tm* ts;
+  ts = localtime(&launch_time);
+  char buf[80];
+
+  if (std::filesystem::is_directory("/report")) {
+    strftime(buf, sizeof(buf), "/report/report.txt-%Y%m%d%H%M%S", ts);
+  } else {
+    strftime(buf, sizeof(buf), "report.txt-%Y%m%d%H%M%S", ts);
+  }
+
+  report_file.open(buf, ios::out | ios::app);
+
+  return report_file.is_open();
+}
+
+void Report::end(uint64_t id, time_t launch_time) noexcept
 {
   constexpr int arrange_var = 28;
   if (!conf->mode_eval) {
     return;
   }
-
-  const std::string filename = "report.txt";
-  std::filesystem::path filepath = "/report";
-  if (std::filesystem::is_directory(filepath)) {
-    filepath /= filename;
-  } else {
-    filepath = filename;
+  if (!open_report_file(launch_time)) {
+    return;
   }
-
-  report_file.open(filepath, ios::out | ios::app);
 
   end_id = id;
   time_now = std::chrono::steady_clock::now();

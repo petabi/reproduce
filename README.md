@@ -122,12 +122,13 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 
 ### Report Example
 
-REproduce creates or opens ```/report/report.txt``` first.
-If it failed, it will try to open ```./report.txt```.
+REproduce creates or opens ```/report/report.txt-YYYYMMDDHHMMSS``` first.
+If it failed, it will try to open ```./report.txt-YYYYMMDDHHMMSS```.
 
 
 ```
 root@bada-unbuntu:~/REproduce# ./REproduce -i test.pcap -e -c 10000000
+root@bada-unbuntu:~/REproduce# tail -f /report/report-20190712143111.txt
 --------------------------------------------------
 Time:                       Mon Jul  1 14:34:23 2019
 Input(PCAP):                test.pcap(976.56M)
@@ -143,13 +144,14 @@ Performance:                70.22MBps/419.14Kpps
 
 ### Sessions Information Example
 
-REproduce creates or opens ```/report/sessions.txt``` or ```./sessions.txt```.
+REproduce creates ```/report/sessions.txt-YYYYMMDDHHMMSS``` or ```./sessions.txt-YYYYMMDDHHMMSS```.
 
 * Fields: event_id, sip, dip, proto, sport, dport
 * You can get the packet number by removing the upper 16 bits (datasource_id) from the event_id
+* The report and session files share the 'YYYYMMDDHHMMSS' value, and the value means that REproduce process or docker launch time.
 
 ```
-root@bada-unbuntu:~/REproduce# tail -f /report/sessions.txt
+root@bada-unbuntu:~/REproduce# tail -f /report/sessions-20190712143111.txt
 281474976840922,316206727,3530930811,6,443,64015
 281474976840923,2540037634,3530917189,6,80,63841
 281474976840965,3547547186,3422459274,6,5001,63819
@@ -159,6 +161,7 @@ root@bada-unbuntu:~/REproduce# tail -f /report/sessions.txt
 281474976841024,3551661079,3422459095,1,0,0
 281474976841027,1360408062,3530921781,6,53345,51000
 ```
+
 
 
 ## Performance

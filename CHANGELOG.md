@@ -5,8 +5,16 @@ is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.9.5] 2019-07-12
 
-## [unreleased] 2019-07-10
+### Changed
+
+- 'report.txt', 'session.txt' file name changed to `report.txt-YYYYMMDDHHMMSS` and `sessions.txt-YYYYMMDDHHMMSS`
+- bug fixed: event_id for TCP, UDP, ICMP is still session number. it's fixed to send packet number.
+
+
+
+## [0.9.4] 2019-07-10
 
 ### Added
 

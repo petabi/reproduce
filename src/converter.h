@@ -65,6 +65,7 @@ class PacketConverter : public Converter {
 public:
   PacketConverter() = delete;
   PacketConverter(const uint32_t _l2_type);
+  PacketConverter(const uint32_t _l2_type, const time_t launch_time);
   PacketConverter(const PacketConverter&) = delete;
   PacketConverter& operator=(const PacketConverter&) = delete;
   PacketConverter(PacketConverter&&) = delete;
@@ -98,7 +99,10 @@ private:
   uint8_t proto = 0;
   uint8_t vlan = 0;
   Sessions sessions;
+  std::ofstream session_file;
 
+  void save_session(uint64_t event_id, uint32_t src, uint32_t dst,
+                    uint8_t proto, uint16_t sport, uint16_t dport);
   bool (PacketConverter::*get_l2_process())(unsigned char* offset,
                                             size_t length);
   bool (PacketConverter::*get_l3_process())(unsigned char* offset,
