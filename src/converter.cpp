@@ -45,19 +45,18 @@ void Converter::set_id(const uint64_t _id) { id = _id; }
  */
 PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
 
-PacketConverter::PacketConverter(const uint32_t _l2_type,
-                                 const time_t launch_time)
+PacketConverter::PacketConverter(const uint32_t _l2_type, time_t launch_time)
     : l2_type(_l2_type)
 {
   if (!session_file.is_open()) {
-    struct tm* ts;
-    ts = localtime(&launch_time);
     char buf[80];
 
     if (std::filesystem::is_directory("/report")) {
-      strftime(buf, sizeof(buf), "/report/sessions.txt-%Y%m%d%H%M%S", ts);
+      strftime(buf, sizeof(buf), "/report/sessions.txt-%Y%m%d%H%M%S",
+               std::localtime(&launch_time));
     } else {
-      strftime(buf, sizeof(buf), "sessions.txt-%Y%m%d%H%M%S", ts);
+      strftime(buf, sizeof(buf), "sessions.txt-%Y%m%d%H%M%S",
+               std::localtime(&launch_time));
     }
     session_file.open(buf, ios::out | ios::app);
   }

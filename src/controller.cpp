@@ -4,10 +4,10 @@
 #include <csignal>
 #include <cstdarg>
 #include <cstring>
+#include <ctime>
 #include <filesystem>
 #include <functional>
 #include <thread>
-#include <time.h>
 #include <vector>
 
 #include <pcap/pcap.h>
@@ -250,7 +250,7 @@ bool Controller::set_converter(const uint64_t id)
   uint32_t l2_type;
 
   if (launch_time == 0) {
-    launch_time = time(0);
+    launch_time = time(nullptr);
   }
 
   switch (conf->input_type) {

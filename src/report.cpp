@@ -1,3 +1,4 @@
+#include <ctime>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
@@ -90,16 +91,16 @@ inline std::string PRINT_PRETTY_BYTES(size_t bytes)
 }
 #endif
 
-bool Report::open_report_file(const time_t launch_time)
+bool Report::open_report_file(time_t launch_time)
 {
-  struct tm* ts;
-  ts = localtime(&launch_time);
   char buf[80];
 
   if (std::filesystem::is_directory("/report")) {
-    strftime(buf, sizeof(buf), "/report/report.txt-%Y%m%d%H%M%S", ts);
+    strftime(buf, sizeof(buf), "/report/report.txt-%Y%m%d%H%M%S",
+             std::localtime(&launch_time));
   } else {
-    strftime(buf, sizeof(buf), "report.txt-%Y%m%d%H%M%S", ts);
+    strftime(buf, sizeof(buf), "report.txt-%Y%m%d%H%M%S",
+             std::localtime(&launch_time));
   }
 
   report_file.open(buf, ios::out | ios::app);
