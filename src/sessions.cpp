@@ -10,6 +10,7 @@
 #include "entropy_calculator.h"
 #include "forward_proto.h"
 #include "sessions.h"
+#include "util.h"
 
 using namespace std;
 
@@ -34,8 +35,10 @@ size_t Sessions::make_next_message(PackMsg& msg, uint64_t event_id)
            message_n_label_bytes) > msg.get_max_bytes()) {
         continue;
       }
-      msg.entry(event_id, message_label, s.second.data, s.second.src,
-                s.second.dst, s.second.sport, s.second.dport, s.second.proto);
+
+      msg.entry(s.second.session_event_id, message_label, s.second.data,
+                s.second.src, s.second.dst, s.second.sport, s.second.dport,
+                s.second.proto);
       s.second.bytes_sampled += s.second.data.size();
       s.second.age = 0;
       eid++;
@@ -65,7 +68,7 @@ size_t Sessions::make_next_message(PackMsg& msg, uint64_t event_id)
 
 bool Sessions::update_session(uint32_t src, uint32_t dst, uint8_t proto,
                               uint16_t sport, uint16_t dport, const char* data,
-                              size_t len)
+                              size_t len, uint64_t event_id)
 {
   bool newsession = false;
   uint64_t hash = hash_key(src, dst, proto, sport, dport);
@@ -83,7 +86,7 @@ bool Sessions::update_session(uint32_t src, uint32_t dst, uint8_t proto,
   } else {
     std::vector<unsigned char> temp(data, data + read_len);
     session_map[hash] = Session(read_len, Sampling_status::sample, src, dst,
-                                sport, dport, proto, temp);
+                                sport, dport, proto, event_id, temp);
     if (read_len < max_sample_size) {
       session_map[hash].data.reserve(max_sample_size);
     }

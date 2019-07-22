@@ -48,7 +48,7 @@ private:
   void run_single();
   InputType get_input_type() const;
   OutputType get_output_type() const;
-  bool set_converter(const size_t id);
+  bool set_converter();
   bool set_producer();
   uint32_t open_nic(const std::string& devname);
   void close_nic();

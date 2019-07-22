@@ -5,6 +5,15 @@ is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this
 project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.9.6] 2019-07-22
+
+### Changed
+
+- (test) For PCAP, this version wil send payload only rather than session + payload 2KB.
+  And sessions.txt does not created.
+- Produce success messages are displayed in every 100 success, i.e., around 100MB sent.
+
+
 ## [0.9.5] 2019-07-12
 
 ### Changed

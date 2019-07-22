@@ -144,6 +144,8 @@ Performance:                70.22MBps/419.14Kpps
 
 ### Sessions Information Example
 
+* 0.9.6 version doesn't create or update sessions.txt and only send payload data.
+
 REproduce creates ```/report/sessions.txt-YYYYMMDDHHMMSS``` or ```./sessions.txt-YYYYMMDDHHMMSS```.
 
 * Fields: event_id, sip, dip, proto, sport, dport

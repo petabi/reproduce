@@ -52,11 +52,12 @@ TEST(test_session, test_update_session)
   uint8_t proto = 0x7A;
   uint16_t sport = 0x4142;
   uint16_t dport = 0x3839;
+  uint64_t event_id = 10;
   std::string mymessage = "my message number: ";
   for (int i = 1; i < 10; ++i) {
     std::string temp = mymessage + std::to_string(i) + "!";
     mysession.update_session(src, dst, proto, sport, dport, temp.data(),
-                             temp.size());
+                             temp.size(), event_id);
   }
   PackMsg pm;
   size_t initial_size = pm.get_bytes();
@@ -92,10 +93,11 @@ TEST(test_session, test_delete_session)
   uint8_t proto = 3;
   uint16_t sport = 4;
   uint16_t dport = 5;
+  uint64_t event_id = 6;
   Sessions mysession;
   std::string mymessage = "my message number: ";
   mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                           mymessage.size());
+                           mymessage.size(), event_id);
   PackMsg pm;
 
   // Test that counter will eventually delete the session.
@@ -113,7 +115,7 @@ TEST(test_session, test_delete_session)
        mysession.get_number_bytes_in_sessions() < mysession.min_sample_size;
        ++i) {
     mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                             mymessage.size());
+                             mymessage.size(), event_id);
     EXPECT_FALSE(mysession.empty());
     EXPECT_EQ(mysession.get_number_bytes_in_sessions(), i * mymessage.size());
   }
@@ -123,13 +125,13 @@ TEST(test_session, test_delete_session)
        mysession.get_number_bytes_in_sessions() < mysession.min_sample_size;
        ++i) {
     mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                             mymessage.size());
+                             mymessage.size(), event_id);
     EXPECT_FALSE(mysession.empty());
   }
   EXPECT_EQ(mysession.make_next_message(pm, 1), 2);
   EXPECT_EQ(mysession.get_number_bytes_in_sessions(), 0);
   mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                           mymessage.size());
+                           mymessage.size(), event_id);
   for (size_t i = 0; i < mysession.max_age; ++i) {
     EXPECT_EQ(mysession.get_number_bytes_in_sessions(), mymessage.size());
     EXPECT_EQ(mysession.make_next_message(pm, 2), 2);
@@ -148,6 +150,7 @@ TEST(test_session, test_size)
   uint8_t proto = 0x7A;
   uint16_t sport = 0x4142;
   uint16_t dport = 0x3839;
+  uint64_t event_id = 1;
   std::string mymessage;
   for (int i = 0; i < 128; ++i) {
     mymessage.append("h");
@@ -155,7 +158,7 @@ TEST(test_session, test_size)
   PackMsg pm;
   size_t initial_size = pm.get_bytes();
   mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                           mymessage.size());
+                           mymessage.size(), event_id);
   mysession.make_next_message(pm, 0x3132333435363738);
 
   // size of src, dst, sport, dport, proto, src_key, dst_key, sport_key
@@ -183,7 +186,7 @@ TEST(test_session, test_max_size)
   PackMsg pm;
   pm.set_max_bytes(64);
   mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                           mymessage.size());
+                           mymessage.size(), 1);
   mysession.make_next_message(pm, 0x3132333435363738);
   EXPECT_EQ(pm.get_entries(), 0);
   pm.set_max_bytes(256);
@@ -192,10 +195,10 @@ TEST(test_session, test_max_size)
   EXPECT_EQ(mysession.get_number_bytes_in_sessions(), 0);
   pm.clear();
   mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                           mymessage.size());
+                           mymessage.size(), 1);
   EXPECT_EQ(mysession.get_number_bytes_in_sessions(), 128);
   mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                           mymessage.size());
+                           mymessage.size(), 1);
   EXPECT_EQ(mysession.get_number_bytes_in_sessions(), 256);
   mysession.make_next_message(pm, 0x3132333435363738);
 

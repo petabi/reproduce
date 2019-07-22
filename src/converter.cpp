@@ -36,10 +36,6 @@ void Converter::set_matcher(const std::string& filename, const Mode& mode)
   matc = make_unique<Matcher>(filename, mode);
 }
 
-uint64_t Converter::get_id() const { return id; }
-
-void Converter::set_id(const uint64_t _id) { id = _id; }
-
 /**
  * PacketConverter
  */
@@ -47,19 +43,20 @@ PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
 
 PacketConverter::PacketConverter(const uint32_t _l2_type, time_t launch_time)
     : l2_type(_l2_type)
-{
-  if (!session_file.is_open()) {
-    char buf[80];
+{ /* session.txt file will be created when sessions sent
+   if (!session_file.is_open()) {
+     char buf[80];
 
-    if (std::filesystem::is_directory("/report")) {
-      strftime(buf, sizeof(buf), "/report/sessions.txt-%Y%m%d%H%M%S",
-               std::localtime(&launch_time));
-    } else {
-      strftime(buf, sizeof(buf), "sessions.txt-%Y%m%d%H%M%S",
-               std::localtime(&launch_time));
-    }
-    session_file.open(buf, ios::out | ios::app);
-  }
+     if (std::filesystem::is_directory("/report")) {
+       strftime(buf, sizeof(buf), "/report/sessions.txt-%Y%m%d%H%M%S",
+                std::localtime(&launch_time));
+     } else {
+       strftime(buf, sizeof(buf), "sessions.txt-%Y%m%d%H%M%S",
+                std::localtime(&launch_time));
+     }
+     session_file.open(buf, ios::out | ios::app);
+   } */
+  return;
 }
 
 void PacketConverter::save_session(uint64_t event_id, uint32_t src,
@@ -99,11 +96,15 @@ Conv::Status PacketConverter::convert(uint64_t event_id, char* in,
     return Conv::Status::Pass;
   }
   if (l3_type == ETHERTYPE_IP) {
-    update_pack_message(event_id, pm, in, in_len);
+    // update_pack_message(event_id, pm, in, in_len);
+    payload_only_message(event_id, pm, in, in_len);
   } else {
+    /* only the packets with ip header will be send to kafka.
     std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
                                            in + in_len);
     pm.entry(event_id, "message", binary_data);
+     */
+    return Conv::Status::Fail;
   }
 
 #ifdef DEBUG
@@ -313,6 +314,23 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset, size_t length)
   return true;
 }
 
+Conv::Status PacketConverter::payload_only_message(uint64_t event_id,
+                                                   PackMsg& pm, const char* in,
+                                                   size_t in_len)
+{
+  if (in == nullptr || in_len == 0) {
+    return Conv::Status::Fail;
+  }
+
+  size_t data_offset =
+      sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl + vlan;
+
+  std::vector<unsigned char> binary_data(in + data_offset, in + in_len);
+  pm.entry(event_id, "message", binary_data);
+
+  return Conv::Status::Success;
+}
+
 void PacketConverter::update_pack_message(uint64_t event_id, PackMsg& pm,
                                           const char* in, size_t in_len)
 {
@@ -326,7 +344,7 @@ void PacketConverter::update_pack_message(uint64_t event_id, PackMsg& pm,
   size_t data_offset =
       sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl + vlan;
   if (sessions.update_session(src, dst, proto, sport, dport, in + data_offset,
-                              in_len - data_offset)) {
+                              in_len - data_offset, event_id)) {
     save_session(event_id, src, dst, proto, sport, dport);
   }
 

@@ -25,11 +25,9 @@ public:
   virtual Conv::Status convert(uint64_t event_id, char* in, size_t in_len,
                                PackMsg& pm) = 0;
 
-  uint64_t get_id() const;
   Matcher* get_matcher() { return matc.get(); }
   virtual bool remaining_data() const { return false; }
   virtual void set_allowed_entropy_ratio(float e) {}
-  void set_id(const uint64_t _id);
   void set_matcher(const std::string& filename, const Mode& mode);
   virtual void update_pack_message(uint64_t event_id, PackMsg& pm,
                                    const char* in = nullptr, size_t in_len = 0)
@@ -38,7 +36,6 @@ public:
   }
 
 protected:
-  uint64_t id = 1;
   std::unique_ptr<Matcher> matc{nullptr};
 };
 
@@ -84,6 +81,9 @@ public:
   void update_pack_message(uint64_t event_id, PackMsg& pm,
                            const char* in = nullptr,
                            size_t in_len = 0) override;
+
+  Conv::Status payload_only_message(uint64_t event_id, PackMsg& pm,
+                                    const char* in, size_t in_len);
 
 private:
   bool match;

@@ -26,7 +26,7 @@ Controller::Controller(Config _conf)
 {
   conf = make_shared<Config>(_conf);
 
-  if (!set_converter(1)) {
+  if (!set_converter()) {
     throw runtime_error("failed to set the converter");
   }
   if (!set_producer()) {
@@ -65,11 +65,7 @@ void Controller::run_split()
   for (const auto& file : files) {
     conf->input = file;
 
-    if (conv) {
-      conv_id = conv->get_id();
-    }
-
-    if (!set_converter(conv_id)) {
+    if (!set_converter()) {
       throw runtime_error("failed to set the converter");
     }
 
@@ -85,9 +81,6 @@ void Controller::run_single()
   char imessage[message_size];
   size_t imessage_len = 0;
   size_t conv_cnt = 0;
-#ifdef DEBUG
-  size_t sent_cnt = 0;
-#endif
   uint32_t offset = 0;
   Report report(conf);
   std::stringstream ss;
@@ -123,6 +116,16 @@ void Controller::run_single()
     imessage_len = message_size;
     GetData::Status gstat = invoke(get_next_data, this, imessage, imessage_len);
     if (gstat == GetData::Status::Success) {
+      if ((pm.get_bytes() + imessage_len) >= pm.get_max_bytes()) {
+        pm.pack(ss);
+        if (!prod->produce(ss.str(), true)) {
+          break;
+        }
+        pm.clear();
+        ss.str("");
+        pm.tag("REproduce");
+        pm.option("option", "optional");
+      }
       read_count++;
       Conv::Status cstat = conv->convert(read_count | conf->datasource_id,
                                          imessage, imessage_len, pm);
@@ -146,36 +149,20 @@ void Controller::run_single()
 
     conv_cnt++;
     report.process(imessage_len);
-    if (pm.get_bytes() < prod->get_max_bytes()) {
-      continue;
-    }
-    pm.pack(ss);
-#ifdef DEBUG
-    sent_cnt++;
-    Util::dprint(F, "[", sent_cnt, "]",
-                 " unpacked message: ", pm.get_string(ss));
-#endif
-    if (!prod->produce(ss.str(), true)) {
-      break;
-    }
-    pm.clear();
-    ss.str("");
-    pm.tag("REproduce");
-    pm.option("option", "optional");
 
     if (check_count(conv_cnt)) {
       break;
     }
   }
+  // only use when processing session data
+  /*
   if (conv->remaining_data()) {
     conv->update_pack_message(read_count | conf->datasource_id, pm, nullptr, 0);
   }
+  */
+
   if (pm.get_entries() > 0) {
     pm.pack(ss);
-#ifdef DEBUG
-    Util::dprint(F, "[", sent_cnt, "]",
-                 " unpacked message: ", pm.get_string(ss));
-#endif
     prod->produce(ss.str(), true);
     pm.clear();
     ss.str("");
@@ -244,7 +231,7 @@ OutputType Controller::get_output_type() const
   return OutputType::File;
 }
 
-bool Controller::set_converter(const uint64_t id)
+bool Controller::set_converter()
 {
   conf->input_type = get_input_type();
   uint32_t l2_type;
@@ -306,9 +293,6 @@ bool Controller::set_converter(const uint64_t id)
     break;
   default:
     return false;
-  }
-  if (conv) {
-    conv->set_id(id);
   }
 
   return true;

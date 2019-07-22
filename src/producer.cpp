@@ -66,12 +66,13 @@ void RdDeliveryReportCb::dr_cb(RdKafka::Message& message)
 #endif
   auto* pacp = reinterpret_cast<produce_ack_cnt*>(message.msg_opaque());
   if (message.err() != 0) {
-    Util::eprint("Message Produce Fail: ", message.errstr());
+    Util::eprint("Message producing failed: ", message.errstr());
   } else {
     pacp->ack_cnt += 1;
-    Util::iprint("Message Produce Success: ", message.len(),
-                 " bytes, Total Produce ", pacp->ack_cnt, "/",
-                 pacp->produce_cnt, "acked");
+    if (pacp->ack_cnt % 100 == 0)
+      Util::iprint("Message produced: ", message.len(),
+                   " bytes, Total produced/acked: ", pacp->ack_cnt, "/",
+                   pacp->produce_cnt);
   }
 
   if (message.key()) {
@@ -325,14 +326,14 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   case RdKafka::ERR_NO_ERROR:
     pac.produce_cnt++;
     Util::dprint(F, "A message queue entry success(", queue_data_cnt,
-                 "converted data, ", message.size(), "bytes, ", pac.ack_cnt,
-                 "/", pac.produce_cnt, "acked)");
+                 " converted data, ", message.size(), " bytes, ", pac.ack_cnt,
+                 "/", pac.produce_cnt, " acked)");
     break;
 
   default:
     Util::eprint("A message queue entry failed(", queue_data_cnt,
-                 "converted data, ", message.size(), "bytes, ", pac.ack_cnt,
-                 "/", pac.produce_cnt, "acked): ", RdKafka::err2str(resp));
+                 " converted data, ", message.size(), " bytes, ", pac.ack_cnt,
+                 "/", pac.produce_cnt, " acked): ", RdKafka::err2str(resp));
     return false;
   }
 
