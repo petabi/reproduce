@@ -25,7 +25,7 @@ void Config::help() const noexcept
   cout << "      Only relevant for network packets.\n";
   cout << "  -e: evaluation mode. output statistical result of transmission\n"
           "      after job is terminated or stopped\n";
-  cout << "  -f: tcpdump filter (when input is NIC)\n";
+  cout << "  -f: tcpdump filter (when input is NIC or PCAP)\n";
   cout << "      (reference : "
           "https://www.tcpdump.org/manpages/pcap-filter.7.html)\n";
   cout << "  -g: follow the growing input file\n";
