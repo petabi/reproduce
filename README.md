@@ -53,7 +53,7 @@ REproduce outputs the converted result in a form specified by the user(Stdout, F
   -E: entropy ratio. The amount of maximum entropy allowed for a
       session (0.0 < entropy ratio <= 1.0). Default is 0.9.
       Only relevant for network packets.
-  -f: packet filter syntax when input is NIC
+  -f: packet filter syntax when input is NIC or PCAP
       (reference : https://www.tcpdump.org/manpages/pcap-filter.7.html)
   -g: follow the growing input file
   -h: help
