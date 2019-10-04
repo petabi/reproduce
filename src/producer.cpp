@@ -34,7 +34,8 @@ static const array<KafkaConf, 5> kafka_conf = {{
     {KafkaConfType::Global, "queue.buffering.max.kbytes", "2097151", "1",
      "2097151", "1048576",
      "Maximum total message size sum allowed on the producer queue"},
-    {KafkaConfType::Topic, "message.timeout.ms", "0", "0", "900000", "300000",
+    {KafkaConfType::Topic, "message.timeout.ms", "5000", "5000", "900000",
+     "300000",
      "limit the time a produced message waits for successful delivery"},
 #if 0
     // it will reduce performance
