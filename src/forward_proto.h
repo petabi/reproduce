@@ -4,11 +4,11 @@
 #include <iostream>
 #include <list>
 #include <map>
-#include <msgpack.hpp>
 #include <string>
 #include <tuple>
 #include <vector>
 
+#include "event.h"
 #include "producer.h"
 
 static constexpr char src_key[] = "src";
@@ -24,16 +24,6 @@ static constexpr size_t session_extra_bytes =
     (sizeof(session_msg_fmt) - 1) + (2 * sizeof(uint32_t)) +
     (2 * sizeof(uint16_t)) + sizeof(uint8_t);
 
-class ForwardMsg {
-public:
-  std::string tag;
-  std::vector<
-      std::tuple<size_t, std::map<std::string, std::vector<unsigned char>>>>
-      entries;
-  std::map<std::string, std::string> option;
-  MSGPACK_DEFINE(tag, entries, option);
-};
-
 class PackMsg {
 public:
   PackMsg();
@@ -43,7 +33,7 @@ public:
   PackMsg& operator=(const PackMsg&&) = delete;
   ~PackMsg();
 
-  void pack(std::stringstream& ss);
+  std::pair<const char*, size_t> pack();
   void tag(const std::string& str);
   void entry(const uint64_t& id, const std::string& str,
              const std::vector<unsigned char>& vec);
@@ -55,13 +45,13 @@ public:
   size_t get_bytes() const;
   size_t get_entries() const;
   size_t get_max_bytes() const { return max_bytes; }
-  std::string get_string(const std::stringstream& ss) const;
   void set_max_bytes(size_t mb) { max_bytes = mb; }
 
 private:
   size_t bytes = 0;
   size_t max_bytes = default_produce_max_bytes;
-  ForwardMsg fm;
+  ForwardMode* fm;
+  SerializationBuffer* buffer;
 };
 
 #endif

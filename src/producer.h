@@ -19,7 +19,7 @@ static constexpr size_t default_produce_max_bytes = 100000;
 
 class Producer {
 public:
-  virtual bool produce(const std::string& message, bool flush = false) = 0;
+  virtual bool produce(const char* message, size_t len, bool flush = false) = 0;
   virtual ~Producer() = 0;
   virtual size_t get_max_bytes() const = 0;
 };
@@ -52,7 +52,7 @@ public:
   KafkaProducer(KafkaProducer&&) = delete;
   KafkaProducer& operator=(KafkaProducer&&) = delete;
   ~KafkaProducer() override;
-  bool produce(const std::string& message,
+  bool produce(const char* message, size_t len,
                bool flush = false) noexcept override;
   size_t get_max_bytes() const noexcept override;
 
@@ -96,7 +96,7 @@ public:
   FileProducer(FileProducer&&) = delete;
   FileProducer& operator=(FileProducer&&) = delete;
   ~FileProducer() override;
-  bool produce(const std::string& message,
+  bool produce(const char* message, size_t len,
                bool flush = false) noexcept override;
   size_t get_max_bytes() const noexcept override;
 
@@ -119,7 +119,7 @@ public:
   NullProducer(NullProducer&&) = delete;
   NullProducer& operator=(NullProducer&&) = delete;
   ~NullProducer() override;
-  bool produce(const std::string& message,
+  bool produce(const char* message, size_t len,
                bool flush = false) noexcept override;
   size_t get_max_bytes() const noexcept override;
 

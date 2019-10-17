@@ -14,6 +14,17 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_subdirectory(src)
 
+include(ExternalProject)
+
+ExternalProject_Add(libevent
+  DOWNLOAD_COMMAND ""
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND cargo build --release
+  BINARY_DIR "${CMAKE_SOURCE_DIR}"
+  INSTALL_COMMAND ""
+  BUILD_ALWAYS ON
+  LOG_BUILD ON)
+
 find_package(GTest)
 if(GTEST_FOUND)
   enable_testing()

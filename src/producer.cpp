@@ -359,11 +359,12 @@ bool KafkaProducer::period_queue_flush() noexcept
   return false;
 }
 
-bool KafkaProducer::produce(const string& message, bool flush) noexcept
+bool KafkaProducer::produce(const char* message, size_t len,
+                            bool flush) noexcept
 {
 
-  queue_data += message;
-  if (!message.empty() && !flush) {
+  queue_data.append(message, len);
+  if (len > 0 && !flush) {
     queue_data_cnt++;
   }
 
@@ -432,9 +433,10 @@ FileProducer::~FileProducer()
   }
 }
 
-bool FileProducer::produce(const string& message, bool flush) noexcept
+bool FileProducer::produce(const char* message, size_t len, bool flush) noexcept
 {
-  file << message << "\n";
+  file.write(message, len);
+  file << '\n';
   file.flush();
 
   // FIXME: check error?
@@ -466,7 +468,7 @@ NullProducer::NullProducer(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
 NullProducer::~NullProducer() = default;
 
-bool NullProducer::produce(const string& message, bool flush) noexcept
+bool NullProducer::produce(const char* message, size_t len, bool flush) noexcept
 {
   return true;
 }

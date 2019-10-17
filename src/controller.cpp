@@ -117,8 +117,8 @@ void Controller::run_single()
     GetData::Status gstat = invoke(get_next_data, this, imessage, imessage_len);
     if (gstat == GetData::Status::Success) {
       if ((pm.get_bytes() + imessage_len) >= pm.get_max_bytes()) {
-        pm.pack(ss);
-        if (!prod->produce(ss.str(), true)) {
+        auto packed = pm.pack();
+        if (!prod->produce(packed.first, packed.second, true)) {
           break;
         }
         pm.clear();
@@ -162,8 +162,8 @@ void Controller::run_single()
   */
 
   if (pm.get_entries() > 0) {
-    pm.pack(ss);
-    prod->produce(ss.str(), true);
+    auto packed = pm.pack();
+    prod->produce(packed.first, packed.second, true);
     pm.clear();
     ss.str("");
   }
