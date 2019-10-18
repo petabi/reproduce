@@ -17,8 +17,6 @@ merge:
   - if [ `find src tests \( -name \*.c -o -name \*.cpp -o -name \*.h \) | xargs clang-format -output-replacements-xml | grep -c "<replacement "` -ne "0" ]; then echo "Run clang-format." && false; fi
   - mkdir build && cd build
   - cmake -DCMAKE_EXPORT_COMPILE_COMMANDS=ON ..
-  - make VERBOSE=1
-  - make test
   - clang-tidy -p=. ../src/*.cpp
 
 release:
