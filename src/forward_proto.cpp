@@ -7,11 +7,7 @@
 #include "event.h"
 #include "forward_proto.h"
 
-static constexpr char fix_mark[] = R"(["",[],{"":""}])";
-
-PackMsg::PackMsg()
-    : bytes{sizeof(fix_mark)}, fm(forward_mode_new()),
-      buffer(serialization_buffer_new())
+PackMsg::PackMsg() : fm(forward_mode_new()), buffer(serialization_buffer_new())
 {
 }
 
@@ -32,19 +28,16 @@ std::pair<const char*, size_t> PackMsg::pack()
 void PackMsg::tag(const std::string& str)
 {
   if (!forward_mode_set_tag(fm, str.data())) {
-    throw "invalid UTF-8 tag";
+    throw "invalid tag";
   }
-  bytes += str.length();
 }
 
 void PackMsg::entry(const uint64_t& id, const std::string& str,
                     const std::vector<unsigned char>& vec)
 {
   if (!forward_mode_append_raw(fm, id, str.data(), vec.data(), vec.size())) {
-    throw "invalid UTF-8 string";
+    throw "invalid raw entry";
   }
-  bytes += (sizeof(id) + str.length() + vec.size() +
-            std::string(R"([,{"":""}],)").length());
 }
 
 void PackMsg::entry(const uint64_t& id, const std::string& str,
@@ -53,24 +46,17 @@ void PackMsg::entry(const uint64_t& id, const std::string& str,
 {
   if (!forward_mode_append_packet(fm, id, str.data(), vec.data(), vec.size(),
                                   src, dst, sport, dport, proto)) {
-    throw "invalid UTF-8 string";
+    throw "invalid entry";
   }
-  bytes += (sizeof(id) + str.length() + vec.size() + session_extra_bytes);
 }
 
 void PackMsg::option(const std::string& option, const std::string& value)
 {
   if (!forward_mode_add_option(fm, option.data(), value.data())) {
-    throw "invalid UTF-8 string";
+    throw "invalid option";
   }
-  bytes += (option.length() + value.length());
 }
 
-void PackMsg::clear()
-{
-  forward_mode_clear(fm);
-  bytes = sizeof(fix_mark);
-}
-
-size_t PackMsg::get_bytes() const { return bytes; }
+void PackMsg::clear() { forward_mode_clear(fm); }
+size_t PackMsg::get_bytes() const { return forward_mode_serialized_len(fm); }
 size_t PackMsg::get_entries() const { return forward_mode_size(fm); };

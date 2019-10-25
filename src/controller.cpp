@@ -19,6 +19,8 @@ using namespace std;
 
 static constexpr size_t max_packet_length = 65535;
 static constexpr size_t message_size = 102400;
+static constexpr size_t kafka_buffer_safety_gap = 1024;
+
 atomic_bool stop = false;
 pcap_t* Controller::pcd = nullptr;
 
@@ -116,7 +118,8 @@ void Controller::run_single()
     imessage_len = message_size;
     GetData::Status gstat = invoke(get_next_data, this, imessage, imessage_len);
     if (gstat == GetData::Status::Success) {
-      if ((pm.get_bytes() + imessage_len) >= pm.get_max_bytes()) {
+      if ((pm.get_bytes() + imessage_len) >=
+          pm.get_max_bytes() - kafka_buffer_safety_gap) {
         auto packed = pm.pack();
         if (!prod->produce(packed.first, packed.second, true)) {
           break;

@@ -48,7 +48,6 @@ public:
   void set_max_bytes(size_t mb) { max_bytes = mb; }
 
 private:
-  size_t bytes = 0;
   size_t max_bytes = default_produce_max_bytes;
   ForwardMode* fm;
   SerializationBuffer* buffer;

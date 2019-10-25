@@ -18,6 +18,7 @@ void forward_mode_clear(ForwardMode* ptr);
 void forward_mode_free(ForwardMode* ptr);
 ForwardMode* forward_mode_new();
 bool forward_mode_serialize(const ForwardMode* ptr, SerializationBuffer* buf);
+uintptr_t forward_mode_serialized_len(const ForwardMode* ptr);
 bool forward_mode_set_tag(ForwardMode* ptr, const char* ctag);
 uintptr_t forward_mode_size(const ForwardMode* ptr);
 void serialization_buffer_free(SerializationBuffer* ptr);
