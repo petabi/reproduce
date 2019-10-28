@@ -13,7 +13,7 @@
 #include <pcap/pcap.h>
 
 #include "controller.h"
-#include "forward_proto.h"
+#include "event.h"
 
 using namespace std;
 
@@ -85,7 +85,6 @@ void Controller::run_single()
   size_t conv_cnt = 0;
   uint32_t offset = 0;
   Report report(conf);
-  std::stringstream ss;
 
   if (signal(SIGINT, signal_handler) == SIG_ERR ||
       signal(SIGTERM, signal_handler) == SIG_ERR ||
@@ -109,29 +108,28 @@ void Controller::run_single()
   }
 
   report.start(read_count + 1);
-  PackMsg pm;
-  pm.set_max_bytes(prod->get_max_bytes());
-  pm.tag("REproduce");
-  pm.option("option", "optional");
+  auto msg = forward_mode_new();
+  forward_mode_set_tag(msg, "REproduce");
+  auto buf = serialization_buffer_new();
 
   while (!stop) {
     imessage_len = message_size;
     GetData::Status gstat = invoke(get_next_data, this, imessage, imessage_len);
     if (gstat == GetData::Status::Success) {
-      if ((pm.get_bytes() + imessage_len) >=
-          pm.get_max_bytes() - kafka_buffer_safety_gap) {
-        auto packed = pm.pack();
-        if (!prod->produce(packed.first, packed.second, true)) {
+      if ((forward_mode_serialized_len(msg) + imessage_len) >=
+          prod->get_max_bytes() - kafka_buffer_safety_gap) {
+        forward_mode_serialize(msg, buf);
+        if (!prod->produce(
+                reinterpret_cast<const char*>(serialization_buffer_data(buf)),
+                serialization_buffer_len(buf), true)) {
           break;
         }
-        pm.clear();
-        ss.str("");
-        pm.tag("REproduce");
-        pm.option("option", "optional");
+        forward_mode_clear(msg);
+        forward_mode_set_tag(msg, "REproduce");
       }
       read_count++;
       Conv::Status cstat = conv->convert(read_count | conf->datasource_id,
-                                         imessage, imessage_len, pm);
+                                         imessage, imessage_len, msg);
       if (cstat != Conv::Status::Success) {
         // TODO: handling exceptions due to convert failures
         report.skip(imessage_len);
@@ -160,16 +158,17 @@ void Controller::run_single()
   // only use when processing session data
   /*
   if (conv->remaining_data()) {
-    conv->update_pack_message(read_count | conf->datasource_id, pm, nullptr, 0);
+    conv->update_pack_message(read_count | conf->datasource_id, pm.fm, nullptr,
+  0);
   }
   */
 
-  if (pm.get_entries() > 0) {
-    auto packed = pm.pack();
-    prod->produce(packed.first, packed.second, true);
-    pm.clear();
-    ss.str("");
+  if (forward_mode_size(msg) > 0) {
+    forward_mode_serialize(msg, buf);
+    prod->produce(reinterpret_cast<const char*>(serialization_buffer_data(buf)),
+                  serialization_buffer_len(buf), true);
   }
+  forward_mode_free(msg);
   write_offset(conf->input + "_" + conf->offset_prefix, offset + conv_cnt);
   report.end(read_count, launch_time);
 }

@@ -8,7 +8,18 @@
 #include <vector>
 
 #include "entropy_calculator.h"
-#include "forward_proto.h"
+
+struct ForwardMode;
+
+static constexpr char src_key[] = "src";
+static constexpr char dst_key[] = "dst";
+static constexpr char sport_key[] = "sport";
+static constexpr char dport_key[] = "dport";
+static constexpr char proto_key[] = "proto";
+static constexpr size_t session_extra_bytes =
+    (sizeof(src_key)) + (sizeof(dst_key)) + (sizeof(dport_key)) +
+    (sizeof(sport_key)) + (sizeof(proto_key)) + 2 * 5 + (2 * sizeof(uint32_t)) +
+    (2 * sizeof(uint16_t)) + sizeof(uint8_t);
 
 // Potential varying status for sampling...most for future use
 enum class Sampling_status { no_sampling = -1, sample };
@@ -44,7 +55,8 @@ class Sessions {
 public:
   bool empty() const { return session_map.empty(); }
   size_t get_number_bytes_in_sessions() const { return message_data; }
-  size_t make_next_message(PackMsg& msg, uint64_t event_id);
+  size_t make_next_message(ForwardMode* msg, uint64_t event_id,
+                           size_t max_bytes);
   bool update_session(uint32_t src, uint32_t dst, uint8_t proto, uint16_t sport,
                       uint16_t dport, const char* data, size_t len,
                       uint64_t event_id);

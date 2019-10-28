@@ -4,12 +4,14 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <sstream>
 #include <string>
 
-#include "forward_proto.h"
 #include "matcher.h"
 #include "sessions.h"
+
+struct ForwardMode;
 
 namespace Conv {
 enum class Status { Fail = -2, Pass = -1, Success = 0 };
@@ -23,14 +25,15 @@ class Converter {
 public:
   virtual ~Converter() = default;
   virtual Conv::Status convert(uint64_t event_id, char* in, size_t in_len,
-                               PackMsg& pm) = 0;
+                               ForwardMode* pm) = 0;
 
   Matcher* get_matcher() { return matc.get(); }
   virtual bool remaining_data() const { return false; }
   virtual void set_allowed_entropy_ratio(float e) {}
   void set_matcher(const std::string& filename, const Mode& mode);
-  virtual void update_pack_message(uint64_t event_id, PackMsg& pm,
-                                   const char* in = nullptr, size_t in_len = 0)
+  virtual void update_pack_message(uint64_t event_id, ForwardMode* pm,
+                                   size_t max_bytes, const char* in = nullptr,
+                                   size_t in_len = 0)
   {
     return;
   }
@@ -69,7 +72,7 @@ public:
   PacketConverter& operator=(const PacketConverter&&) = delete;
   ~PacketConverter() override = default;
   Conv::Status convert(uint64_t event_id, char* in, size_t in_len,
-                       PackMsg& pm) override;
+                       ForwardMode* msg) override;
   bool remaining_data() const override
   {
     return sessions.get_number_bytes_in_sessions() > 0;
@@ -78,11 +81,11 @@ public:
   {
     sessions.set_allowed_entropy_ratio(e);
   }
-  void update_pack_message(uint64_t event_id, PackMsg& pm,
-                           const char* in = nullptr,
+  void update_pack_message(uint64_t event_id, ForwardMode* msg,
+                           size_t max_bytes, const char* in = nullptr,
                            size_t in_len = 0) override;
 
-  Conv::Status payload_only_message(uint64_t event_id, PackMsg& pm,
+  Conv::Status payload_only_message(uint64_t event_id, ForwardMode* pm,
                                     const char* in, size_t in_len);
 
 private:
@@ -133,7 +136,7 @@ public:
   LogConverter& operator=(const LogConverter&&) = delete;
   ~LogConverter() override = default;
   Conv::Status convert(uint64_t event_id, char* in, size_t in_len,
-                       PackMsg& pm) override;
+                       ForwardMode* msg) override;
 };
 
 #endif

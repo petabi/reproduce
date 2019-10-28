@@ -18,6 +18,7 @@
 #include "udp.h"
 
 #include "converter.h"
+#include "event.h"
 #include "sessions.h"
 #include "util.h"
 
@@ -71,7 +72,7 @@ void PacketConverter::save_session(uint64_t event_id, uint32_t src,
 }
 
 Conv::Status PacketConverter::convert(uint64_t event_id, char* in,
-                                      size_t in_len, PackMsg& pm)
+                                      size_t in_len, ForwardMode* msg)
 {
   if (in == nullptr) {
     return Conv::Status::Fail;
@@ -97,12 +98,16 @@ Conv::Status PacketConverter::convert(uint64_t event_id, char* in,
   }
   if (l3_type == ETHERTYPE_IP) {
     // update_pack_message(event_id, pm, in, in_len);
-    payload_only_message(event_id, pm, in, in_len);
+    payload_only_message(event_id, msg, in, in_len);
   } else {
     /* only the packets with ip header will be send to kafka.
     std::vector<unsigned char> binary_data(in + sizeof(pcap_sf_pkthdr),
                                            in + in_len);
-    pm.entry(event_id, "message", binary_data);
+    if (!forward_mode_append_raw(msg, event_id, "message", binary_data.data(),
+                                 binary_data.size())) {
+      // invalid raw entry
+      return Conv::Status::Fail;
+    }
      */
     return Conv::Status::Fail;
   }
@@ -315,7 +320,8 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset, size_t length)
 }
 
 Conv::Status PacketConverter::payload_only_message(uint64_t event_id,
-                                                   PackMsg& pm, const char* in,
+                                                   ForwardMode* msg,
+                                                   const char* in,
                                                    size_t in_len)
 {
   if (in == nullptr || in_len == 0) {
@@ -326,16 +332,21 @@ Conv::Status PacketConverter::payload_only_message(uint64_t event_id,
       sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl + vlan;
 
   std::vector<unsigned char> binary_data(in + data_offset, in + in_len);
-  pm.entry(event_id, "message", binary_data);
+  if (!forward_mode_append_raw(msg, event_id, "message", binary_data.data(),
+                               binary_data.size())) {
+    // invalid raw entry
+    return Conv::Status::Fail;
+  }
 
   return Conv::Status::Success;
 }
 
-void PacketConverter::update_pack_message(uint64_t event_id, PackMsg& pm,
-                                          const char* in, size_t in_len)
+void PacketConverter::update_pack_message(uint64_t event_id, ForwardMode* msg,
+                                          size_t max_bytes, const char* in,
+                                          size_t in_len)
 {
   if (in == nullptr && in_len == 0) {
-    sessions.make_next_message(pm, event_id);
+    sessions.make_next_message(msg, event_id, max_bytes);
     return;
   }
   if (in == nullptr || in_len == 0) {
@@ -350,9 +361,10 @@ void PacketConverter::update_pack_message(uint64_t event_id, PackMsg& pm,
 
   size_t estimated_data =
       (sessions.size() * (session_extra_bytes + message_n_label_bytes)) +
-      sessions.get_number_bytes_in_sessions() + pm.get_bytes();
-  if (estimated_data >= pm.get_max_bytes()) {
-    sessions.make_next_message(pm, event_id);
+      sessions.get_number_bytes_in_sessions() +
+      forward_mode_serialized_len(msg);
+  if (estimated_data >= max_bytes) {
+    sessions.make_next_message(msg, event_id, max_bytes);
   }
 }
 
@@ -361,7 +373,7 @@ void PacketConverter::update_pack_message(uint64_t event_id, PackMsg& pm,
  */
 
 Conv::Status LogConverter::convert(uint64_t event_id, char* in, size_t in_len,
-                                   PackMsg& pm)
+                                   ForwardMode* msg)
 {
   if (in == nullptr) {
     return Conv::Status::Fail;
@@ -374,7 +386,11 @@ Conv::Status LogConverter::convert(uint64_t event_id, char* in, size_t in_len,
   }
 
   std::vector<unsigned char> binary_data(in, in + in_len);
-  pm.entry(event_id, "message", binary_data);
+  if (!forward_mode_append_raw(msg, event_id, "message", binary_data.data(),
+                               binary_data.size())) {
+    // invalid raw entry
+    return Conv::Status::Fail;
+  }
 
   return Conv::Status::Success;
 }

@@ -8,13 +8,14 @@
 #include <vector>
 
 #include "entropy_calculator.h"
-#include "forward_proto.h"
+#include "event.h"
 #include "sessions.h"
 #include "util.h"
 
 using namespace std;
 
-size_t Sessions::make_next_message(PackMsg& msg, uint64_t event_id)
+size_t Sessions::make_next_message(ForwardMode* msg, uint64_t event_id,
+                                   size_t max_bytes)
 {
   std::vector<uint64_t> removal;
   uint64_t eid = event_id;
@@ -31,14 +32,15 @@ size_t Sessions::make_next_message(PackMsg& msg, uint64_t event_id)
              reinterpret_cast<const unsigned char*>(s.second.data.data()),
              s.second.data.size()) /
          e_calc.max_entropy_for_size(s.second.data.size())) < entropy_ratio) {
-      if ((msg.get_bytes() + s.second.data.size() + session_extra_bytes +
-           message_n_label_bytes) > msg.get_max_bytes()) {
+      if ((forward_mode_serialized_len(msg) + s.second.data.size() +
+           session_extra_bytes + message_n_label_bytes) > max_bytes) {
         continue;
       }
 
-      msg.entry(s.second.session_event_id, message_label, s.second.data,
-                s.second.src, s.second.dst, s.second.sport, s.second.dport,
-                s.second.proto);
+      forward_mode_append_packet(msg, s.second.session_event_id, message_label,
+                                 s.second.data.data(), s.second.data.size(),
+                                 s.second.src, s.second.dst, s.second.sport,
+                                 s.second.dport, s.second.proto);
       s.second.bytes_sampled += s.second.data.size();
       s.second.age = 0;
       eid++;
@@ -47,7 +49,7 @@ size_t Sessions::make_next_message(PackMsg& msg, uint64_t event_id)
       }
       message_data -= s.second.data.size();
       s.second.data.clear();
-      if (msg.get_bytes() >= msg.get_max_bytes()) {
+      if (forward_mode_serialized_len(msg) >= max_bytes) {
         break;
       }
     } else {
