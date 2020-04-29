@@ -11,9 +11,9 @@ public:
   Report() = delete;
   Report(std::shared_ptr<Config>);
   Report(const Report&) = delete;
-  Report& operator=(const Report&) = delete;
+  auto operator=(const Report&) -> Report& = delete;
   Report(Report&&) = delete;
-  Report& operator=(Report&&) = delete;
+  auto operator=(Report &&) -> Report& = delete;
   ~Report();
 
   void start(const uint64_t id) noexcept;
@@ -33,7 +33,7 @@ private:
   size_t skip_bytes{0};
   size_t skip_cnt{0};
   size_t process_cnt{0};
-  bool open_report_file(time_t launch_time);
+  auto open_report_file(time_t launch_time) -> bool;
   std::chrono::time_point<std::chrono::steady_clock> time_start{
       (std::chrono::milliseconds::zero())};
   std::chrono::time_point<std::chrono::steady_clock> time_now{

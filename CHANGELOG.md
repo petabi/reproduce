@@ -6,6 +6,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+
+## [0.9.7] 2020-04-08
+
+### Added
+
+- Add '-j' option: user can set the initial event_id number. Without this option, event_id will be begin at 1 or skip_count+1.
+- Add '-v' option: REproduce watches the input directory and sends it when new files are found.
+- Instead of the name 'report.txt', use the Kafka topic name as the file name.
+
 ### Fixed
 
 - The default value of `message.timeout.ms` is set to 5,000 ms, the default

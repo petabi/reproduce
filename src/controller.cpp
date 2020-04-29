@@ -56,26 +56,44 @@ void Controller::run_split()
 {
   string filename;
   string dir_path = conf->input;
-  std::vector<string> files = traverse_directory(dir_path, conf->file_prefix);
+  std::vector<string> files, read_files;
 
-  if (!files.empty()) {
-    sort(files.begin(), files.end());
-  } else {
-    throw runtime_error("no file exists");
-  }
+  do {
+    files = traverse_directory(dir_path, conf->file_prefix, read_files);
 
-  for (const auto& file : files) {
-    conf->input = file;
-
-    if (!set_converter()) {
-      throw runtime_error("failed to set the converter");
+    if (files.empty()) {
+      if (conf->mode_polling_dir) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+        continue;
+      } else {
+        throw runtime_error("no input files");
+      }
     }
 
-    this->run();
+    sort(files.begin(), files.end());
 
-    close_pcap();
-    close_log();
-  }
+    for (const auto& file : files) {
+      conf->input = file;
+
+      if (!set_converter()) {
+        throw runtime_error("failed to set the converter");
+      }
+
+      this->run();
+
+      close_pcap();
+      close_log();
+    }
+
+    if (conf->mode_polling_dir) {
+      for (auto& f : files) {
+        read_files.push_back(f);
+      }
+      files.clear();
+    } else {
+      break;
+    }
+  } while (true);
 }
 
 void Controller::run_single()
@@ -103,11 +121,20 @@ void Controller::run_single()
     Util::eprint("failed to skip: ", offset);
   }
 
-  if (offset > 0) {
-    read_count = static_cast<uint64_t>(offset);
+  // set initial event_id: begin at 1 or skip_count + 1 or user defined event_id
+  if (event_id == 1) {
+    if (offset) {
+      event_id = static_cast<uint64_t>(offset) + 1;
+    }
+
+    // if user set the initial event_id, the skip count will not be used for
+    // numbering the event_id
+    if (conf->initial_event_id) {
+      event_id = conf->initial_event_id;
+    }
   }
 
-  report.start(read_count + 1);
+  report.start(event_id);
   auto msg = forward_mode_new();
   forward_mode_set_tag(msg, "REproduce");
   auto buf = serialization_buffer_new();
@@ -127,9 +154,11 @@ void Controller::run_single()
         forward_mode_clear(msg);
         forward_mode_set_tag(msg, "REproduce");
       }
-      read_count++;
-      Conv::Status cstat = conv->convert(read_count | conf->datasource_id,
+
+      Conv::Status cstat = conv->convert(event_id | conf->datasource_id,
                                          imessage, imessage_len, msg);
+      event_id++;
+
       if (cstat != Conv::Status::Success) {
         // TODO: handling exceptions due to convert failures
         report.skip(imessage_len);
@@ -138,7 +167,8 @@ void Controller::run_single()
       Util::eprint("failed to convert input data");
       break;
     } else if (gstat == GetData::Status::No_more) {
-      if (conf->input_type != InputType::Nic && conf->mode_grow) {
+      if (conf->input_type != InputType::Nic && conf->mode_grow &&
+          !conf->mode_polling_dir) {
         // TODO: optimize time interval
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         continue;
@@ -158,7 +188,7 @@ void Controller::run_single()
   // only use when processing session data
   /*
   if (conv->remaining_data()) {
-    conv->update_pack_message(read_count | conf->datasource_id, pm.fm, nullptr,
+    conv->update_pack_message(event_id | conf->datasource_id, pm.fm, nullptr,
   0);
   }
   */
@@ -170,10 +200,10 @@ void Controller::run_single()
   }
   forward_mode_free(msg);
   write_offset(conf->input + "_" + conf->offset_prefix, offset + conv_cnt);
-  report.end(read_count, launch_time);
+  report.end(event_id - 1, launch_time);
 }
 
-InputType Controller::get_input_type() const
+auto Controller::get_input_type() const -> InputType
 {
   const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
   const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
@@ -220,7 +250,7 @@ InputType Controller::get_input_type() const
   return InputType::Log;
 }
 
-OutputType Controller::get_output_type() const
+auto Controller::get_output_type() const -> OutputType
 {
   if (conf->output.empty()) {
     return OutputType::Kafka;
@@ -233,7 +263,7 @@ OutputType Controller::get_output_type() const
   return OutputType::File;
 }
 
-bool Controller::set_converter()
+auto Controller::set_converter() -> bool
 {
   conf->input_type = get_input_type();
   uint32_t l2_type;
@@ -300,7 +330,7 @@ bool Controller::set_converter()
   return true;
 }
 
-bool Controller::set_producer()
+auto Controller::set_producer() -> bool
 {
   conf->output_type = get_output_type();
   switch (conf->output_type) {
@@ -323,7 +353,7 @@ bool Controller::set_producer()
   return true;
 }
 
-uint32_t Controller::open_nic(const std::string& devname)
+auto Controller::open_nic(const std::string& devname) -> uint32_t
 {
   bpf_u_int32 net;
   bpf_u_int32 mask;
@@ -368,7 +398,7 @@ void Controller::close_nic()
   }
 }
 
-uint32_t Controller::open_pcap(const string& filename)
+auto Controller::open_pcap(const string& filename) -> uint32_t
 {
   struct bpf_program fp;
   char errbuf[PCAP_ERRBUF_SIZE];
@@ -417,7 +447,7 @@ void Controller::close_log()
   }
 }
 
-uint32_t Controller::read_offset(const std::string& filename) const
+auto Controller::read_offset(const std::string& filename) const -> uint32_t
 {
   if (conf->offset_prefix.empty() || conf->input_type == InputType::Nic) {
     return 0;
@@ -455,7 +485,8 @@ void Controller::write_offset(const std::string& filename,
   }
 }
 
-GetData::Status Controller::get_next_nic(char* imessage, size_t& imessage_len)
+auto Controller::get_next_nic(char* imessage, size_t& imessage_len)
+    -> GetData::Status
 {
   pcap_pkthdr* pkthdr;
   pcap_sf_pkthdr sfhdr;
@@ -488,7 +519,8 @@ GetData::Status Controller::get_next_nic(char* imessage, size_t& imessage_len)
   return GetData::Status::Success;
 }
 
-GetData::Status Controller::get_next_pcap(char* imessage, size_t& imessage_len)
+auto Controller::get_next_pcap(char* imessage, size_t& imessage_len)
+    -> GetData::Status
 {
   pcap_pkthdr* pkthdr;
   pcap_sf_pkthdr sfhdr;
@@ -519,7 +551,8 @@ GetData::Status Controller::get_next_pcap(char* imessage, size_t& imessage_len)
   return GetData::Status::Success;
 }
 
-GetData::Status Controller::get_next_log(char* imessage, size_t& imessage_len)
+auto Controller::get_next_log(char* imessage, size_t& imessage_len)
+    -> GetData::Status
 {
   static size_t count = 0;
   static bool trunc = false;
@@ -552,8 +585,10 @@ GetData::Status Controller::get_next_log(char* imessage, size_t& imessage_len)
   return GetData::Status::Success;
 }
 
-std::vector<std::string>
-Controller::traverse_directory(std::string& _path, const std::string& _prefix)
+auto Controller::traverse_directory(std::string& _path,
+                                    const std::string& _prefix,
+                                    std::vector<std::string>& read_files)
+    -> std::vector<std::string>
 {
   std::vector<std::string> _files;
 
@@ -566,14 +601,17 @@ Controller::traverse_directory(std::string& _path, const std::string& _prefix)
     }
 
     if (std::filesystem::is_regular_file(entry->path())) {
-      _files.push_back(entry->path());
+      auto it = find(read_files.begin(), read_files.end(), entry->path());
+      if (it == read_files.end()) {
+        _files.push_back(entry->path());
+      }
     }
   }
 
   return _files;
 }
 
-bool Controller::skip_pcap(const size_t count_skip)
+auto Controller::skip_pcap(const size_t count_skip) -> bool
 {
   if (count_skip == 0) {
     return true;
@@ -595,7 +633,7 @@ bool Controller::skip_pcap(const size_t count_skip)
   return true;
 }
 
-bool Controller::skip_log(const size_t count_skip)
+auto Controller::skip_log(const size_t count_skip) -> bool
 {
   if (count_skip == 0) {
     return true;
@@ -624,9 +662,9 @@ bool Controller::skip_log(const size_t count_skip)
   return true;
 }
 
-bool Controller::skip_null(const size_t count_skip) { return true; }
+auto Controller::skip_null(const size_t count_skip) -> bool { return true; }
 
-bool Controller::check_count(const size_t sent_cnt) const noexcept
+auto Controller::check_count(const size_t sent_cnt) const noexcept -> bool
 {
   if (conf->count_send == 0 || sent_cnt < conf->count_send) {
     return false;

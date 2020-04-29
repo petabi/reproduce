@@ -19,9 +19,10 @@ static constexpr size_t default_produce_max_bytes = 100000;
 
 class Producer {
 public:
-  virtual bool produce(const char* message, size_t len, bool flush = false) = 0;
+  virtual auto produce(const char* message, size_t len, bool flush = false)
+      -> bool = 0;
   virtual ~Producer() = 0;
-  virtual size_t get_max_bytes() const = 0;
+  [[nodiscard]] virtual auto get_max_bytes() const -> size_t = 0;
 };
 
 /**
@@ -48,13 +49,13 @@ public:
   KafkaProducer() = delete;
   KafkaProducer(std::shared_ptr<Config>);
   KafkaProducer(const KafkaProducer&) = delete;
-  KafkaProducer& operator=(const KafkaProducer&) = delete;
+  auto operator=(const KafkaProducer&) -> KafkaProducer& = delete;
   KafkaProducer(KafkaProducer&&) = delete;
-  KafkaProducer& operator=(KafkaProducer&&) = delete;
+  auto operator=(KafkaProducer &&) -> KafkaProducer& = delete;
   ~KafkaProducer() override;
-  bool produce(const char* message, size_t len,
-               bool flush = false) noexcept override;
-  size_t get_max_bytes() const noexcept override;
+  auto produce(const char* message, size_t len, bool flush = false) noexcept
+      -> bool override;
+  [[nodiscard]] auto get_max_bytes() const noexcept -> size_t override;
 
 private:
   produce_ack_cnt pac;
@@ -74,13 +75,13 @@ private:
   std::chrono::time_point<std::chrono::steady_clock> current_time{
       (std::chrono::milliseconds::zero())};
   std::chrono::duration<double> time_diff{0.0};
-  bool produce_core(const std::string& message) noexcept;
+  auto produce_core(const std::string& message) noexcept -> bool;
   void wait_queue(const int count) noexcept;
   void set_kafka_conf();
   void set_kafka_conf_file(const std::string& conf_file);
   void set_kafka_threshold();
   void show_kafka_conf() const;
-  bool period_queue_flush() noexcept;
+  auto period_queue_flush() noexcept -> bool;
 };
 
 /**
@@ -92,18 +93,18 @@ public:
   FileProducer() = delete;
   FileProducer(std::shared_ptr<Config>);
   FileProducer(const FileProducer&) = delete;
-  FileProducer& operator=(const FileProducer&) = delete;
+  auto operator=(const FileProducer&) -> FileProducer& = delete;
   FileProducer(FileProducer&&) = delete;
-  FileProducer& operator=(FileProducer&&) = delete;
+  auto operator=(FileProducer &&) -> FileProducer& = delete;
   ~FileProducer() override;
-  bool produce(const char* message, size_t len,
-               bool flush = false) noexcept override;
-  size_t get_max_bytes() const noexcept override;
+  auto produce(const char* message, size_t len, bool flush = false) noexcept
+      -> bool override;
+  auto get_max_bytes() const noexcept -> size_t override;
 
 private:
   std::shared_ptr<Config> conf;
   std::ofstream file;
-  bool open() noexcept;
+  auto open() noexcept -> bool;
 };
 
 /**
@@ -115,13 +116,13 @@ public:
   NullProducer() = delete;
   NullProducer(std::shared_ptr<Config>);
   NullProducer(const NullProducer&) = delete;
-  NullProducer& operator=(const NullProducer&) = delete;
+  auto operator=(const NullProducer&) -> NullProducer& = delete;
   NullProducer(NullProducer&&) = delete;
-  NullProducer& operator=(NullProducer&&) = delete;
+  auto operator=(NullProducer &&) -> NullProducer& = delete;
   ~NullProducer() override;
-  bool produce(const char* message, size_t len,
-               bool flush = false) noexcept override;
-  size_t get_max_bytes() const noexcept override;
+  auto produce(const char* message, size_t len, bool flush = false) noexcept
+      -> bool override;
+  [[nodiscard]] auto get_max_bytes() const noexcept -> size_t override;
 
 private:
   std::shared_ptr<Config> conf;

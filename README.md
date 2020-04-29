@@ -60,6 +60,7 @@ REproduce outputs the converted result in a form specified by the user(Stdout, F
   -i: input [PCAPFILE/LOGFILE/DIR/NIC]
       If no 'i' option is given, input is internal sample data
       If DIR is given, the g option is not supported.
+  -j: set initial event_id number.
   -k: kafka config file (Ex: kafka.conf)
       it overrides default kafka config to user kafka config
   -m: match [Pattern FILE]
@@ -76,6 +77,7 @@ REproduce outputs the converted result in a form specified by the user(Stdout, F
   -t: kafka topic (default: pcap)
       If the broker does not have a corresponding topic, the broker fails
       unless there is a setting that automatically creates the topic.
+  -v: REproduce watches the input directory and sends it when new files are found.
 ```
 
 ### Kafka Config
@@ -122,13 +124,13 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
 
 ### Report Example
 
-REproduce creates or opens ```/report/report.txt-YYYYMMDDHHMMSS``` first.
-If it failed, it will try to open ```./report.txt-YYYYMMDDHHMMSS```.
+REproduce creates or opens ```/report/<Kafka topic name>``` first.
+If it failed, it will try to open ```./<Kafka topic name>```.
 
 
 ```
 root@bada-unbuntu:~/REproduce# ./REproduce -i test.pcap -e -c 10000000
-root@bada-unbuntu:~/REproduce# tail -f /report/report-20190712143111.txt
+root@bada-unbuntu:~/REproduce# tail -f /report/<Kafka topic name>
 --------------------------------------------------
 Time:                       Mon Jul  1 14:34:23 2019
 Input(PCAP):                test.pcap(976.56M)

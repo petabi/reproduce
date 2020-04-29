@@ -60,7 +60,7 @@ void Report::skip(const size_t bytes) noexcept
   skip_cnt++;
 }
 
-template <typename T> inline std::string PRINT_PRETTY_BYTES(T bytes)
+template <typename T> inline auto PRINT_PRETTY_BYTES(T bytes) -> std::string
 {
   double n = static_cast<double>(bytes) / mbytes;
   if (n < 1) {
@@ -91,19 +91,17 @@ inline std::string PRINT_PRETTY_BYTES(size_t bytes)
 }
 #endif
 
-bool Report::open_report_file(time_t launch_time)
+auto Report::open_report_file(time_t launch_time) -> bool
 {
-  char buf[80];
+  std::string filename;
 
   if (std::filesystem::is_directory("/report")) {
-    strftime(buf, sizeof(buf), "/report/report.txt-%Y%m%d%H%M%S",
-             std::localtime(&launch_time));
+    filename = std::string("/report/") + conf->kafka_topic;
   } else {
-    strftime(buf, sizeof(buf), "report.txt-%Y%m%d%H%M%S",
-             std::localtime(&launch_time));
+    filename = conf->kafka_topic;
   }
 
-  report_file.open(buf, ios::out | ios::app);
+  report_file.open(filename, ios::out | ios::app);
 
   return report_file.is_open();
 }

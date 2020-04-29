@@ -15,7 +15,7 @@ Matcher::~Matcher()
   hs_free_scratch(scratch);
 }
 
-bool Matcher::match(const char* content, size_t content_length)
+auto Matcher::match(const char* content, size_t content_length) -> bool
 {
   if (content_length == 0) {
     return false;
@@ -41,7 +41,7 @@ bool Matcher::match(const char* content, size_t content_length)
 #endif
 }
 
-bool Matcher::reload(const std::string& filename)
+auto Matcher::reload(const std::string& filename) -> bool
 {
   hs_free_database(hs_db);
   hs_free_scratch(scratch);
@@ -56,8 +56,9 @@ bool Matcher::reload(const std::string& filename)
   return true;
 }
 
-int Matcher::on_match(unsigned int id, unsigned long long from,
-                      unsigned long long to, unsigned int flags, void* ctx)
+auto Matcher::on_match(unsigned int id, unsigned long long from,
+                       unsigned long long to, unsigned int flags, void* ctx)
+    -> int
 {
   // Our context points to a size_t storing the match count
   // size_t *matches = (size_t *)ctx;
@@ -68,9 +69,9 @@ int Matcher::on_match(unsigned int id, unsigned long long from,
   return 1;
 }
 
-Matcher::MatchResult Matcher::scan_block(const char* content,
-                                         size_t content_length,
-                                         const match_event_handler& onEvent)
+auto Matcher::scan_block(const char* content, size_t content_length,
+                         const match_event_handler& onEvent)
+    -> Matcher::MatchResult
 {
   size_t matchCount = 0;
   hs_error_t err =
@@ -172,10 +173,10 @@ void Matcher::parse_file(const std::string& filename,
   }
 }
 
-hs_database_t*
-Matcher::build_database(const std::vector<const char*>& expressions,
-                        const std::vector<unsigned int>& flags,
-                        const std::vector<unsigned int>& ids, unsigned int mode)
+auto Matcher::build_database(const std::vector<const char*>& expressions,
+                             const std::vector<unsigned int>& flags,
+                             const std::vector<unsigned int>& ids,
+                             unsigned int mode) -> hs_database_t*
 {
   hs_database_t* db;
   hs_compile_error_t* compile_err;
@@ -202,7 +203,7 @@ Matcher::build_database(const std::vector<const char*>& expressions,
   return db;
 }
 
-unsigned int Matcher::parse_flags(const std::string& flags_str)
+auto Matcher::parse_flags(const std::string& flags_str) -> unsigned int
 {
   unsigned int flags = 0;
   for (const auto& c : flags_str) {

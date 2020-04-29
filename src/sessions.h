@@ -53,15 +53,15 @@ struct Session {
 
 class Sessions {
 public:
-  bool empty() const { return session_map.empty(); }
-  size_t get_number_bytes_in_sessions() const { return message_data; }
-  size_t make_next_message(ForwardMode* msg, uint64_t event_id,
-                           size_t max_bytes);
-  bool update_session(uint32_t src, uint32_t dst, uint8_t proto, uint16_t sport,
+  auto empty() const -> bool { return session_map.empty(); }
+  auto get_number_bytes_in_sessions() const -> size_t { return message_data; }
+  auto make_next_message(ForwardMode* msg, uint64_t event_id, size_t max_bytes)
+      -> size_t;
+  auto update_session(uint32_t src, uint32_t dst, uint8_t proto, uint16_t sport,
                       uint16_t dport, const char* data, size_t len,
-                      uint64_t event_id);
+                      uint64_t event_id) -> bool;
   void set_allowed_entropy_ratio(float e) { entropy_ratio = e; }
-  size_t size() const { return session_map.size(); }
+  auto size() const -> size_t { return session_map.size(); }
 
   static constexpr size_t max_age = 128;
   static constexpr size_t max_sample_size = 2048;
@@ -75,8 +75,8 @@ private:
   std::unordered_map<uint64_t, Session> session_map;
 };
 
-inline uint64_t hash_key(uint32_t src, uint32_t dst, uint8_t proto,
-                         uint16_t sport, uint16_t dport)
+inline auto hash_key(uint32_t src, uint32_t dst, uint8_t proto, uint16_t sport,
+                     uint16_t dport) -> uint64_t
 {
   return ((static_cast<uint64_t>(src) + static_cast<uint64_t>(dst)) << 31) +
          (static_cast<uint64_t>(proto) << 17) +

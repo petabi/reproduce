@@ -313,7 +313,7 @@ void KafkaProducer::wait_queue(const int count) noexcept
   } while (kafka_producer->outq_len() > count);
 }
 
-bool KafkaProducer::produce_core(const string& message) noexcept
+auto KafkaProducer::produce_core(const string& message) noexcept -> bool
 {
   // Produce message
   RdKafka::ErrorCode resp = kafka_producer->produce(
@@ -341,7 +341,7 @@ bool KafkaProducer::produce_core(const string& message) noexcept
   return true;
 }
 
-bool KafkaProducer::period_queue_flush() noexcept
+auto KafkaProducer::period_queue_flush() noexcept -> bool
 {
   if (!period_chk) {
     return false;
@@ -359,8 +359,8 @@ bool KafkaProducer::period_queue_flush() noexcept
   return false;
 }
 
-bool KafkaProducer::produce(const char* message, size_t len,
-                            bool flush) noexcept
+auto KafkaProducer::produce(const char* message, size_t len,
+                            bool flush) noexcept -> bool
 {
 
   queue_data.append(message, len);
@@ -394,7 +394,7 @@ bool KafkaProducer::produce(const char* message, size_t len,
   return true;
 }
 
-size_t KafkaProducer::get_max_bytes() const noexcept
+auto KafkaProducer::get_max_bytes() const noexcept -> size_t
 {
   string message_max_bytes;
   kafka_gconf->get("message.max.bytes", message_max_bytes);
@@ -433,7 +433,8 @@ FileProducer::~FileProducer()
   }
 }
 
-bool FileProducer::produce(const char* message, size_t len, bool flush) noexcept
+auto FileProducer::produce(const char* message, size_t len, bool flush) noexcept
+    -> bool
 {
   file.write(message, len);
   file << '\n';
@@ -444,7 +445,7 @@ bool FileProducer::produce(const char* message, size_t len, bool flush) noexcept
   return true;
 }
 
-bool FileProducer::open() noexcept
+auto FileProducer::open() noexcept -> bool
 {
   file.open(conf->output, ios::out);
   if (!file.is_open()) {
@@ -455,7 +456,7 @@ bool FileProducer::open() noexcept
   return true;
 }
 
-size_t FileProducer::get_max_bytes() const noexcept
+auto FileProducer::get_max_bytes() const noexcept -> size_t
 {
   return default_produce_max_bytes;
 }
@@ -468,12 +469,13 @@ NullProducer::NullProducer(shared_ptr<Config> _conf) : conf(move(_conf)) {}
 
 NullProducer::~NullProducer() = default;
 
-bool NullProducer::produce(const char* message, size_t len, bool flush) noexcept
+auto NullProducer::produce(const char* message, size_t len, bool flush) noexcept
+    -> bool
 {
   return true;
 }
 
-size_t NullProducer::get_max_bytes() const noexcept
+auto NullProducer::get_max_bytes() const noexcept -> size_t
 {
   return default_produce_max_bytes;
 }

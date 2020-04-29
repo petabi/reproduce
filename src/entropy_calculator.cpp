@@ -5,8 +5,8 @@
 
 #include <entropy_calculator.h>
 
-double Entropy_calculator::calculate_entropy(const unsigned char* data,
-                                             size_t num_bytes)
+auto Entropy_calculator::calculate_entropy(const unsigned char* data,
+                                           size_t num_bytes) -> double
 {
   for (size_t i = 0; i < num_bytes; ++i) {
     frequency_map[static_cast<size_t>(data[i])]++;
@@ -23,7 +23,7 @@ double Entropy_calculator::calculate_entropy(const unsigned char* data,
   return -entropy;
 }
 
-double Entropy_calculator::max_entropy_for_size(size_t num_bytes) const
+auto Entropy_calculator::max_entropy_for_size(size_t num_bytes) const -> double
 {
   return std::log2(num_bytes);
 }

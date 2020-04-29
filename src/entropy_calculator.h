@@ -6,10 +6,10 @@
 
 class Entropy_calculator {
 public:
-  double calculate_entropy(const unsigned char* data, size_t num_bytes);
+  auto calculate_entropy(const unsigned char* data, size_t num_bytes) -> double;
 
   // Convenience to get upper bound entropy dependent on input size.
-  double max_entropy_for_size(size_t num_bytes) const;
+  [[nodiscard]] auto max_entropy_for_size(size_t num_bytes) const -> double;
 
   static constexpr size_t freq_base = 256;
 

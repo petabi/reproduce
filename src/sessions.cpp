@@ -14,8 +14,8 @@
 
 using namespace std;
 
-size_t Sessions::make_next_message(ForwardMode* msg, uint64_t event_id,
-                                   size_t max_bytes)
+auto Sessions::make_next_message(ForwardMode* msg, uint64_t event_id,
+                                 size_t max_bytes) -> size_t
 {
   std::vector<uint64_t> removal;
   uint64_t eid = event_id;
@@ -68,9 +68,9 @@ size_t Sessions::make_next_message(ForwardMode* msg, uint64_t event_id,
   return eid;
 }
 
-bool Sessions::update_session(uint32_t src, uint32_t dst, uint8_t proto,
+auto Sessions::update_session(uint32_t src, uint32_t dst, uint8_t proto,
                               uint16_t sport, uint16_t dport, const char* data,
-                              size_t len, uint64_t event_id)
+                              size_t len, uint64_t event_id) -> bool
 {
   bool newsession = false;
   uint64_t hash = hash_key(src, dst, proto, sport, dport);

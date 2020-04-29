@@ -31,9 +31,8 @@ void Config::help() const noexcept
   cout << "  -g: follow the growing input file\n";
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/DIR/NIC]\n";
-  cout
-      << "      If no 'i' option is given, input is internal sample data and\n";
-  cout << "      If DIR is given, the g option is not supported.\n";
+  cout << "      If no 'i' option is given, input is internal sample data\n";
+  cout << "  -j: set initial event_id number\n";
   cout << "  -k: kafka config file."
        << " (Ex: kafka.conf)\n"
        << "      it overrides default kafka config to user kafka config\n";
@@ -56,13 +55,15 @@ void Config::help() const noexcept
          "topic,\n"
       << "      the broker fails unless there is a setting that automatically\n"
       << "      creates the topic.\n";
+  cout << "  -v: polling the input directory\n";
 }
 
-bool Config::set(int argc, char** argv)
+auto Config::set(int argc, char** argv) -> bool
 {
   int o;
 
-  while ((o = getopt(argc, argv, "b:c:d:eE:f:ghi:k:m:n:o:p:q:r:s:t:")) != -1) {
+  while ((o = getopt(argc, argv, "b:c:d:eE:f:ghi:j:k:m:n:o:p:q:r:s:t:v")) !=
+         -1) {
     switch (o) {
     case 'b':
       kafka_broker = optarg;
@@ -101,6 +102,9 @@ bool Config::set(int argc, char** argv)
     case 'i':
       input = optarg;
       break;
+    case 'j':
+      initial_event_id = static_cast<uint64_t>(stoul(optarg, nullptr, 0));
+      break;
     case 'k':
       kafka_conf = optarg;
       break;
@@ -127,6 +131,9 @@ bool Config::set(int argc, char** argv)
       break;
     case 't':
       kafka_topic = optarg;
+      break;
+    case 'v':
+      mode_polling_dir = true;
       break;
     default:
       break;

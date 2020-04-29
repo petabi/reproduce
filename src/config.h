@@ -16,14 +16,15 @@ enum class OutputType {
 class Config {
 public:
   // user
-  bool mode_eval{false};     // report statistics
-  bool mode_grow{false};     // convert while tracking the growing file
-  size_t count_skip{0};      // count to skip
-  size_t queue_size{0};      // how many bytes send once
-  size_t queue_period{0};    // how much time keep queued data
-  std::string input;         // input: packet/log/none
-  std::string output;        // output: kafka/file/none
-  std::string offset_prefix; // prefix of offset file to read and write
+  bool mode_eval{false};        // report statistics
+  bool mode_grow{false};        // convert while tracking the growing file
+  bool mode_polling_dir{false}; // polling the input directory
+  size_t count_skip{0};         // count to skip
+  size_t queue_size{0};         // how many bytes send once
+  size_t queue_period{0};       // how much time keep queued data
+  std::string input;            // input: packet/log/none
+  std::string output;           // output: kafka/file/none
+  std::string offset_prefix;    // prefix of offset file to read and write
   std::string packet_filter;
   std::string kafka_broker;
   std::string kafka_topic;
@@ -33,6 +34,7 @@ public:
                            // multiple files or directory
 
   uint64_t datasource_id = 0x0001000000000000;
+  uint64_t initial_event_id = 0;
 
   float entropy_ratio = 0.9; // entropy break point to drop a seesion
 
@@ -43,11 +45,11 @@ public:
 
   Config() = default;
   Config(const Config&) = default;
-  Config& operator=(const Config&) = default;
+  auto operator=(const Config&) -> Config& = default;
   Config(Config&&) = default;
-  Config& operator=(Config&&) = delete;
+  auto operator=(Config &&) -> Config& = delete;
   ~Config() = default;
-  bool set(int argc, char** argv);
+  auto set(int argc, char** argv) -> bool;
   void show() const noexcept;
 
 private:

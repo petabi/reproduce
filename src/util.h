@@ -9,7 +9,7 @@
 #include <string>
 #include <syslog.h>
 
-inline std::string class_name(const std::string& pretty_function)
+inline auto class_name(const std::string& pretty_function) -> std::string
 {
   size_t colons = pretty_function.find("::");
   if (colons == std::string::npos)
@@ -29,9 +29,9 @@ class Util {
 public:
   Util() = delete;
   Util(const Util&) = delete;
-  Util& operator=(const Util&) = delete;
+  auto operator=(const Util&) -> Util& = delete;
   Util(Util&&) = delete;
-  Util& operator=(Util&&) = delete;
+  auto operator=(Util &&) -> Util& = delete;
   ~Util() = delete;
   template <typename T> static void print(std::ostream& logstream, T tail);
   template <typename T, typename... Ts>
@@ -44,9 +44,9 @@ public:
   template <typename T, typename... Ts> static void iprint(T head, Ts... tail);
   template <typename T> static void eprint(T tail);
   template <typename T, typename... Ts> static void eprint(T head, Ts... tail);
-  static std::string& ltrim(std::string& str);
-  static std::string& rtrim(std::string& str);
-  static std::string& trim(std::string& str);
+  static auto ltrim(std::string& str) -> std::string&;
+  static auto rtrim(std::string& str) -> std::string&;
+  static auto trim(std::string& str) -> std::string&;
 
 private:
 };

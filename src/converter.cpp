@@ -24,7 +24,8 @@
 
 using namespace std;
 
-inline bool BOUNDARY_SAFE(const size_t& remain_size, const size_t& struct_size)
+inline auto BOUNDARY_SAFE(const size_t& remain_size, const size_t& struct_size)
+    -> bool
 {
   return (remain_size > struct_size);
 }
@@ -71,8 +72,8 @@ void PacketConverter::save_session(uint64_t event_id, uint32_t src,
   }
 }
 
-Conv::Status PacketConverter::convert(uint64_t event_id, char* in,
-                                      size_t in_len, ForwardMode* msg)
+auto PacketConverter::convert(uint64_t event_id, char* in, size_t in_len,
+                              ForwardMode* msg) -> Conv::Status
 {
   if (in == nullptr) {
     return Conv::Status::Fail;
@@ -126,8 +127,8 @@ Conv::Status PacketConverter::convert(uint64_t event_id, char* in,
   return Conv::Status::Success;
 }
 
-bool (PacketConverter::*PacketConverter::get_l2_process())(
-    unsigned char* offset, size_t length)
+auto (PacketConverter::*PacketConverter::get_l2_process())(
+    unsigned char* offset, size_t length) -> bool
 {
   switch (l2_type) {
   case 1:
@@ -139,8 +140,8 @@ bool (PacketConverter::*PacketConverter::get_l2_process())(
   return &PacketConverter::l2_null_process;
 }
 
-bool (PacketConverter::*PacketConverter::get_l3_process())(
-    unsigned char* offset, size_t length)
+auto (PacketConverter::*PacketConverter::get_l3_process())(
+    unsigned char* offset, size_t length) -> bool
 {
   switch (l3_type) {
   case ETHERTYPE_IP:
@@ -154,8 +155,8 @@ bool (PacketConverter::*PacketConverter::get_l3_process())(
   return &PacketConverter::l3_null_process;
 }
 
-bool (PacketConverter::*PacketConverter::get_l4_process())(
-    unsigned char* offset, size_t length)
+auto (PacketConverter::*PacketConverter::get_l4_process())(
+    unsigned char* offset, size_t length) -> bool
 {
   switch (l4_type) {
   case IPPROTO_ICMP:
@@ -171,7 +172,8 @@ bool (PacketConverter::*PacketConverter::get_l4_process())(
   return &PacketConverter::l4_null_process;
 }
 
-bool PacketConverter::l2_ethernet_process(unsigned char* offset, size_t length)
+auto PacketConverter::l2_ethernet_process(unsigned char* offset, size_t length)
+    -> bool
 {
   if (!BOUNDARY_SAFE(length, sizeof(ether_header))) {
     return false;
@@ -198,7 +200,8 @@ bool PacketConverter::l2_ethernet_process(unsigned char* offset, size_t length)
   return true;
 }
 
-bool PacketConverter::l3_ipv4_process(unsigned char* offset, size_t length)
+auto PacketConverter::l3_ipv4_process(unsigned char* offset, size_t length)
+    -> bool
 {
   auto iph = reinterpret_cast<ip*>(offset);
   ip_hl = IP_HL(iph->ip_vhl) * 4;
@@ -213,7 +216,8 @@ bool PacketConverter::l3_ipv4_process(unsigned char* offset, size_t length)
   return invoke(get_l4_process(), this, offset, length - ip_hl);
 }
 
-bool PacketConverter::l3_arp_process(unsigned char* offset, size_t length)
+auto PacketConverter::l3_arp_process(unsigned char* offset, size_t length)
+    -> bool
 {
 // Use additional inspection if necessary
 #if 0
@@ -257,22 +261,26 @@ bool PacketConverter::l3_arp_process(unsigned char* offset, size_t length)
   return true;
 }
 
-bool PacketConverter::l2_null_process(unsigned char* offset, size_t length)
+auto PacketConverter::l2_null_process(unsigned char* offset, size_t length)
+    -> bool
 {
   return true;
 }
 
-bool PacketConverter::l3_null_process(unsigned char* offset, size_t length)
+auto PacketConverter::l3_null_process(unsigned char* offset, size_t length)
+    -> bool
 {
   return true;
 }
 
-bool PacketConverter::l4_null_process(unsigned char* offset, size_t length)
+auto PacketConverter::l4_null_process(unsigned char* offset, size_t length)
+    -> bool
 {
   return true;
 }
 
-bool PacketConverter::l4_tcp_process(unsigned char* offset, size_t length)
+auto PacketConverter::l4_tcp_process(unsigned char* offset, size_t length)
+    -> bool
 {
   auto tcph = reinterpret_cast<tcphdr*>(offset);
   l4_hl = TCP_HLEN(tcph->th_offx2) * 4;
@@ -289,7 +297,8 @@ bool PacketConverter::l4_tcp_process(unsigned char* offset, size_t length)
   return true;
 }
 
-bool PacketConverter::l4_udp_process(unsigned char* offset, size_t length)
+auto PacketConverter::l4_udp_process(unsigned char* offset, size_t length)
+    -> bool
 {
   auto udph = reinterpret_cast<udphdr*>(offset);
   l4_hl = sizeof(struct udphdr);
@@ -306,7 +315,8 @@ bool PacketConverter::l4_udp_process(unsigned char* offset, size_t length)
   return true;
 }
 
-bool PacketConverter::l4_icmp_process(unsigned char* offset, size_t length)
+auto PacketConverter::l4_icmp_process(unsigned char* offset, size_t length)
+    -> bool
 {
   l4_hl = ICMP_MINLEN;
   if (!BOUNDARY_SAFE(length, l4_hl) || l4_hl < ICMP_MINLEN) {
@@ -319,10 +329,9 @@ bool PacketConverter::l4_icmp_process(unsigned char* offset, size_t length)
   return true;
 }
 
-Conv::Status PacketConverter::payload_only_message(uint64_t event_id,
-                                                   ForwardMode* msg,
-                                                   const char* in,
-                                                   size_t in_len)
+auto PacketConverter::payload_only_message(uint64_t event_id, ForwardMode* msg,
+                                           const char* in, size_t in_len)
+    -> Conv::Status
 {
   if (in == nullptr || in_len == 0) {
     return Conv::Status::Fail;
@@ -372,8 +381,8 @@ void PacketConverter::update_pack_message(uint64_t event_id, ForwardMode* msg,
  * LogConverter
  */
 
-Conv::Status LogConverter::convert(uint64_t event_id, char* in, size_t in_len,
-                                   ForwardMode* msg)
+auto LogConverter::convert(uint64_t event_id, char* in, size_t in_len,
+                           ForwardMode* msg) -> Conv::Status
 {
   if (in == nullptr) {
     return Conv::Status::Fail;
