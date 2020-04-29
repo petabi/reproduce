@@ -23,7 +23,7 @@ Report::~Report()
   }
 }
 
-void Report::start(uint64_t id) noexcept
+void Report::start(uint32_t id) noexcept
 {
   if (!conf->mode_eval) {
     return;
@@ -106,7 +106,7 @@ auto Report::open_report_file(time_t launch_time) -> bool
   return report_file.is_open();
 }
 
-void Report::end(uint64_t id, time_t launch_time) noexcept
+void Report::end(uint32_t id, time_t launch_time) noexcept
 {
   constexpr int arrange_var = 28;
   if (!conf->mode_eval) {
@@ -161,7 +161,7 @@ void Report::end(uint64_t id, time_t launch_time) noexcept
   }
 
   report_file << left << setw(arrange_var)
-              << "Datasource ID: " << (conf->datasource_id >> 48) << "\n";
+              << "Datasource ID: " << (int)conf->datasource_id << "\n";
   report_file << left << setw(arrange_var) << "Input ID: " << start_id << " ~ "
               << end_id << "\n";
 

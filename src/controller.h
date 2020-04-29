@@ -36,8 +36,7 @@ private:
   std::shared_ptr<Config> conf;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
-  uint64_t conv_id = 1;
-  uint64_t event_id = 1;
+  uint32_t seq_no = 1; /* use lower 24-bit */
   static pcap_t* pcd;
   FILE* pcapfile{nullptr};
   std::ifstream logfile;
@@ -69,6 +68,18 @@ private:
   auto skip_log(const size_t count_skip) -> bool;
   auto skip_null(const size_t count_skip) -> bool;
   auto check_count(const size_t sent_count) const noexcept -> bool;
+  /* event_id(64bit) = upper 32-bit (current time in seconds)
+                     + lower 24-bit (sequence number)
+                     + lowest 8-bit (data source id) */
+  auto event_id() -> uint64_t
+  {
+    return ((time(nullptr) << 32) | ((seq_no & 0x00FFFFFF) << 8) |
+            conf->datasource_id);
+  }
+  auto get_seq_no(const int no) -> uint32_t
+  {
+    return ((seq_no + no) & 0x00FFFFFF);
+  }
   static void signal_handler(int signal);
 };
 

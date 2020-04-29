@@ -33,8 +33,8 @@ public:
   std::string file_prefix; // prefix for file name to send when you want to send
                            // multiple files or directory
 
-  uint64_t datasource_id = 0x0001000000000000;
-  uint64_t initial_event_id = 0;
+  uint8_t datasource_id = 1;
+  uint32_t initial_seq_no = 0;
 
   float entropy_ratio = 0.9; // entropy break point to drop a seesion
 

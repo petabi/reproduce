@@ -7,6 +7,15 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 
+## [0.9.8] 2020-04-29
+
+### Changed
+
+- "event_id" format is changed.
+- previous format: event_id(64bit) = datasource id(upper 16bit) + sequence number(lower 48bit)
+- new format: event_id(64bit) = current system time in seconds(upper 32bit) + sequence number (lower 24bit) + datasource id(lowest 8bit)
+
+
 ## [0.9.7] 2020-04-08
 
 ### Added

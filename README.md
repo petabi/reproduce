@@ -4,7 +4,8 @@
 
 ### Introduction
 
-  REproduce is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
+REproduce is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
+
 Packet translation is up to the transport layer, and the protocols currently supported are Ethernet, IP, ARP, TCP, UDP, and ICMP. Also, logs and plain text files are converted to a new type of log stream by adding or removing information according to their attributes.
 
 ## Function Specification
@@ -24,7 +25,7 @@ REproduce converts the incoming packet or pcap file, log to a stream format with
 #### Conversion Example
 
 ##### Packet
-1531980829 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 56325 19069 64 127 7184 59.7.91.91 121.205.88.134 ip_opt TCP 3389 63044 1092178785 2869829243 20 AP 64032 5779 0
+1531980829 Ethernet2 a4:7b:2c:1f:eb:61 40:61:86:82:e9:26 IP 4 5 0 56325 19069 64 127 7184 59.x.x.91 121.x.x.134 ip_opt TCP 3389 63044 1092178785 2869829243 20 AP 64032 5779 0
 
 \[Seconds of Timestamp\] \[Protocol Name\] \[Destination MAC Address\] \[Source MAC Address\] \[Protocol Name\] \[Version\] \[IHL\] \[ToS\] \[Total Length\] \[Identification\] \[Fragment Offset\] \[TTL\] \[Header Checksum\] \[Source IP Address\] \[Destination IP Address\] \[Presence of option field\] \[Protocol name\] \[Source Port Address\] \[Destination Port Address\] \[Squence Number\] \[Acknowledge Number\] \[Hlen\] \[Flags(UAPRSF)\] \[Window Size\] \[Checksum\] \[Urgent Pointer\]
 
@@ -33,7 +34,16 @@ REproduce converts the incoming packet or pcap file, log to a stream format with
 
 See more details in appendix.
 
-### 3. Output
+### 3. Event id
+REproduce insert `Event id` in all messages.
+* Format: 0.9.8 or later<br>
+  Event id (64bit) = system time in seconds(upper 32bit) + sequence number(lower 24bit) + datasource id(lowest 8bit)
+
+* Format: 0.9.7 and lower<br>
+  Event id (64bit) = datasource id(upper 16bit) + sequence number(lower 48bit)
+
+
+### 4. Output
 
 REproduce outputs the converted result in a form specified by the user(Stdout, File, Transmission to kafka server).
 
@@ -48,7 +58,7 @@ REproduce outputs the converted result in a form specified by the user(Stdout, F
 ```
   -b: kafka broker list, [host1:port1,host2:port2,..] (default: localhost:9092)
   -c: send count
-  -d: data source id (1~65535). (default: 1)
+  -d: data source id (1~255). (default: 1)
   -e: evaluation mode. output statistical result of transmission after job is terminated or stopped
   -E: entropy ratio. The amount of maximum entropy allowed for a
       session (0.0 < entropy ratio <= 1.0). Default is 0.9.
@@ -60,7 +70,7 @@ REproduce outputs the converted result in a form specified by the user(Stdout, F
   -i: input [PCAPFILE/LOGFILE/DIR/NIC]
       If no 'i' option is given, input is internal sample data
       If DIR is given, the g option is not supported.
-  -j: set initial event_id number.
+  -j: set initial sequence number. (24bit size)
   -k: kafka config file (Ex: kafka.conf)
       it overrides default kafka config to user kafka config
   -m: match [Pattern FILE]
@@ -96,7 +106,7 @@ message.copy.max.bytes=65535
 
 [topic]
 request.required.acks=1
-message.timeout.ms=300000
+message.timeout.ms=5000
 offset.store.method=broker
 ```
 
@@ -121,6 +131,10 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
     * ```reproduce -i test.pcap -q 10240 -p 2```
 * Send all log files beginning with 'msg' prefix in the '/data/LOG' directory and it's subdirectory
     * ```reproduce -i /data/LOG -n msg -b 192.168.4.5:9092 -t syslog -e```
+* Send all log files in the '/data/LOG' directory and it's subdirectory. And polling the directory periodically (default 3 seconds). If new files found, send it too.
+    * ```reproduce -i /data/LOG -v -b 192.168.4.5:9092 -t syslog -e```
+
+
 
 ### Report Example
 

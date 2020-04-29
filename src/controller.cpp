@@ -121,20 +121,21 @@ void Controller::run_single()
     Util::eprint("failed to skip: ", offset);
   }
 
-  // set initial event_id: begin at 1 or skip_count + 1 or user defined event_id
-  if (event_id == 1) {
+  // set initial sequence number: begin at 1 or skip_count + 1
+  // or user defined seq_no
+  if (seq_no == 1) {
     if (offset) {
-      event_id = static_cast<uint64_t>(offset) + 1;
+      seq_no = static_cast<uint32_t>(offset) + 1;
     }
 
-    // if user set the initial event_id, the skip count will not be used for
-    // numbering the event_id
-    if (conf->initial_event_id) {
-      event_id = conf->initial_event_id;
+    // if user set the initial seq_no, the skip count will not be used for
+    // numbering the seq_no
+    if (conf->initial_seq_no) {
+      seq_no = conf->initial_seq_no;
     }
   }
 
-  report.start(event_id);
+  report.start(get_seq_no(0));
   auto msg = forward_mode_new();
   forward_mode_set_tag(msg, "REproduce");
   auto buf = serialization_buffer_new();
@@ -155,9 +156,9 @@ void Controller::run_single()
         forward_mode_set_tag(msg, "REproduce");
       }
 
-      Conv::Status cstat = conv->convert(event_id | conf->datasource_id,
-                                         imessage, imessage_len, msg);
-      event_id++;
+      Conv::Status cstat =
+          conv->convert(event_id(), imessage, imessage_len, msg);
+      seq_no++;
 
       if (cstat != Conv::Status::Success) {
         // TODO: handling exceptions due to convert failures
@@ -170,7 +171,7 @@ void Controller::run_single()
       if (conf->input_type != InputType::Nic && conf->mode_grow &&
           !conf->mode_polling_dir) {
         // TODO: optimize time interval
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         continue;
       }
       break;
@@ -188,8 +189,7 @@ void Controller::run_single()
   // only use when processing session data
   /*
   if (conv->remaining_data()) {
-    conv->update_pack_message(event_id | conf->datasource_id, pm.fm, nullptr,
-  0);
+    conv->update_pack_message(event_id(), pm.fm, nullptr, 0);
   }
   */
 
@@ -200,7 +200,7 @@ void Controller::run_single()
   }
   forward_mode_free(msg);
   write_offset(conf->input + "_" + conf->offset_prefix, offset + conv_cnt);
-  report.end(event_id - 1, launch_time);
+  report.end(get_seq_no(-1), launch_time);
 }
 
 auto Controller::get_input_type() const -> InputType

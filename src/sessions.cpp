@@ -18,7 +18,7 @@ auto Sessions::make_next_message(ForwardMode* msg, uint64_t event_id,
                                  size_t max_bytes) -> size_t
 {
   std::vector<uint64_t> removal;
-  uint64_t eid = event_id;
+  uint32_t seq_no = (event_id & 0x00000000FFFFFF00) >> 8;
   for (auto& s : session_map) {
     if (s.second.status != Sampling_status::sample ||
         s.second.data.size() < min_sample_size) {
@@ -43,7 +43,7 @@ auto Sessions::make_next_message(ForwardMode* msg, uint64_t event_id,
                                  s.second.dport, s.second.proto);
       s.second.bytes_sampled += s.second.data.size();
       s.second.age = 0;
-      eid++;
+      seq_no++;
       if (s.second.bytes_sampled >= max_sample_size) {
         s.second.status = Sampling_status::no_sampling;
       }
@@ -65,7 +65,7 @@ auto Sessions::make_next_message(ForwardMode* msg, uint64_t event_id,
       session_map.erase(r);
     }
   }
-  return eid;
+  return ((event_id & 0xFFFFFFFF000000FF) | ((seq_no & 0x00FFFFFF) << 8));
 }
 
 auto Sessions::update_session(uint32_t src, uint32_t dst, uint8_t proto,

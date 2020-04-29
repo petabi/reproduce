@@ -9,7 +9,7 @@
 using namespace std;
 
 static constexpr size_t default_queue_period = 3;
-static constexpr uint64_t default_datasource_id = 0x0001000000000000;
+static constexpr uint8_t default_datasource_id = 1;
 static constexpr size_t default_queue_size = 900000;
 
 void Config::help() const noexcept
@@ -19,7 +19,7 @@ void Config::help() const noexcept
   cout << "[USAGE] " << program_name << " [OPTIONS]\n";
   cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]\n";
   cout << "  -c: send count\n";
-  cout << "  -d: data source id (1 ~ 65535). Default: 1\n";
+  cout << "  -d: data source id (1 ~ 255). Default: 1\n";
   cout << "  -E: entropy ratio. The amount of maximum entropy allowed for a\n";
   cout << "      session (0.0 < entropy ratio <= 1.0). Default is 0.9.\n";
   cout << "      Only relevant for network packets.\n";
@@ -32,7 +32,7 @@ void Config::help() const noexcept
   cout << "  -h: help\n";
   cout << "  -i: input [PCAPFILE/LOGFILE/DIR/NIC]\n";
   cout << "      If no 'i' option is given, input is internal sample data\n";
-  cout << "  -j: set initial event_id number\n";
+  cout << "  -j: set initial sequence number. (24bit size)\n";
   cout << "  -k: kafka config file."
        << " (Ex: kafka.conf)\n"
        << "      it overrides default kafka config to user kafka config\n";
@@ -72,18 +72,17 @@ auto Config::set(int argc, char** argv) -> bool
       count_send = strtoul(optarg, nullptr, 0);
       break;
     case 'd':
-      datasource_id = static_cast<uint64_t>(stoul(optarg, nullptr, 0));
-      if (datasource_id <= 0 || datasource_id > 65535) {
-        cerr << "Waring: datasource id is out of range. Defaulting to 1\n";
+      datasource_id = static_cast<uint8_t>(stoul(optarg, nullptr, 0));
+      if (datasource_id == 0) {
+        cerr << "Warning: datasource id is out of range (1 ~ 255). Defaulting "
+                "to 1\n";
         datasource_id = default_datasource_id;
-      } else {
-        datasource_id = datasource_id << 48;
       }
       break;
     case 'E':
       entropy_ratio = strtof(optarg, nullptr);
       if (entropy_ratio <= 0.0 || entropy_ratio > 1.0) {
-        cerr << "Waring: Entropy ratio is out of range. Defaulting to 0.9.\n";
+        cerr << "Warning: Entropy ratio is out of range. Defaulting to 0.9.\n";
         entropy_ratio = 0.9;
       }
       break;
@@ -103,7 +102,7 @@ auto Config::set(int argc, char** argv) -> bool
       input = optarg;
       break;
     case 'j':
-      initial_event_id = static_cast<uint64_t>(stoul(optarg, nullptr, 0));
+      initial_seq_no = static_cast<uint32_t>(stoul(optarg, nullptr, 0));
       break;
     case 'k':
       kafka_conf = optarg;
@@ -189,7 +188,7 @@ void Config::show() const noexcept
   Util::dprint(F, "kafka_topic=", kafka_topic);
   Util::dprint(F, "kafka_conf=", kafka_conf);
   Util::dprint(F, "file_prefix=", file_prefix);
-  Util::dprint(F, "datasource_id=", datasource_id);
+  Util::dprint(F, "datasource_id=", (int)datasource_id);
 }
 
 // vim: et:ts=2:sw=2
