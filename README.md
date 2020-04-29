@@ -303,7 +303,7 @@ root@bada-unbuntu:~/REproduce# tail -f /report/sessions-20190712143111.txt
 #### Building Docker Images
 try this in a directory that has a Dockerfile:
 ```
-docker build -t reproduce .
+docker build -t registry.gitlab.com/resolutions/reproduce:0.9.8 .
 ```
 #### Running Docker Images
 Run with the following command
