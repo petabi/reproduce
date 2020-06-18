@@ -28,8 +28,10 @@ Last Modified : 2018-07-20
 
 #include "ipv4.h"
 
-typedef unsigned char ipv4[4];
-typedef unsigned char byte;
+//typedef unsigned char ipv4[4];
+//typedef unsigned char byte;
+using byte = unsigned char;
+using ipv4 = unsigned char[4];
 
 struct icmp {
   uint8_t icmp_type;   /* type of message, see below */

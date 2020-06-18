@@ -24,7 +24,7 @@ static constexpr size_t kafka_buffer_safety_gap = 1024;
 atomic_bool stop = false;
 pcap_t* Controller::pcd = nullptr;
 
-Controller::Controller(Config _conf)
+Controller::Controller(Config const& _conf)
 {
   conf = make_shared<Config>(_conf);
 
@@ -98,7 +98,7 @@ void Controller::run_split()
 
 void Controller::run_single()
 {
-  char imessage[message_size];
+  std::array<char, message_size> imessage{0};
   size_t imessage_len = 0;
   size_t conv_cnt = 0;
   uint32_t offset = 0;
@@ -142,7 +142,8 @@ void Controller::run_single()
 
   while (!stop) {
     imessage_len = message_size;
-    GetData::Status gstat = invoke(get_next_data, this, imessage, imessage_len);
+    GetData::Status gstat =
+        invoke(get_next_data, this, imessage.data(), imessage_len);
     if (gstat == GetData::Status::Success) {
       if ((forward_mode_serialized_len(msg) + imessage_len) >=
           prod->get_max_bytes() - kafka_buffer_safety_gap) {
@@ -157,7 +158,7 @@ void Controller::run_single()
       }
 
       Conv::Status cstat =
-          conv->convert(event_id(), imessage, imessage_len, msg);
+          conv->convert(event_id(), imessage.data(), imessage_len, msg);
       seq_no++;
 
       if (cstat != Conv::Status::Success) {
@@ -205,12 +206,20 @@ void Controller::run_single()
 
 auto Controller::get_input_type() const -> InputType
 {
-  const unsigned char mn_pcap_little_micro[4] = {0xd4, 0xc3, 0xb2, 0xa1};
-  const unsigned char mn_pcap_big_micro[4] = {0xa1, 0xb2, 0xc3, 0xd4};
-  const unsigned char mn_pcap_little_nano[4] = {0x4d, 0x3c, 0xb2, 0xa1};
-  const unsigned char mn_pcap_big_nano[4] = {0xa1, 0xb2, 0x3c, 0x4d};
-  const unsigned char mn_pcapng_little[4] = {0x4D, 0x3C, 0x2B, 0x1A};
-  const unsigned char mn_pcapng_big[4] = {0x1A, 0x2B, 0x3C, 0x4D};
+  // pcap: c3d4 a1b2
+  // pcap-ng: 0d0a 0a0d
+  constexpr std::array<unsigned char, 4> mn_pcap_little_micro{0xd4, 0xc3, 0xb2,
+                                                              0xa1};
+  constexpr std::array<unsigned char, 4> mn_pcap_big_micro = {0xa1, 0xb2, 0xc3,
+                                                              0xd4};
+  constexpr std::array<unsigned char, 4> mn_pcap_little_nano = {0x4d, 0x3c,
+                                                                0xb2, 0xa1};
+  constexpr std::array<unsigned char, 4> mn_pcap_big_nano = {0xa1, 0xb2, 0x3c,
+                                                             0x4d};
+  constexpr std::array<unsigned char, 4> mn_pcapng_big = {0x1A, 0x2B, 0x3C,
+                                                          0x4D};
+  constexpr std::array<unsigned char, 4> mn_pcapng_little = {0x0a, 0x0d, 0x0d,
+                                                             0x0a};
 
   DIR* dir_chk = nullptr;
   dir_chk = opendir(conf->input.c_str());
@@ -222,9 +231,9 @@ auto Controller::get_input_type() const -> InputType
   ifstream ifs(conf->input, ios::binary);
   if (!ifs) {
     pcap_t* pcd_chk;
-    char errbuf[PCAP_ERRBUF_SIZE];
-    pcd_chk =
-        pcap_open_live(conf->input.c_str(), max_packet_length, 0, 1000, errbuf);
+    std::array<char, PCAP_ERRBUF_SIZE> errbuf{0};
+    pcd_chk = pcap_open_live(conf->input.c_str(), max_packet_length, 0, 1000,
+                             errbuf.data());
     if (pcd_chk != nullptr) {
       pcap_close(pcd_chk);
       return InputType::Nic;
@@ -234,16 +243,13 @@ auto Controller::get_input_type() const -> InputType
   }
 
   ifs.seekg(0, ios::beg);
-  unsigned char magic[4] = {0};
-  ifs.read((char*)magic, sizeof(magic));
+  std::array<unsigned char, 4> magic{0};
+  ifs.read((char*)magic.data(), magic.size());
 
-  if (memcmp(magic, mn_pcap_little_micro, sizeof(magic)) == 0 ||
-      memcmp(magic, mn_pcap_big_micro, sizeof(magic)) == 0 ||
-      memcmp(magic, mn_pcap_little_nano, sizeof(magic)) == 0 ||
-      memcmp(magic, mn_pcap_big_nano, sizeof(magic)) == 0) {
+  if (magic == mn_pcap_little_micro || magic == mn_pcap_big_micro ||
+      magic == mn_pcap_little_nano || magic == mn_pcap_big_nano) {
     return InputType::Pcap;
-  } else if (memcmp(magic, mn_pcapng_little, sizeof(magic)) == 0 ||
-             memcmp(magic, mn_pcapng_big, sizeof(magic)) == 0) {
+  } else if (magic == mn_pcapng_little || magic == mn_pcapng_big) {
     return InputType::Pcapng;
   }
 
@@ -290,6 +296,7 @@ auto Controller::set_converter() -> bool
     conv->set_allowed_entropy_ratio(conf->entropy_ratio);
     break;
   case InputType::Pcap:
+  case InputType::Pcapng:
     l2_type = open_pcap(conf->input);
     conv = make_unique<PacketConverter>(l2_type, launch_time);
     if (!conf->pattern_file.empty()) {
@@ -299,7 +306,11 @@ auto Controller::set_converter() -> bool
     }
     get_next_data = &Controller::get_next_pcap;
     skip_data = &Controller::skip_pcap;
-    Util::iprint("input=", conf->input, ", input type=PCAP");
+    if (conf->input_type == InputType::Pcap)
+      Util::iprint("input=", conf->input, ", input type=PCAP");
+    else
+      Util::iprint("input=", conf->input, ", input type=PCAPNG");
+
     if (conv->get_matcher() != nullptr) {
       Util::iprint("pattern file=", conf->pattern_file);
     }
@@ -358,21 +369,21 @@ auto Controller::open_nic(const std::string& devname) -> uint32_t
   bpf_u_int32 net;
   bpf_u_int32 mask;
   struct bpf_program fp;
-  char errbuf[PCAP_ERRBUF_SIZE];
+  std::array<char, PCAP_ERRBUF_SIZE> errbuf{0};
 
-  if (pcap_lookupnet(devname.c_str(), &net, &mask, errbuf) == -1) {
+  if (pcap_lookupnet(devname.c_str(), &net, &mask, errbuf.data()) == -1) {
     throw runtime_error("failed to lookup the network: " + devname + ": " +
-                        errbuf);
+                        errbuf.data());
   }
 
-  pcd = pcap_open_live(devname.c_str(), BUFSIZ, 0, -1, errbuf);
+  pcd = pcap_open_live(devname.c_str(), BUFSIZ, 0, -1, errbuf.data());
 
   if (pcd == nullptr) {
     throw runtime_error("failed to initialize the nic mode: " + devname + ": " +
-                        errbuf);
+                        errbuf.data());
   }
 
-  if (pcap_setnonblock(pcd, false, errbuf) != 0) {
+  if (pcap_setnonblock(pcd, false, errbuf.data()) != 0) {
     Util::dprint(F, "non-blocking mode is set, it can cause cpu overhead");
   }
 
@@ -401,13 +412,13 @@ void Controller::close_nic()
 auto Controller::open_pcap(const string& filename) -> uint32_t
 {
   struct bpf_program fp;
-  char errbuf[PCAP_ERRBUF_SIZE];
+  std::array<char, PCAP_ERRBUF_SIZE> errbuf{0};
 
-  pcd = pcap_open_offline(filename.c_str(), errbuf);
+  pcd = pcap_open_offline(filename.c_str(), errbuf.data());
 
   if (pcd == nullptr) {
     throw runtime_error("failed to initialize the pcap file mode: " + filename +
-                        ": " + errbuf);
+                        ": " + errbuf.data());
   }
 
   if (pcap_compile(pcd, &fp, conf->packet_filter.c_str(), 0, 0) == -1) {

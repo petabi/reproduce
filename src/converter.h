@@ -106,12 +106,14 @@ private:
 
   void save_session(uint64_t event_id, uint32_t src, uint32_t dst,
                     uint8_t proto, uint16_t sport, uint16_t dport);
-  auto (PacketConverter::*get_l2_process())(unsigned char* offset,
-                                            size_t length) -> bool;
-  auto (PacketConverter::*get_l3_process())(unsigned char* offset,
-                                            size_t length) -> bool;
-  auto (PacketConverter::*get_l4_process())(unsigned char* offset,
-                                            size_t length) -> bool;
+
+  auto get_l2_process()
+      -> bool (PacketConverter::*)(unsigned char* offset, size_t length);
+  auto get_l3_process()
+      -> bool (PacketConverter::*)(unsigned char* offset, size_t length);
+  auto get_l4_process()
+      -> bool (PacketConverter::*)(unsigned char* offset, size_t length);
+
   auto l2_ethernet_process(unsigned char* offset, size_t length) -> bool;
   auto l2_null_process(unsigned char* offset, size_t length) -> bool;
   auto l3_ipv4_process(unsigned char* offset, size_t length) -> bool;

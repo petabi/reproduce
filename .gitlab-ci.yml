@@ -6,7 +6,7 @@ merge:
   stage: build
   only:
   - merge_requests
-  image: ubuntu:18.10
+  image: ubuntu:19.10
   except:
   - tags
   before_script:

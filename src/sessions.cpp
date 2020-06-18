@@ -33,7 +33,7 @@ auto Sessions::make_next_message(ForwardMode* msg, uint64_t event_id,
              s.second.data.size()) /
          e_calc.max_entropy_for_size(s.second.data.size())) < entropy_ratio) {
       if ((forward_mode_serialized_len(msg) + s.second.data.size() +
-           session_extra_bytes + message_n_label_bytes) > max_bytes) {
+           SESSION_EXTRA_BYTES + message_n_label_bytes) > max_bytes) {
         continue;
       }
 

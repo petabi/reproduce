@@ -43,7 +43,7 @@ TEST(test_producer, test_producer_file)
   size_t mb = fp.get_max_bytes();
   EXPECT_GT(mb, 0);
   std::string mymessage = "Here is a message to produce!";
-  const char *c = mymessage.c_str();
+  const char* c = mymessage.c_str();
   bool success = fp.produce(c, mymessage.size(), true);
   EXPECT_TRUE(success);
   std::ifstream myfile(conf.output);
@@ -64,7 +64,7 @@ TEST(test_producer, test_producer_null)
   size_t mb = np.get_max_bytes();
   EXPECT_GT(mb, 0);
   std::string msg = "A message to lose!";
-  const char *c = msg.c_str();
+  const char* c = msg.c_str();
   bool success = np.produce(c, msg.size(), true);
   EXPECT_TRUE(success);
 }

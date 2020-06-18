@@ -127,8 +127,8 @@ auto PacketConverter::convert(uint64_t event_id, char* in, size_t in_len,
   return Conv::Status::Success;
 }
 
-auto (PacketConverter::*PacketConverter::get_l2_process())(
-    unsigned char* offset, size_t length) -> bool
+auto PacketConverter::get_l2_process()
+    -> bool (PacketConverter::*)(unsigned char* offset, size_t length)
 {
   switch (l2_type) {
   case 1:
@@ -140,8 +140,8 @@ auto (PacketConverter::*PacketConverter::get_l2_process())(
   return &PacketConverter::l2_null_process;
 }
 
-auto (PacketConverter::*PacketConverter::get_l3_process())(
-    unsigned char* offset, size_t length) -> bool
+auto PacketConverter::get_l3_process()
+    -> bool (PacketConverter::*)(unsigned char* offset, size_t length)
 {
   switch (l3_type) {
   case ETHERTYPE_IP:
@@ -155,8 +155,8 @@ auto (PacketConverter::*PacketConverter::get_l3_process())(
   return &PacketConverter::l3_null_process;
 }
 
-auto (PacketConverter::*PacketConverter::get_l4_process())(
-    unsigned char* offset, size_t length) -> bool
+auto PacketConverter::get_l4_process()
+    -> bool (PacketConverter::*)(unsigned char* offset, size_t length)
 {
   switch (l4_type) {
   case IPPROTO_ICMP:
@@ -369,7 +369,7 @@ void PacketConverter::update_pack_message(uint64_t event_id, ForwardMode* msg,
   }
 
   size_t estimated_data =
-      (sessions.size() * (session_extra_bytes + message_n_label_bytes)) +
+      (sessions.size() * (SESSION_EXTRA_BYTES + message_n_label_bytes)) +
       sessions.get_number_bytes_in_sessions() +
       forward_mode_serialized_len(msg);
   if (estimated_data >= max_bytes) {

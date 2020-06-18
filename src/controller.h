@@ -23,7 +23,7 @@ enum class Status { Fail = -2, No_more = -1, Success = 0 };
 class Controller {
 public:
   Controller() = delete;
-  Controller(Config);
+  Controller(Config const&);
   Controller(const Controller&) = delete;
   auto operator=(const Controller&) -> Controller& = delete;
   Controller(Controller&&) = delete;

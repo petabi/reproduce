@@ -197,8 +197,8 @@ void KafkaProducer::set_kafka_conf()
 
 void KafkaProducer::set_kafka_conf_file(const string& conf_file)
 {
-  constexpr char global_section[] = "[global]";
-  constexpr char topic_section[] = "[topic]";
+#define GLOBALSECTION "[global]"
+#define TOPICSECTION "[topic]"
   RdKafka::Conf* kafka_conf_ptr = nullptr;
   string line, option, value;
   size_t line_num = 0, offset = 0;
@@ -215,11 +215,11 @@ void KafkaProducer::set_kafka_conf_file(const string& conf_file)
     if (line.find('#') == 0) {
       continue;
     }
-    if (line.find(global_section) != string::npos) {
+    if (line.find(GLOBALSECTION) != string::npos) {
       kafka_conf_ptr = kafka_gconf.get();
       continue;
     }
-    if (line.find(topic_section) != string::npos) {
+    if (line.find(TOPICSECTION) != string::npos) {
       kafka_conf_ptr = kafka_tconf.get();
       continue;
     }

@@ -11,15 +11,15 @@
 
 struct ForwardMode;
 
-static constexpr char src_key[] = "src";
-static constexpr char dst_key[] = "dst";
-static constexpr char sport_key[] = "sport";
-static constexpr char dport_key[] = "dport";
-static constexpr char proto_key[] = "proto";
-static constexpr size_t session_extra_bytes =
-    (sizeof(src_key)) + (sizeof(dst_key)) + (sizeof(dport_key)) +
-    (sizeof(sport_key)) + (sizeof(proto_key)) + 2 * 5 + (2 * sizeof(uint32_t)) +
-    (2 * sizeof(uint16_t)) + sizeof(uint8_t);
+constexpr std::array<char, 4> src_key{"src"};
+constexpr std::array<char, 4> dst_key{"dst"};
+constexpr std::array<char, 6> sport_key{"sport"};
+constexpr std::array<char, 6> dport_key{"dport"};
+constexpr std::array<char, 6> proto_key{"proto"};
+#define SESSION_EXTRA_BYTES                                                    \
+  (src_key.size() + dst_key.size() + sport_key.size() + dport_key.size() +     \
+   proto_key.size() + 2 * 5 + (2 * sizeof(uint32_t)) +                         \
+   (2 * sizeof(uint16_t)) + sizeof(uint8_t))
 
 // Potential varying status for sampling...most for future use
 enum class Sampling_status { no_sampling = -1, sample };

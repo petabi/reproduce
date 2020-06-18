@@ -6,6 +6,13 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.9.9] 2020-06-17
+
+### Changed
+
+- modify magic code to identify pcap-ng
+- modify code to send pcap-ng pcap file
+- follow what ClangTidy says. destroy c++11 warnings
 
 ## [0.9.8] 2020-04-29
 

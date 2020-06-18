@@ -25,7 +25,8 @@ Last Modified : 2018-07-20
 #ifndef IPV4_H
 #define IPV4_H
 
-typedef unsigned char ipv4[4];
+//typedef unsigned char ipv4[4];
+using ipv4 = unsigned char[4];
 
 struct ip {
   uint8_t ip_vhl; /* header length, version */
