@@ -138,7 +138,13 @@ void Report::end(uint32_t id, time_t launch_time) noexcept
   size_t process_bytes = 0;
   switch (conf->input_type) {
   case InputType::Pcap:
-    report_file << left << setw(arrange_var) << "Input(PCAP): " << conf->input;
+  case InputType::Pcapng:
+    if (conf->input_type == InputType::Pcap) {
+      report_file << left << setw(arrange_var) << "Input(PCAP): ";
+    } else {
+      report_file << left << setw(arrange_var) << "Input(PCAPNG): ";
+    }
+    report_file << conf->input;
     process_bytes = sum_bytes + sizeof(struct pcap_file_header);
     break;
   case InputType::Log:
