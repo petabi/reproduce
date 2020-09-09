@@ -6,6 +6,22 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+
+## [0.9.10] 2020-09-08
+### Changed
+
+- "event_id = time(32bit) + serial-number(24bit) + data-origin(8bit)"
+  The "time" is current time of system, and "data-origin" is attached also.
+  And "serial-number" is rotating from 0 to max 24bit number.
+
+  The value of "event_id" is not continuous because of this.
+
+  If REPRODUCE finishes processing 24bit events within 1 second (ie, before the "time" value is changed),
+  the serial number starts from 0 again, so the "event_id" that follows is less than the "event_id" of the previous event.
+
+  Patch: the "event_id" created later has a larger value than before, at all time.
+
+
 ## [0.9.9] 2020-06-17
 
 ### Changed
