@@ -71,9 +71,28 @@ private:
   /* event_id(64bit) = upper 32-bit (current time in seconds)
                      + lower 24-bit (sequence number)
                      + lowest 8-bit (data source id) */
+  /* time correction to correct reviewd work:
+      review process the whole event_id as sequence number */
   auto event_id() -> uint64_t
   {
-    return ((time(nullptr) << 32) | ((seq_no & 0x00FFFFFF) << 8) |
+    static bool time_correction = false;
+    static time_t save_point = 0;
+    time_t base_time = time(nullptr);
+
+    if ((seq_no & 0x00FFFFFF) == 0) {
+        time_correction = true;
+        save_point = base_time;
+    }
+
+    if (time_correction) {
+      if (save_point == base_time) {
+        base_time++;
+      } else {
+        time_correction = false;
+      }
+    }
+
+    return ((base_time << 32) | ((seq_no & 0x00FFFFFF) << 8) |
             conf->datasource_id);
   }
   auto get_seq_no(const int no) -> uint32_t
