@@ -80,8 +80,8 @@ private:
     time_t base_time = time(nullptr);
 
     if ((seq_no & 0x00FFFFFF) == 0) {
-        time_correction = true;
-        save_point = base_time;
+      time_correction = true;
+      save_point = base_time;
     }
 
     if (time_correction) {
