@@ -6,12 +6,10 @@
 #include <string>
 #include <vector>
 
-enum class Mode { BLOCK, STREAM };
-
 class Matcher {
 public:
   Matcher() = delete;
-  Matcher(const std::string& filename, const Mode& mode = Mode::BLOCK);
+  Matcher(const std::string& filename);
   Matcher(const Matcher&) = delete;
   auto operator=(const Matcher&) -> Matcher& = delete;
   Matcher(Matcher&&) = delete;
@@ -23,7 +21,6 @@ public:
 private:
   hs_database_t* hs_db{nullptr};
   hs_scratch_t* scratch{nullptr};
-  Mode mode;
 
   static auto on_match(unsigned int id, unsigned long long from,
                        unsigned long long to, unsigned int flags, void* ctx)

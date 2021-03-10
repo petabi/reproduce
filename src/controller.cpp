@@ -284,7 +284,7 @@ auto Controller::set_converter() -> bool
     conv = make_unique<PacketConverter>(l2_type, launch_time);
     if (!conf->pattern_file.empty()) {
       if (conv->get_matcher() == nullptr) {
-        conv->set_matcher(conf->pattern_file, Mode::BLOCK);
+        conv->set_matcher(conf->pattern_file);
       }
     }
     get_next_data = &Controller::get_next_nic;
@@ -301,7 +301,7 @@ auto Controller::set_converter() -> bool
     conv = make_unique<PacketConverter>(l2_type, launch_time);
     if (!conf->pattern_file.empty()) {
       if (conv->get_matcher() == nullptr) {
-        conv->set_matcher(conf->pattern_file, Mode::BLOCK);
+        conv->set_matcher(conf->pattern_file);
       }
     }
     get_next_data = &Controller::get_next_pcap;
@@ -321,7 +321,7 @@ auto Controller::set_converter() -> bool
     conv = make_unique<LogConverter>();
     if (!conf->pattern_file.empty()) {
       if (conv->get_matcher() == nullptr) {
-        conv->set_matcher(conf->pattern_file, Mode::BLOCK);
+        conv->set_matcher(conf->pattern_file);
       }
     }
     get_next_data = &Controller::get_next_log;

@@ -33,9 +33,9 @@ inline auto BOUNDARY_SAFE(const size_t& remain_size, const size_t& struct_size)
 /**
  * Converter
  */
-void Converter::set_matcher(const std::string& filename, const Mode& mode)
+void Converter::set_matcher(const std::string& filename)
 {
-  matc = make_unique<Matcher>(filename, mode);
+  matc = make_unique<Matcher>(filename);
 }
 
 /**

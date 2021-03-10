@@ -30,7 +30,7 @@ public:
   auto get_matcher() -> Matcher* { return matc.get(); }
   [[nodiscard]] virtual auto remaining_data() const -> bool { return false; }
   virtual void set_allowed_entropy_ratio(float e) {}
-  void set_matcher(const std::string& filename, const Mode& mode);
+  void set_matcher(const std::string& filename);
   virtual void update_pack_message(uint64_t event_id, ForwardMode* pm,
                                    size_t max_bytes, const char* in = nullptr,
                                    size_t in_len = 0)

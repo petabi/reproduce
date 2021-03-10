@@ -1,7 +1,7 @@
 #include "matcher.h"
 #include "util.h"
 
-Matcher::Matcher(const std::string& filename, const Mode& _mode) : mode(_mode)
+Matcher::Matcher(const std::string& filename)
 {
   databases_from_file(filename.c_str());
   if (hs_alloc_scratch(hs_db, &scratch) != HS_SUCCESS) {
@@ -21,24 +21,16 @@ auto Matcher::match(const char* content, size_t content_length) -> bool
     return false;
   }
   match_event_handler onEvent = &Matcher::on_match;
-  if (mode == Mode::BLOCK) {
-    MatchResult ret = scan_block(content, content_length, onEvent);
-    if (ret == MatchResult::TRUE) {
-      return true;
-    } else if (ret == MatchResult::FALSE) {
-      return false;
-    } else {
-      // hyperscan matching error
-      return false;
-    }
+  MatchResult ret = scan_block(content, content_length, onEvent);
+  if (ret == MatchResult::TRUE) {
+    return true;
+  } else if (ret == MatchResult::FALSE) {
+    return false;
+  } else {
+    // hyperscan matching error
+    return false;
   }
   return false;
-// TODO: Implementation to scan stream
-#if 0
-    else {
-      scanStream(content, content_length);
-    }
-#endif
 }
 
 auto Matcher::reload(const std::string& filename) -> bool
@@ -112,14 +104,7 @@ void Matcher::databases_from_file(const std::string& filename)
   Util::iprint("compiling hyperscan databases with patterns: ",
                std::to_string(patterns.size()));
 
-  if (mode == Mode::BLOCK) {
-    hs_db = build_database(cstr_patterns, flags, ids, HS_MODE_BLOCK);
-  } else {
-    // TODO: Stream mode implementation
-#if 0
-    hs_db = build_database(cstr_patterns, flags, ids, HS_MODE_STREAM);
-#endif
-  }
+  hs_db = build_database(cstr_patterns, flags, ids, HS_MODE_BLOCK);
 }
 
 void Matcher::parse_file(const std::string& filename,
@@ -139,37 +124,13 @@ void Matcher::parse_file(const std::string& filename,
       continue;
     }
 
-#if 0
-    //  10001:foobar/is
-    size_t colon_idx = line.find_first_of(':');
-    if (colon_idx == std::string::npos) {
-      throw std::runtime_error("failed to parse pattern file: " + i);
-    }
-
-    unsigned int id = std::stoi(line.substr(0, colon_idx).c_str());
-
-    const std::string expr(line.substr(colon_idx + 1));
-    size_t flags_start = expr.find_last_of('/');
-    if (flags_start == std::string::npos) {
-      throw std::runtime_error("failed to parse pattern file('/' not found): " +
-                               i);
-    }
-
-    std::string pcre(expr.substr(0, flags_start));
-    std::string flags_str(expr.substr(flags_start + 1, expr.size() - flags_start));
-#else
     std::string& pcre = line;
     std::string flags_str("");
-#endif
     unsigned int flag = parse_flags(flags_str);
 
     patterns.push_back(pcre);
     flags.push_back(flag);
-#if 0
-    ids.push_back(id);
-#else
     ids.push_back(i);
-#endif
   }
 }
 
