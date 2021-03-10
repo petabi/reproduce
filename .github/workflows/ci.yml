@@ -1,0 +1,15 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Install Rust
+      uses: hecrj/setup-rust-action@v1
+      with:
+        rust-version: stable
+    - uses: actions/checkout@v2
+    - name: Check formatting
+      run: cargo fmt -- --check
