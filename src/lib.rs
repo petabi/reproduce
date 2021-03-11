@@ -1,3 +1,5 @@
+#![allow(clippy::missing_safety_doc)]
+
 mod fluentd;
 
 use crate::fluentd::SizedForwardMode;
