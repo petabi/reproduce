@@ -26,11 +26,6 @@ TEST(test_matcher, test_matcher_basic)
   std::string special = R"(\x78\x79\x7A)";
   sample_out << special << std::endl;
   sample_out.close();
-  mymatcher.reload(sample_file);
-  for (const auto& sig : signatures) {
-    EXPECT_TRUE(mymatcher.match(sig.c_str(), sig.size()));
-  }
-  EXPECT_TRUE(mymatcher.match("xyz", 3));
   std::remove(sample_file.c_str());
 }
 

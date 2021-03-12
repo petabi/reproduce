@@ -1,12 +1,15 @@
 #![allow(clippy::missing_safety_doc)]
 
 mod fluentd;
+mod matcher;
 
 use crate::fluentd::SizedForwardMode;
+use crate::matcher::Matcher;
 use libc::c_char;
 use rmp_serde::Serializer;
 use serde::Serialize;
 use std::ffi::CStr;
+use std::ptr;
 use std::slice;
 
 #[no_mangle]
@@ -147,6 +150,41 @@ pub unsafe extern "C" fn forward_mode_serialize(
         .message
         .serialize(&mut Serializer::new(buf))
         .is_ok()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn matcher_new(filename_ptr: *const c_char) -> *mut Matcher {
+    let c_filename = CStr::from_ptr(filename_ptr);
+    let filename = match c_filename.to_str() {
+        Ok(s) => s,
+        Err(_) => return ptr::null_mut(),
+    };
+    let matcher = match Matcher::with_file(filename) {
+        Ok(m) => m,
+        Err(_) => return ptr::null_mut(),
+    };
+    Box::into_raw(Box::new(matcher))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn matcher_free(ptr: *mut Matcher) {
+    if ptr.is_null() {
+        return;
+    }
+    Box::from_raw(ptr);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn matcher_match(ptr: *mut Matcher, data: *const u8, len: usize) -> usize {
+    let matcher = &mut *ptr;
+    if matcher
+        .scan(slice::from_raw_parts(data, len))
+        .unwrap_or_default()
+    {
+        1
+    } else {
+        0
+    }
 }
 
 #[no_mangle]

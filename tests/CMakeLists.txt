@@ -22,7 +22,10 @@ if(HAVE_CXX_NO_ZERO_AS_NULL_POINTER_CONSTANT)
   target_compile_options(test_matcher PUBLIC
     -Wno-zero-as-null-pointer-constant)
 endif()
-target_link_libraries(test_matcher libreproduce GTest::GTest GTest::Main)
+target_link_libraries(test_matcher
+  libreproduce
+  ${CMAKE_SOURCE_DIR}/target/release/libevent.a
+  GTest::GTest GTest::Main)
 gtest_discover_tests(test_matcher)
 
 #add_executable(test_converter t_converter.cpp)
