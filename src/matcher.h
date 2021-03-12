@@ -1,10 +1,7 @@
 #ifndef MATCHER_H
 #define MATCHER_H
-#include <fstream>
-#include <hs/hs.h>
-#include <iostream>
+
 #include <string>
-#include <vector>
 
 struct InnerMatcher;
 

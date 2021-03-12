@@ -6,12 +6,11 @@ find_package(Threads)
 find_path(LIBRDKAFKA_INCLUDE_DIR librdkafka/rdkafkacpp.h)
 find_library(LIBRDKAFKA_LIB rdkafka++)
 find_library(PCAP_LIB pcap)
-find_path(LIBHS_INCLUDE hs/hs.h)
 find_library(HS_LIB hs)
 add_executable(${PROJECT_NAME} main.cpp controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp matcher.cpp entropy_calculator.cpp sessions.cpp)
 add_dependencies(${PROJECT_NAME} libevent)
 target_include_directories(${PROJECT_NAME}
-  PRIVATE ${LIBRDKAFKA_INCLUDE_DIR} ${LIBHS_INCLUDE} ${CMAKE_SOURCE_DIR}/ext ${PROJECT_BINARY_DIR})
+  PRIVATE ${LIBRDKAFKA_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/ext ${PROJECT_BINARY_DIR})
 target_link_libraries(${PROJECT_NAME} PRIVATE ${LIBRDKAFKA_LIB}
   ${CMAKE_SOURCE_DIR}/target/release/libevent.a
   ${HS_LIB}
