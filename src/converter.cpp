@@ -283,7 +283,8 @@ auto PacketConverter::l4_tcp_process(unsigned char* offset, size_t length)
   sport = ntohs(tcph->th_sport);
   dport = ntohs(tcph->th_dport);
   if (matc) {
-    match = matc->match(reinterpret_cast<char*>(offset), length - l4_hl);
+    match =
+        matcher_match(matc, reinterpret_cast<char*>(offset), length - l4_hl);
   }
 
   return true;
@@ -301,7 +302,8 @@ auto PacketConverter::l4_udp_process(unsigned char* offset, size_t length)
   dport = ntohs(udph->uh_dport);
   offset += l4_hl;
   if (matc) {
-    match = matc->match(reinterpret_cast<char*>(offset), length - l4_hl);
+    match =
+        matcher_match(matc, reinterpret_cast<char*>(offset), length - l4_hl);
   }
 
   return true;
@@ -316,7 +318,8 @@ auto PacketConverter::l4_icmp_process(unsigned char* offset, size_t length)
   }
   offset += ICMP_MINLEN;
   if (matc) {
-    match = matc->match(reinterpret_cast<char*>(offset), length - l4_hl);
+    match =
+        matcher_match(matc, reinterpret_cast<char*>(offset), length - l4_hl);
   }
   return true;
 }
@@ -381,7 +384,7 @@ auto LogConverter::convert(uint64_t event_id, char* in, size_t in_len,
   }
 
   if (matc) {
-    if (matc->match(in, in_len)) {
+    if (matcher_match(matc, in, in_len)) {
       return Conv::Status::Pass;
     }
   }
