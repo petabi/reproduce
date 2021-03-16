@@ -64,10 +64,10 @@ public:
   auto operator=(const PacketConverter&) -> PacketConverter& = delete;
   PacketConverter(PacketConverter&&) = delete;
   auto operator=(const PacketConverter &&) -> PacketConverter& = delete;
-  ~PacketConverter() override = default;
+  ~PacketConverter() override { matcher_free(matc); };
   auto convert(uint64_t event_id, char* in, size_t in_len, ForwardMode* msg)
       -> Conv::Status override;
-  Matcher* get_matcher() override { return matc.get(); }
+  Matcher* get_matcher() override { return matc; }
   auto remaining_data() const -> bool override
   {
     return sessions.get_number_bytes_in_sessions() > 0;
@@ -78,7 +78,8 @@ public:
   }
   void set_matcher(const std::string& filename) override
   {
-    matc = std::make_unique<Matcher>(filename);
+    matcher_free(matc);
+    matc = matcher_new(filename.c_str());
   }
   void update_pack_message(uint64_t event_id, ForwardMode* msg,
                            size_t max_bytes, const char* in = nullptr,
@@ -88,7 +89,7 @@ public:
                             size_t in_len) -> Conv::Status;
 
 private:
-  std::unique_ptr<Matcher> matc{nullptr};
+  Matcher* matc{nullptr};
   bool match;
   uint32_t dst = 0;
   uint32_t ip_hl = 0;
@@ -136,15 +137,16 @@ public:
   auto operator=(const LogConverter&) -> LogConverter& = delete;
   LogConverter(LogConverter&&) = delete;
   auto operator=(const LogConverter &&) -> LogConverter& = delete;
-  ~LogConverter() override = default;
+  ~LogConverter() override { matcher_free(matc); }
   auto convert(uint64_t event_id, char* in, size_t in_len, ForwardMode* msg)
       -> Conv::Status override;
-  Matcher* get_matcher() override { return matc.get(); }
+  Matcher* get_matcher() override { return matc; }
   [[nodiscard]] bool remaining_data() const override { return false; }
   void set_allowed_entropy_ratio(float e) override {}
   void set_matcher(const std::string& filename) override
   {
-    matc = std::make_unique<Matcher>(filename);
+    matcher_free(matc);
+    matc = matcher_new(filename.c_str());
   }
   void update_pack_message(uint64_t event_id, ForwardMode* pm, size_t max_bytes,
                            const char* in = nullptr, size_t in_len = 0) override
@@ -153,7 +155,7 @@ public:
   }
 
 private:
-  std::unique_ptr<Matcher> matc{nullptr};
+  Matcher* matc{nullptr};
 };
 
 #endif

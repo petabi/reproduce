@@ -3,29 +3,14 @@
 
 #include <string>
 
-struct InnerMatcher;
+struct Matcher;
 
 extern "C" {
 
-void matcher_free(InnerMatcher* ptr);
-auto matcher_match(InnerMatcher* ptr, const char* data, size_t len) -> size_t;
-auto matcher_new(const char* filename) -> InnerMatcher*;
+void matcher_free(Matcher* ptr);
+auto matcher_match(Matcher* ptr, const char* data, size_t len) -> size_t;
+auto matcher_new(const char* filename) -> Matcher*;
 
 } // extern "C"
-
-class Matcher {
-public:
-  Matcher() = delete;
-  Matcher(const std::string& filename);
-  Matcher(const Matcher&) = delete;
-  auto operator=(const Matcher&) -> Matcher& = delete;
-  Matcher(Matcher&&) = delete;
-  auto operator=(const Matcher &&) -> Matcher& = delete;
-  ~Matcher();
-  auto match(const char* content, size_t content_length) -> bool;
-
-private:
-  InnerMatcher* inner{nullptr};
-};
 
 #endif

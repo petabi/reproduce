@@ -14,20 +14,6 @@ endif()
 target_link_libraries(test_config libreproduce GTest::GTest GTest::Main)
 gtest_discover_tests(test_config)
 
-
-add_executable(test_matcher t_matcher.cpp)
-target_include_directories(test_matcher PRIVATE ${PROJECT_BINARY_DIR})
-target_compile_options(test_matcher PRIVATE -Wno-global-constructors)
-if(HAVE_CXX_NO_ZERO_AS_NULL_POINTER_CONSTANT)
-  target_compile_options(test_matcher PUBLIC
-    -Wno-zero-as-null-pointer-constant)
-endif()
-target_link_libraries(test_matcher
-  libreproduce
-  ${CMAKE_SOURCE_DIR}/target/release/libevent.a
-  GTest::GTest GTest::Main)
-gtest_discover_tests(test_matcher)
-
 #add_executable(test_converter t_converter.cpp)
 #target_include_directories(test_converter PRIVATE ${PROJECT_BINARY_DIR})
 #target_compile_options(test_converter PRIVATE -Wno-global-constructors)
