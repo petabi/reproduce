@@ -1,8 +1,6 @@
 #include <iostream>
 #include <unistd.h>
 
-#include "librdkafka/rdkafkacpp.h"
-
 #include "config.h"
 #include "version.h"
 
@@ -14,8 +12,7 @@ static constexpr size_t default_queue_size = 900000;
 
 void Config::help() const noexcept
 {
-  cout << PROGRAM_NAME << "-" << PROGRAM_VERSION << " (librdkafka++-"
-       << RdKafka::version_str() << ")\n";
+  cout << PROGRAM_NAME << "-" << PROGRAM_VERSION << "\n";
   cout << "[USAGE] " << PROGRAM_NAME << " [OPTIONS]\n";
   cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]\n";
   cout << "  -c: send count\n";

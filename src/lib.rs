@@ -2,15 +2,18 @@
 
 mod fluentd;
 mod matcher;
+mod producer;
 
 use crate::fluentd::SizedForwardMode;
 use crate::matcher::Matcher;
 use libc::c_char;
+pub use producer::Kafka as KafkaProducer;
 use rmp_serde::Serializer;
 use serde::Serialize;
 use std::ffi::CStr;
 use std::ptr;
 use std::slice;
+use std::time::Duration;
 
 #[no_mangle]
 pub extern "C" fn forward_mode_new() -> *mut SizedForwardMode {
@@ -150,6 +153,57 @@ pub unsafe extern "C" fn forward_mode_serialize(
         .message
         .serialize(&mut Serializer::new(buf))
         .is_ok()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn kafka_producer_new(
+    broker: *const c_char,
+    topic: *const c_char,
+    idle_timeout_ms: u32,
+    ack_timeout_ms: u32,
+) -> *mut KafkaProducer {
+    let topic = match CStr::from_ptr(topic).to_str() {
+        Ok(topic) => topic,
+        Err(_) => return ptr::null_mut(),
+    };
+    let idle_timeout = Duration::new(
+        (idle_timeout_ms / 1_000).into(),
+        idle_timeout_ms % 1_000 * 1_000_000,
+    );
+    let ack_timeout = Duration::new(
+        (ack_timeout_ms / 1_000).into(),
+        ack_timeout_ms % 1_000 * 1_000_000,
+    );
+    let producer = match CStr::from_ptr(broker).to_str() {
+        Ok(broker) => match KafkaProducer::new(broker, topic, idle_timeout, ack_timeout) {
+            Ok(producer) => producer,
+            Err(_) => return ptr::null_mut(),
+        },
+        Err(_) => return ptr::null_mut(),
+    };
+    Box::into_raw(Box::new(producer))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn kafka_producer_free(ptr: *mut KafkaProducer) {
+    if ptr.is_null() {
+        return;
+    }
+    Box::from_raw(ptr);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn kafka_producer_send(
+    ptr: *mut KafkaProducer,
+    msg: *const u8,
+    len: usize,
+) -> usize {
+    let producer = &mut *ptr;
+    if producer.send(slice::from_raw_parts(msg, len)).is_ok() {
+        1
+    } else {
+        0
+    }
 }
 
 #[no_mangle]

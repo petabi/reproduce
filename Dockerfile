@@ -1,17 +1,17 @@
-FROM ubuntu:19.10 as builder
+FROM ubuntu:20.04 as builder
 
-ARG RUSTUP_VERSION=1.20.2
-ARG RUST_VERSION=1.41.0
+ARG RUSTUP_VERSION=1.23.1
+ARG RUST_VERSION=1.50
 
 RUN set -eux; \
     apt-get update; \
+    env DEBIAN_FRONTEND="noninteractive" \
     apt-get install -y --no-install-recommends \
     ca-certificates \
     cmake \
     g++ \
     libhyperscan-dev \
     libpcap-dev \
-    librdkafka-dev \
     libssl-dev \
     make \
     pkgconf \
@@ -36,14 +36,13 @@ COPY ext /work/ext/
 
 RUN mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j
 
-FROM ubuntu:19.10
+FROM ubuntu:20.04
 
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
     libhyperscan5 \
-    libpcap0.8 \
-    librdkafka++1
+    libpcap0.8
 
 COPY --from=builder /work/build/src/reproduce /usr/local/bin/
 
