@@ -27,19 +27,13 @@ public:
   virtual auto convert(uint64_t event_id, char* in, size_t in_len,
                        ForwardMode* pm) -> Conv::Status = 0;
 
-  auto get_matcher() -> Matcher* { return matc.get(); }
-  [[nodiscard]] virtual auto remaining_data() const -> bool { return false; }
-  virtual void set_allowed_entropy_ratio(float e) {}
-  void set_matcher(const std::string& filename);
+  virtual auto get_matcher() -> Matcher* = 0;
+  [[nodiscard]] virtual auto remaining_data() const -> bool = 0;
+  virtual void set_allowed_entropy_ratio(float e) = 0;
+  virtual void set_matcher(const std::string& filename) = 0;
   virtual void update_pack_message(uint64_t event_id, ForwardMode* pm,
                                    size_t max_bytes, const char* in = nullptr,
-                                   size_t in_len = 0)
-  {
-    return;
-  }
-
-protected:
-  std::unique_ptr<Matcher> matc{nullptr};
+                                   size_t in_len = 0) = 0;
 };
 
 /**
@@ -73,6 +67,7 @@ public:
   ~PacketConverter() override = default;
   auto convert(uint64_t event_id, char* in, size_t in_len, ForwardMode* msg)
       -> Conv::Status override;
+  Matcher* get_matcher() override { return matc.get(); }
   auto remaining_data() const -> bool override
   {
     return sessions.get_number_bytes_in_sessions() > 0;
@@ -80,6 +75,10 @@ public:
   void set_allowed_entropy_ratio(float e) override
   {
     sessions.set_allowed_entropy_ratio(e);
+  }
+  void set_matcher(const std::string& filename) override
+  {
+    matc = std::make_unique<Matcher>(filename);
   }
   void update_pack_message(uint64_t event_id, ForwardMode* msg,
                            size_t max_bytes, const char* in = nullptr,
@@ -89,6 +88,7 @@ public:
                             size_t in_len) -> Conv::Status;
 
 private:
+  std::unique_ptr<Matcher> matc{nullptr};
   bool match;
   uint32_t dst = 0;
   uint32_t ip_hl = 0;
@@ -139,6 +139,21 @@ public:
   ~LogConverter() override = default;
   auto convert(uint64_t event_id, char* in, size_t in_len, ForwardMode* msg)
       -> Conv::Status override;
+  Matcher* get_matcher() override { return matc.get(); }
+  [[nodiscard]] bool remaining_data() const override { return false; }
+  void set_allowed_entropy_ratio(float e) override {}
+  void set_matcher(const std::string& filename) override
+  {
+    matc = std::make_unique<Matcher>(filename);
+  }
+  void update_pack_message(uint64_t event_id, ForwardMode* pm, size_t max_bytes,
+                           const char* in = nullptr, size_t in_len = 0) override
+  {
+    return;
+  }
+
+private:
+  std::unique_ptr<Matcher> matc{nullptr};
 };
 
 #endif
