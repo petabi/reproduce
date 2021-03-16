@@ -31,14 +31,6 @@ inline auto BOUNDARY_SAFE(const size_t& remain_size, const size_t& struct_size)
 }
 
 /**
- * Converter
- */
-void Converter::set_matcher(const std::string& filename)
-{
-  matc = make_unique<Matcher>(filename);
-}
-
-/**
  * PacketConverter
  */
 PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
