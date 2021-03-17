@@ -3,6 +3,7 @@
 mod fluentd;
 mod matcher;
 mod producer;
+mod session;
 
 use crate::fluentd::SizedForwardMode;
 use crate::matcher::Matcher;
@@ -14,6 +15,35 @@ use std::ffi::CStr;
 use std::ptr;
 use std::slice;
 use std::time::Duration;
+
+#[no_mangle]
+pub extern "C" fn entropy_calculator_new() -> *mut [usize; 256] {
+    Box::into_raw(Box::new([0; 256]))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn entropy_calculator_free(ptr: *mut [usize; 256]) {
+    if ptr.is_null() {
+        return;
+    }
+    Box::from_raw(ptr);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn entropy_calculator_calculate(
+    ptr: *mut [usize; 256],
+    data: *const u8,
+    len: usize,
+) -> f64 {
+    let scratch = &mut *ptr;
+    let data = slice::from_raw_parts(data, len);
+    session::entropy(data, scratch)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn maximum_entropy(len: usize) -> f64 {
+    session::maximum_entropy(len)
+}
 
 #[no_mangle]
 pub extern "C" fn forward_mode_new() -> *mut SizedForwardMode {

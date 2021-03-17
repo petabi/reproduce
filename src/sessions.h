@@ -1,15 +1,25 @@
 #ifndef SESSIONS_H
 #define SESSIONS_H
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include "entropy_calculator.h"
-
+struct EntropyCalculator;
 struct ForwardMode;
+
+extern "C" {
+
+double entropy_calculator_calculate(EntropyCalculator*,
+                                    const unsigned char* data, size_t len);
+EntropyCalculator* entropy_calculator_new();
+void entropy_calculator_free(EntropyCalculator*);
+double maximum_entropy(size_t len);
+
+} // extern "C"
 
 constexpr std::array<char, 4> src_key{"src"};
 constexpr std::array<char, 4> dst_key{"dst"};
@@ -53,6 +63,8 @@ struct Session {
 
 class Sessions {
 public:
+  Sessions() : e_calc(entropy_calculator_new()) {}
+  ~Sessions() { entropy_calculator_free(e_calc); }
   [[nodiscard]] auto empty() const -> bool { return session_map.empty(); }
   [[nodiscard]] auto get_number_bytes_in_sessions() const -> size_t
   {
@@ -71,7 +83,7 @@ public:
   static constexpr size_t min_sample_size = 128;
 
 private:
-  Entropy_calculator e_calc;
+  EntropyCalculator* e_calc;
   size_t message_data = 0;
   float entropy_ratio =
       0.9; // <= amount entropy vs max entropy allowed before drop
