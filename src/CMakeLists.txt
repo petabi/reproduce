@@ -6,7 +6,7 @@ find_package(Threads)
 find_path(PCAP_INCLUDE_DIR pcap/pcap.h)
 find_library(PCAP_LIB pcap)
 find_library(HS_LIB hs)
-add_executable(${PROJECT_NAME} main.cpp controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp entropy_calculator.cpp sessions.cpp)
+add_executable(${PROJECT_NAME} main.cpp controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp sessions.cpp)
 add_dependencies(${PROJECT_NAME} libevent)
 target_include_directories(${PROJECT_NAME}
   PRIVATE ${CMAKE_SOURCE_DIR}/ext ${PROJECT_BINARY_DIR} ${PCAP_INCLUDE_DIR})
@@ -29,7 +29,7 @@ else()
 endif()
 #install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR})
 
-add_library(libreproduce controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp entropy_calculator.cpp sessions.cpp)
+add_library(libreproduce controller.cpp converter.cpp producer.cpp config.cpp report.cpp util.cpp sessions.cpp)
 set_target_properties(libreproduce PROPERTIES
   OUTPUT_NAME reproduce
   POSITION_INDEPENDENT_CODE ON)
