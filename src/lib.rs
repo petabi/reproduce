@@ -7,6 +7,7 @@ mod session;
 
 use crate::fluentd::SizedForwardMode;
 use crate::matcher::Matcher;
+use crate::session::Traffic;
 use libc::c_char;
 pub use producer::Kafka as KafkaProducer;
 use rmp_serde::Serializer;
@@ -296,4 +297,52 @@ pub unsafe extern "C" fn serialization_buffer_len(buf: *const Vec<u8>) -> usize 
     assert!(!buf.is_null());
     let buf = &*buf;
     buf.len()
+}
+
+#[no_mangle]
+pub extern "C" fn traffic_new() -> *mut Traffic {
+    Box::into_raw(Box::new(Traffic::default()))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn traffic_free(ptr: *mut Traffic) {
+    if ptr.is_null() {
+        return;
+    }
+    Box::from_raw(ptr);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn traffic_make_next_message(
+    ptr: *mut Traffic,
+    event_id: u64,
+    msg: *mut SizedForwardMode,
+    max_len: usize,
+) -> u64 {
+    let traffic = &mut *ptr;
+    let msg = &mut *msg;
+    traffic.make_next_message(event_id, msg, max_len)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn traffic_update_session(
+    ptr: *mut Traffic,
+    src_addr: u32,
+    dst_addr: u32,
+    src_port: u16,
+    dst_port: u16,
+    proto: u8,
+    data: *const u8,
+    len: usize,
+    event_id: u64,
+) -> usize {
+    let traffic = &mut *ptr;
+    let data = slice::from_raw_parts(data, len);
+    if traffic.update_session(
+        src_addr, dst_addr, src_port, dst_port, proto, data, event_id,
+    ) {
+        1
+    } else {
+        0
+    }
 }

@@ -10,6 +10,7 @@
 
 struct EntropyCalculator;
 struct ForwardMode;
+struct Traffic;
 
 extern "C" {
 
