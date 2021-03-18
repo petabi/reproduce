@@ -7,8 +7,6 @@
 #include <gtest/gtest.h>
 
 #include "converter.h"
-//#include "forward_proto.h"
-#include "matcher.h"
 
 TEST(test_converter, test_packet_converter)
 {
