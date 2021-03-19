@@ -8,63 +8,6 @@
 #include "forward_proto.h"
 #include "sessions.h"
 
-TEST(test_session, test_delete_session)
-{
-
-  uint32_t src = 1;
-  uint32_t dst = 2;
-  uint8_t proto = 3;
-  uint16_t sport = 4;
-  uint16_t dport = 5;
-  uint64_t event_id = 6;
-  Sessions mysession;
-  std::string mymessage = "my message number: ";
-  mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                           mymessage.size(), event_id);
-  PackMsg pm;
-
-  // Test that counter will eventually delete the session.
-  for (size_t i = 0; i < mysession.max_age; ++i) {
-    EXPECT_EQ(mysession.get_number_bytes_in_sessions(), mymessage.size());
-    EXPECT_EQ(mysession.make_next_message(pm, 0), 0);
-    EXPECT_FALSE(mysession.empty());
-  }
-  EXPECT_EQ(mysession.make_next_message(pm, 0), 0);
-  EXPECT_EQ(mysession.get_number_bytes_in_sessions(), 0);
-  EXPECT_TRUE(mysession.empty());
-
-  // Test new sample will restart counter to delete session.
-  for (size_t i = 1;
-       mysession.get_number_bytes_in_sessions() < mysession.min_sample_size;
-       ++i) {
-    mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                             mymessage.size(), event_id);
-    EXPECT_FALSE(mysession.empty());
-    EXPECT_EQ(mysession.get_number_bytes_in_sessions(), i * mymessage.size());
-  }
-  EXPECT_EQ(mysession.make_next_message(pm, 0), 1);
-  EXPECT_EQ(mysession.get_number_bytes_in_sessions(), 0);
-  for (size_t i = 1;
-       mysession.get_number_bytes_in_sessions() < mysession.min_sample_size;
-       ++i) {
-    mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                             mymessage.size(), event_id);
-    EXPECT_FALSE(mysession.empty());
-  }
-  EXPECT_EQ(mysession.make_next_message(pm, 1), 2);
-  EXPECT_EQ(mysession.get_number_bytes_in_sessions(), 0);
-  mysession.update_session(src, dst, proto, sport, dport, mymessage.data(),
-                           mymessage.size(), event_id);
-  for (size_t i = 0; i < mysession.max_age; ++i) {
-    EXPECT_EQ(mysession.get_number_bytes_in_sessions(), mymessage.size());
-    EXPECT_EQ(mysession.make_next_message(pm, 2), 2);
-    EXPECT_FALSE(mysession.empty());
-  }
-  EXPECT_EQ(mysession.make_next_message(pm, 2), 2);
-  EXPECT_EQ(mysession.get_number_bytes_in_sessions(), 0);
-  EXPECT_TRUE(mysession.empty());
-}
-
 TEST(test_session, test_size)
 {
   Sessions mysession;
