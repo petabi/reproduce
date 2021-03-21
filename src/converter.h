@@ -8,16 +8,18 @@
 #include <sstream>
 #include <string>
 
-#include "sessions.h"
-
 struct ForwardMode;
 struct Matcher;
+struct Traffic;
 
 extern "C" {
 
 void matcher_free(Matcher* ptr);
 auto matcher_match(Matcher* ptr, const char* data, size_t len) -> size_t;
 auto matcher_new(const char* filename) -> Matcher*;
+size_t traffic_data_len(const Traffic*);
+void traffic_free(Traffic*);
+void traffic_set_entropy_ratio(Traffic*, double);
 
 } // extern "C"
 
@@ -72,17 +74,21 @@ public:
   auto operator=(const PacketConverter&) -> PacketConverter& = delete;
   PacketConverter(PacketConverter&&) = delete;
   auto operator=(const PacketConverter &&) -> PacketConverter& = delete;
-  ~PacketConverter() override { matcher_free(matc); };
+  ~PacketConverter() override
+  {
+    traffic_free(traffic);
+    matcher_free(matc);
+  };
   auto convert(uint64_t event_id, char* in, size_t in_len, ForwardMode* msg)
       -> Conv::Status override;
   Matcher* get_matcher() override { return matc; }
   auto remaining_data() const -> bool override
   {
-    return sessions.get_number_bytes_in_sessions() > 0;
+    return traffic_data_len(traffic) > 0;
   }
   void set_allowed_entropy_ratio(float e) override
   {
-    sessions.set_allowed_entropy_ratio(e);
+    traffic_set_entropy_ratio(traffic, e);
   }
   void set_matcher(const std::string& filename) override
   {
@@ -98,6 +104,7 @@ public:
 
 private:
   Matcher* matc{nullptr};
+  Traffic* traffic{nullptr};
   bool match;
   uint32_t dst = 0;
   uint32_t ip_hl = 0;
@@ -110,7 +117,6 @@ private:
   uint8_t l4_type;
   uint8_t proto = 0;
   uint8_t vlan = 0;
-  Sessions sessions;
   std::ofstream session_file;
 
   void save_session(uint64_t event_id, uint32_t src, uint32_t dst,

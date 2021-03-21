@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <array>
 #include <cstdarg>
 #include <cstdio>
 #include <cstring>
@@ -8,6 +9,7 @@
 #include <iomanip>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 #include "arp.h"
 #include "ethernet.h"
@@ -19,8 +21,35 @@
 
 #include "converter.h"
 #include "event.h"
-#include "sessions.h"
 #include "util.h"
+
+struct Traffic;
+
+extern "C" {
+
+uint64_t traffic_make_next_message(Traffic*, uint64_t, ForwardMode*, size_t);
+Traffic* traffic_new();
+size_t traffic_session_count(const Traffic*);
+size_t traffic_update_session(Traffic*, uint32_t, uint32_t, uint16_t, uint16_t,
+                              uint8_t, const char*, size_t, uint64_t);
+
+} // extern "C"
+
+constexpr std::array<char, 4> src_key{"src"};
+constexpr std::array<char, 4> dst_key{"dst"};
+constexpr std::array<char, 6> sport_key{"sport"};
+constexpr std::array<char, 6> dport_key{"dport"};
+constexpr std::array<char, 6> proto_key{"proto"};
+#define SESSION_EXTRA_BYTES                                                    \
+  (src_key.size() + dst_key.size() + sport_key.size() + dport_key.size() +     \
+   proto_key.size() + 2 * 5 + (2 * sizeof(uint32_t)) +                         \
+   (2 * sizeof(uint16_t)) + sizeof(uint8_t))
+
+constexpr auto message_label = "message";
+
+// size of message_label includes null terminator.
+constexpr size_t message_n_label_bytes =
+    (sizeof(message_label) - 1) + sizeof(size_t);
 
 using namespace std;
 
@@ -33,10 +62,13 @@ inline auto BOUNDARY_SAFE(const size_t& remain_size, const size_t& struct_size)
 /**
  * PacketConverter
  */
-PacketConverter::PacketConverter(const uint32_t _l2_type) : l2_type(_l2_type) {}
+PacketConverter::PacketConverter(const uint32_t _l2_type)
+    : traffic(traffic_new()), l2_type(_l2_type)
+{
+}
 
 PacketConverter::PacketConverter(const uint32_t _l2_type, time_t launch_time)
-    : l2_type(_l2_type)
+    : traffic(traffic_new()), l2_type(_l2_type)
 { /* session.txt file will be created when sessions sent
    if (!session_file.is_open()) {
      char buf[80];
@@ -350,7 +382,7 @@ void PacketConverter::update_pack_message(uint64_t event_id, ForwardMode* msg,
                                           size_t in_len)
 {
   if (in == nullptr && in_len == 0) {
-    sessions.make_next_message(msg, event_id, max_bytes);
+    traffic_make_next_message(traffic, event_id, msg, max_bytes);
     return;
   }
   if (in == nullptr || in_len == 0) {
@@ -358,17 +390,18 @@ void PacketConverter::update_pack_message(uint64_t event_id, ForwardMode* msg,
   }
   size_t data_offset =
       sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl + vlan;
-  if (sessions.update_session(src, dst, proto, sport, dport, in + data_offset,
-                              in_len - data_offset, event_id)) {
+  if (traffic_update_session(traffic, src, dst, sport, dport, proto,
+                             in + data_offset, in_len - data_offset,
+                             event_id)) {
     save_session(event_id, src, dst, proto, sport, dport);
   }
 
-  size_t estimated_data =
-      (sessions.size() * (SESSION_EXTRA_BYTES + message_n_label_bytes)) +
-      sessions.get_number_bytes_in_sessions() +
-      forward_mode_serialized_len(msg);
+  size_t estimated_data = (traffic_session_count(traffic) *
+                           (SESSION_EXTRA_BYTES + message_n_label_bytes)) +
+                          traffic_data_len(traffic) +
+                          forward_mode_serialized_len(msg);
   if (estimated_data >= max_bytes) {
-    sessions.make_next_message(msg, event_id, max_bytes);
+    traffic_make_next_message(traffic, event_id, msg, max_bytes);
   }
 }
 
