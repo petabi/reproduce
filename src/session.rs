@@ -125,6 +125,18 @@ impl Traffic {
         (event_id & 0xffff_ffff_0000_00ff) | ((seq_no & 0x00ff_ffff) << 8)
     }
 
+    pub fn data_len(&self) -> usize {
+        self.message_data
+    }
+
+    pub fn session_count(&self) -> usize {
+        self.sessions.len()
+    }
+
+    pub fn set_entropy_ratio(&mut self, ratio: f64) {
+        self.entropy_ratio = ratio;
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn update_session(
         &mut self,
@@ -276,7 +288,7 @@ mod tests {
                 msg_id << 8,
             );
             assert_eq!(is_new, i == 1);
-            assert_eq!(tr.message_data, 20 * i);
+            assert_eq!(tr.data_len(), 20 * i);
         }
 
         let mut msg = SizedForwardMode::default();
@@ -301,41 +313,41 @@ mod tests {
 
         let mut msg = SizedForwardMode::default();
         for _ in 0..MAX_AGE {
-            assert_eq!(tr.message_data, content.len());
+            assert_eq!(tr.data_len(), content.len());
             event_id = tr.make_next_message(0, &mut msg, 0xffff);
             assert!(!tr.sessions.is_empty());
         }
 
         let mut i = 2;
-        while tr.message_data < MIN_SAMPLE_SIZE {
+        while tr.data_len() < MIN_SAMPLE_SIZE {
             tr.update_session(1, 2, 4, 5, 3, content.as_bytes(), event_id);
-            assert_eq!(tr.message_data, i * content.len());
+            assert_eq!(tr.data_len(), i * content.len());
             assert!(!tr.sessions.is_empty());
             i += 1;
         }
         event_id = tr.make_next_message(event_id, &mut msg, 0xffff);
         assert_eq!(event_id >> 8, 1);
-        assert_eq!(tr.message_data, 0);
+        assert_eq!(tr.data_len(), 0);
         i = 1;
-        while tr.message_data < MIN_SAMPLE_SIZE {
+        while tr.data_len() < MIN_SAMPLE_SIZE {
             tr.update_session(1, 2, 4, 5, 3, content.as_bytes(), event_id);
-            assert_eq!(tr.message_data, i * content.len());
+            assert_eq!(tr.data_len(), i * content.len());
             assert!(!tr.sessions.is_empty());
             i += 1;
         }
         event_id = tr.make_next_message(event_id, &mut msg, 0xffff);
         assert_eq!(event_id >> 8, 2);
-        assert_eq!(tr.message_data, 0);
+        assert_eq!(tr.data_len(), 0);
         tr.update_session(1, 2, 4, 5, 3, content.as_bytes(), event_id);
         for _ in 0..MAX_AGE {
-            assert_eq!(tr.message_data, content.len());
+            assert_eq!(tr.data_len(), content.len());
             event_id = tr.make_next_message(event_id, &mut msg, 0xffff);
             assert_eq!(event_id >> 8, 2);
             assert!(!tr.sessions.is_empty());
         }
         event_id = tr.make_next_message(event_id, &mut msg, 0xffff);
         assert_eq!(event_id >> 8, 2);
-        assert_eq!(tr.message_data, 0);
+        assert_eq!(tr.data_len(), 0);
         assert!(tr.sessions.is_empty());
     }
 }

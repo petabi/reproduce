@@ -18,35 +18,6 @@ use std::slice;
 use std::time::Duration;
 
 #[no_mangle]
-pub extern "C" fn entropy_calculator_new() -> *mut [usize; 256] {
-    Box::into_raw(Box::new([0; 256]))
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn entropy_calculator_free(ptr: *mut [usize; 256]) {
-    if ptr.is_null() {
-        return;
-    }
-    Box::from_raw(ptr);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn entropy_calculator_calculate(
-    ptr: *mut [usize; 256],
-    data: *const u8,
-    len: usize,
-) -> f64 {
-    let scratch = &mut *ptr;
-    let data = slice::from_raw_parts(data, len);
-    session::entropy(data, scratch)
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn maximum_entropy(len: usize) -> f64 {
-    session::maximum_entropy(len)
-}
-
-#[no_mangle]
 pub extern "C" fn forward_mode_new() -> *mut SizedForwardMode {
     Box::into_raw(Box::new(SizedForwardMode::default()))
 }
@@ -313,6 +284,12 @@ pub unsafe extern "C" fn traffic_free(ptr: *mut Traffic) {
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn traffic_data_len(ptr: *const Traffic) -> usize {
+    let traffic = &*ptr;
+    traffic.data_len()
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn traffic_make_next_message(
     ptr: *mut Traffic,
     event_id: u64,
@@ -322,6 +299,18 @@ pub unsafe extern "C" fn traffic_make_next_message(
     let traffic = &mut *ptr;
     let msg = &mut *msg;
     traffic.make_next_message(event_id, msg, max_len)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn traffic_session_count(ptr: *const Traffic) -> usize {
+    let traffic = &*ptr;
+    traffic.session_count()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn traffic_set_entropy_ratio(ptr: *mut Traffic, ratio: f64) {
+    let traffic = &mut *ptr;
+    traffic.set_entropy_ratio(ratio);
 }
 
 #[no_mangle]
