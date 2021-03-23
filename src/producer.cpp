@@ -47,11 +47,6 @@ static const array<KafkaConf, 5> kafka_conf = {{
     {KafkaConfType::Topic, "message.timeout.ms", "5000", "5000", "900000",
      "300000",
      "limit the time a produced message waits for successful delivery"},
-#if 0
-    // it will reduce performance
-    {KafkaConfType::Topic, "compression.codec", "lz4", "none", "none", "none",
-     "none/gzip/snappy/lz4"},
-#endif
 }};
 
 Producer::~Producer() = default;

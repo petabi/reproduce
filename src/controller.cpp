@@ -655,15 +655,6 @@ auto Controller::skip_log(const size_t count_skip) -> bool
   size_t count = 0;
 
   while (count < count_skip) {
-#if 0
-    if (!logfile.getline(buf, 1)) {
-      if (logfile.eof()) {
-        return false;
-      } else if (logfile.bad() || logfile.fail()) {
-        return false;
-      }
-    }
-#endif
     getline(logfile, tmp);
     count++;
   }

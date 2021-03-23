@@ -74,22 +74,6 @@ template <typename T> inline auto PRINT_PRETTY_BYTES(T bytes) -> std::string
 
   return std::string(std::to_string(n) + "MB");
 }
-#if 0
-inline std::string PRINT_PRETTY_BYTES(size_t bytes)
-{
-  double n = static_cast<double>(bytes) / mbytes;
-  if (n < 1) {
-    n = static_cast<double>(bytes) / kbytes;
-    if (n < 1) {
-      std::string(std::to_string(bytes) + "B");
-    } else {
-      return std::string(std::to_string(n) + "KB");
-    }
-  }
-
-  return std::string(std::to_string(n) + "MB");
-}
-#endif
 
 auto Report::open_report_file(time_t launch_time) -> bool
 {

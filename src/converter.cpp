@@ -243,45 +243,7 @@ auto PacketConverter::l3_ipv4_process(unsigned char* offset, size_t length)
 auto PacketConverter::l3_arp_process(unsigned char* offset, size_t length)
     -> bool
 {
-// Use additional inspection if necessary
-#if 0
-  auto arph = reinterpret_cast<arp_pkthdr*>(offset);
-  uint16_t hrd = 0, pro = 0;
-  offset += sizeof(arph);
-  hrd = ntohs(arph->ar_hrd);
-  pro = ntohs(arph->ar_pro);
-
-  if ((pro != ETHERTYPE_IP && pro != ETHERTYPE_TRAIL) || arph->ar_pln != 4 ||
-      arph->ar_hln != 6) {
-    return true;
-  }
-
-  unsigned char* eth_sha = offset;
-  offset += arph->ar_hln;
-  unsigned char* ip_spa = offset;
-  offset += arph->ar_pln;
-  unsigned char* eth_tha = offset;
-  offset += arph->ar_hln;
-  unsigned char* ip_tpa = offset;
-
-  switch (ntohs(arph->ar_op)) {
-  case ARPOP_REQUEST:
-    break;
-  case ARPOP_REPLY:
-    break;
-  case ARPOP_REVREQUEST:
-    break;
-  case ARPOP_REVREPLY:
-    break;
-  case ARPOP_INVREQUEST:
-    break;
-  case ARPOP_INVREPLY:
-    break;
-  default:
-    break;
-  }
-#endif
-
+  // Use additional inspection if necessary
   return true;
 }
 
