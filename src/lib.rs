@@ -1,21 +1,53 @@
 #![allow(clippy::missing_safety_doc)]
 
+mod config;
 mod fluentd;
 mod matcher;
 mod producer;
 mod session;
 
+use crate::config::Config;
 use crate::fluentd::SizedForwardMode;
 use crate::matcher::Matcher;
 use crate::session::Traffic;
-use libc::c_char;
 pub use producer::Kafka as KafkaProducer;
 use rmp_serde::Serializer;
 use serde::Serialize;
 use std::ffi::CStr;
+use std::os::raw::{c_char, c_int};
 use std::ptr;
 use std::slice;
 use std::time::Duration;
+
+#[no_mangle]
+pub unsafe extern "C" fn config_new(
+    arg_count: c_int,
+    mut arg_values: *const *const i8,
+) -> *const Config {
+    #[allow(clippy::cast_sign_loss)] // argc in C++ is non-negative.
+    let mut arg_count = arg_count as usize;
+    let mut args = Vec::with_capacity(arg_count);
+    while arg_count > 0 {
+        let arg = match CStr::from_ptr(*arg_values).to_str() {
+            Ok(s) => s,
+            Err(_) => return ptr::null(),
+        };
+        args.push(arg);
+        arg_count -= 1;
+        arg_values = arg_values.add(1);
+    }
+
+    let config = config::parse(&args);
+    Box::into_raw(Box::new(config))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn config_free(ptr: *mut Config) {
+    if ptr.is_null() {
+        return;
+    }
+    Box::from_raw(ptr);
+}
 
 #[no_mangle]
 pub extern "C" fn forward_mode_new() -> *mut SizedForwardMode {
