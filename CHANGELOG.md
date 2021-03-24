@@ -1,13 +1,22 @@
 # Changelog
 
-This file documents all notable changes to this project. The format of this file
-is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this
-project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+This file documents recent notable changes to this project. The format of this
+file is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and
+this project adheres to [Semantic
+Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
 
-## [0.9.10] 2020-09-08
+- `-V` option to display the version number.
+
+### Changed
+
+- librdkafka is no longer needed.
+
+## [0.9.10] - 2020-09-08
+
 ### Changed
 
 - "event_id = time(32bit) + serial-number(24bit) + data-origin(8bit)"
@@ -21,8 +30,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
   Patch: the "event_id" created later has a larger value than before, at all time.
 
-
-## [0.9.9] 2020-06-17
+## [0.9.9] - 2020-06-17
 
 ### Changed
 
@@ -30,7 +38,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - modify code to send pcap-ng pcap file
 - follow what ClangTidy says. destroy c++11 warnings
 
-## [0.9.8] 2020-04-29
+## [0.9.8] - 2020-04-29
 
 ### Changed
 
@@ -38,8 +46,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - previous format: event_id(64bit) = datasource id(upper 16bit) + sequence number(lower 48bit)
 - new format: event_id(64bit) = current system time in seconds(upper 32bit) + sequence number (lower 24bit) + datasource id(lowest 8bit)
 
-
-## [0.9.7] 2020-04-08
+## [0.9.7] - 2020-04-08
 
 ### Added
 
@@ -52,7 +59,7 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - The default value of `message.timeout.ms` is set to 5,000 ms, the default
   value of `linger.ms`. This allows to link REproduce against librdkafka>=1.0.
 
-## [0.9.6] 2019-07-22
+## [0.9.6] - 2019-07-22
 
 ### Changed
 
@@ -60,17 +67,14 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   And sessions.txt does not created.
 - Produce success messages are displayed in every 100 success, i.e., around 100MB sent.
 
-
-## [0.9.5] 2019-07-12
+## [0.9.5] - 2019-07-12
 
 ### Changed
 
 - 'report.txt', 'session.txt' file name changed to `report.txt-YYYYMMDDHHMMSS` and `sessions.txt-YYYYMMDDHHMMSS`
 - bug fixed: event_id for TCP, UDP, ICMP is still session number. it's fixed to send packet number.
 
-
-
-## [0.9.4] 2019-07-10
+## [0.9.4] - 2019-07-10
 
 ### Added
 
@@ -79,11 +83,10 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   The session information is appended at the end of the file.
   You should clear it before REproduce run if you want to get clean data.
 
-
-
-## [0.9.3] 2019-07-08
+## [0.9.3] - 2019-07-08
 
 ### Changed
+
 - The event_id for pcap changed to the number of packets read from that PCAP file.
   In previous version event_id was session number.
 - `report.txt` file will be created in `/report/` directory if it is exist, like `/report/report.txt`.
@@ -91,20 +94,12 @@ project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   If you want to run REproduce in Docker, you should bind the `/report` to see the report file from the host.
 - Dockerfile changed to use g++-8
 
-
-
-## [0.9.3] 2019-06-28
-
-### Added
-
-- `-d` specifies the datasource id. `Default datasource id = 1`
-- `-n` specifies the `prefix` of data file name. This option is
- useful when the `-i` option is DIRECTORY and you want to send
- only the files that the name begin with the specified prefix.
-
-### Changed
-
-- When a DIRECTORY is specified for input, reproduce will send files in `alphabetical order`.
-- When a DIRECTORY is specified for input, reproduce will send the files in it's `sub-directories`.
-- The `event id` will start at 1 rather than 0.
-- Current `Time` will be printed in the report file.
+[Unreleased]: https://github.com/petabi/reproduce/compare/0.9.10...main
+[0.9.10]: https://github.com/petabi/reproduce/compare/0.9.9...0.9.10
+[0.9.9]: https://github.com/petabi/reproduce/compare/0.9.8...0.9.9
+[0.9.8]: https://github.com/petabi/reproduce/compare/0.9.7...0.9.8
+[0.9.7]: https://github.com/petabi/reproduce/compare/0.9.6...0.9.7
+[0.9.6]: https://github.com/petabi/reproduce/compare/0.9.5...0.9.6
+[0.9.5]: https://github.com/petabi/reproduce/compare/0.9.4...0.9.5
+[0.9.4]: https://github.com/petabi/reproduce/compare/0.9.3...0.9.4
+[0.9.3]: https://github.com/petabi/reproduce/compare/0.9.2...0.9.3
