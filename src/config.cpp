@@ -1,8 +1,14 @@
-#include <iostream>
 #include <unistd.h>
 
 #include "config.h"
 #include "version.h"
+
+extern "C" {
+
+Config* config_new(int, const char* const*);
+void config_free(Config*);
+
+} // extern "C"
 
 using namespace std;
 
@@ -10,56 +16,11 @@ static constexpr size_t default_queue_period = 3;
 static constexpr uint8_t default_datasource_id = 1;
 static constexpr size_t default_queue_size = 900000;
 
-void Config::help() const noexcept
-{
-  cout << PROGRAM_NAME << "-" << PROGRAM_VERSION << "\n";
-  cout << "[USAGE] " << PROGRAM_NAME << " [OPTIONS]\n";
-  cout << "  -b: kafka broker list, [host1:port1,host2:port2,..]\n";
-  cout << "  -c: send count\n";
-  cout << "  -d: data source id (1 ~ 255). Default: 1\n";
-  cout << "  -E: entropy ratio. The amount of maximum entropy allowed for a\n";
-  cout << "      session (0.0 < entropy ratio <= 1.0). Default is 0.9.\n";
-  cout << "      Only relevant for network packets.\n";
-  cout << "  -e: evaluation mode. output statistical result of transmission\n"
-          "      after job is terminated or stopped\n";
-  cout << "  -f: tcpdump filter (when input is NIC or PCAP)\n";
-  cout << "      (reference : "
-          "https://www.tcpdump.org/manpages/pcap-filter.7.html)\n";
-  cout << "  -g: follow the growing input file\n";
-  cout << "  -h: help\n";
-  cout << "  -i: input [PCAPFILE/LOGFILE/DIR/NIC]\n";
-  cout << "      If no 'i' option is given, input is internal sample data\n";
-  cout << "  -j: set initial sequence number. (24bit size)\n";
-  cout << "  -k: kafka config file."
-       << " (Ex: kafka.conf)\n"
-       << "      it overrides default kafka config to user kafka config\n";
-  cout << "  -m: match [Pattern FILE]\n";
-  cout << "  -n: prefix of file name to send multiple files or directory\n";
-  cout << "  -o: output [TEXTFILE/none]\n";
-  cout << "      If no 'o' option is given, output is kafka\n";
-  cout << "  -p: queue period time. how much time keep queued data."
-       << " (default: " << default_queue_period << ")\n";
-  cout << "  -q: queue size. how many bytes send once to kafka."
-       << " (default: " << default_queue_size << ")\n";
-  cout << "  -r: record [prefix of offset file]\n"
-       << "      using this option will start the conversion after the "
-          "previous \n"
-       << "      conversion. The offset file name is managed by [input \n"
-       << "      file]_[prefix]. Except when the input is a NIC.\n";
-  cout << "  -s: skip count\n";
-  cout
-      << "  -t: kafka topic If the broker does not have a corresponding "
-         "topic,\n"
-      << "      the broker fails unless there is a setting that automatically\n"
-      << "      creates the topic.\n";
-  cout << "  -v: polling the input directory\n";
-}
-
 auto Config::set(int argc, char** argv) -> bool
 {
   int o;
 
-  while ((o = getopt(argc, argv, "b:c:d:eE:f:ghi:j:k:m:n:o:p:q:r:s:t:v")) !=
+  while ((o = getopt(argc, argv, "b:c:d:eE:f:ghi:j:k:m:n:o:p:q:r:s:t:vV")) !=
          -1) {
     switch (o) {
     case 'b':
@@ -92,8 +53,11 @@ auto Config::set(int argc, char** argv) -> bool
     case 'g':
       mode_grow = true;
       break;
-    case 'h':
-      help();
+    case 'h': {
+      const char* args[] = {"reproduce", "-h"};
+      Config* conf = config_new(2, args);
+      config_free(conf);
+    }
       return false;
     case 'i':
       input = optarg;
@@ -131,6 +95,11 @@ auto Config::set(int argc, char** argv) -> bool
     case 'v':
       mode_polling_dir = true;
       break;
+    case 'V': {
+      const char* args[] = {"reproduce", "-V"};
+      Config* conf = config_new(2, args);
+      config_free(conf);
+    }
     default:
       break;
     }
