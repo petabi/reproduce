@@ -38,7 +38,7 @@ class KafkaProducer : public Producer {
 
 public:
   KafkaProducer() = delete;
-  KafkaProducer(std::shared_ptr<Config>);
+  KafkaProducer(const Config*);
   KafkaProducer(const KafkaProducer&) = delete;
   auto operator=(const KafkaProducer&) -> KafkaProducer& = delete;
   KafkaProducer(KafkaProducer&&) = delete;
@@ -51,7 +51,7 @@ public:
 private:
   InnerProducer* inner{nullptr};
   produce_ack_cnt pac;
-  std::shared_ptr<Config> conf;
+  const Config* conf;
   std::map<std::string, std::string> kafka_gconf;
   std::map<std::string, std::string> kafka_tconf;
   std::string queue_data;
@@ -76,7 +76,7 @@ private:
 class FileProducer : public Producer {
 public:
   FileProducer() = delete;
-  FileProducer(std::shared_ptr<Config>);
+  FileProducer(const Config*);
   FileProducer(const FileProducer&) = delete;
   auto operator=(const FileProducer&) -> FileProducer& = delete;
   FileProducer(FileProducer&&) = delete;
@@ -87,7 +87,7 @@ public:
   auto get_max_bytes() const noexcept -> size_t override;
 
 private:
-  std::shared_ptr<Config> conf;
+  const Config* conf;
   std::ofstream file;
   auto open() noexcept -> bool;
 };
@@ -98,19 +98,15 @@ private:
 
 class NullProducer : public Producer {
 public:
-  NullProducer() = delete;
-  NullProducer(std::shared_ptr<Config>);
+  NullProducer() = default;
   NullProducer(const NullProducer&) = delete;
   auto operator=(const NullProducer&) -> NullProducer& = delete;
   NullProducer(NullProducer&&) = delete;
   auto operator=(NullProducer &&) -> NullProducer& = delete;
-  ~NullProducer() override;
+  ~NullProducer() override = default;
   auto produce(const char* message, size_t len, bool flush = false) noexcept
       -> bool override;
   [[nodiscard]] auto get_max_bytes() const noexcept -> size_t override;
-
-private:
-  std::shared_ptr<Config> conf;
 };
 
 #endif

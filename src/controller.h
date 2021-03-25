@@ -23,7 +23,7 @@ enum class Status { Fail = -2, No_more = -1, Success = 0 };
 class Controller {
 public:
   Controller() = delete;
-  Controller(Config const&);
+  Controller(Config*);
   Controller(const Controller&) = delete;
   auto operator=(const Controller&) -> Controller& = delete;
   Controller(Controller&&) = delete;
@@ -33,7 +33,7 @@ public:
 
 private:
   time_t launch_time{0};
-  std::shared_ptr<Config> conf;
+  Config* conf;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
   uint32_t seq_no = 1; /* use lower 24-bit */
@@ -93,7 +93,7 @@ private:
     }
 
     return ((base_time << 32) | ((seq_no & 0x00FFFFFF) << 8) |
-            conf->datasource_id);
+            config_datasource_id(conf));
   }
   auto get_seq_no(const int no) -> uint32_t
   {

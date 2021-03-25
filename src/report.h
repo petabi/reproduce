@@ -2,6 +2,7 @@
 #define REPORT_H
 
 #include <chrono>
+#include <fstream>
 #include <memory>
 
 #include "config.h"
@@ -9,7 +10,7 @@
 class Report {
 public:
   Report() = delete;
-  Report(std::shared_ptr<Config>);
+  Report(const Config*);
   Report(const Report&) = delete;
   auto operator=(const Report&) -> Report& = delete;
   Report(Report&&) = delete;
@@ -20,7 +21,7 @@ public:
   void process(const size_t bytes) noexcept;
   void skip(const size_t bytes) noexcept;
   void end(const uint32_t id, time_t launch_time) noexcept;
-  std::shared_ptr<Config> conf;
+  const Config* conf;
 
 private:
   std::ofstream report_file;
