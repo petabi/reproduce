@@ -51,18 +51,18 @@ static const array<KafkaConf, 5> kafka_conf = {{
 
 Producer::~Producer() = default;
 
-KafkaProducer::KafkaProducer(shared_ptr<Config> _conf) : conf(move(_conf))
+KafkaProducer::KafkaProducer(const Config* _conf) : conf(_conf)
 {
-  if (conf->kafka_broker.empty() || conf->kafka_topic.empty()) {
+  if (!strlen(config_kafka_broker(conf)) || !strlen(config_kafka_topic(conf))) {
     throw runtime_error("Invalid constructor parameter");
   }
 
   set_kafka_conf();
-  if (!conf->kafka_conf.empty()) {
-    set_kafka_conf_file(conf->kafka_conf);
+  if (strlen(config_kafka_conf(conf))) {
+    set_kafka_conf_file(config_kafka_conf(conf));
   }
 
-  if (conf->mode_grow || conf->input_type == InputType::Nic) {
+  if (config_mode_grow(conf) || config_input_type(conf) == InputType::Nic) {
     period_chk = true;
     last_time = std::chrono::steady_clock::now();
   }
@@ -80,7 +80,7 @@ KafkaProducer::KafkaProducer(shared_ptr<Config> _conf) : conf(move(_conf))
     ack_timeout_ms = std::stoi(it->second);
   }
   inner =
-      kafka_producer_new(conf->kafka_broker.c_str(), conf->kafka_topic.c_str(),
+      kafka_producer_new(config_kafka_broker(conf), config_kafka_topic(conf),
                          idle_timeout_ms, ack_timeout_ms);
 }
 
@@ -185,7 +185,7 @@ auto KafkaProducer::period_queue_flush() noexcept -> bool
   current_time = std::chrono::steady_clock::now();
   time_diff = std::chrono::duration_cast<std::chrono::duration<double>>(
       current_time - last_time);
-  if (time_diff.count() > static_cast<double>(conf->queue_period)) {
+  if (time_diff.count() > static_cast<double>(config_queue_period(conf))) {
     Util::dprint(
         F, "Time lapse since last message queue entry: ", time_diff.count());
     return true;
@@ -204,7 +204,7 @@ auto KafkaProducer::produce(const char* message, size_t len,
   }
 
   if (flush || period_queue_flush() ||
-      queue_data.length() >= conf->queue_size) {
+      queue_data.length() >= config_queue_size(conf)) {
     if (!produce_core(queue_data)) {
       queue_data.clear();
       queue_data_cnt = 0;
@@ -242,11 +242,12 @@ KafkaProducer::~KafkaProducer()
  * FileProducer
  */
 
-FileProducer::FileProducer(shared_ptr<Config> _conf) : conf(move(_conf))
+FileProducer::FileProducer(const Config* _conf) : conf(_conf)
 {
-  if (!conf->output.empty()) {
+  if (strlen(config_output(conf))) {
     if (!open()) {
-      throw runtime_error("Failed to open output file: " + conf->output);
+      throw runtime_error(string("Failed to open output file: ") +
+                          config_output(conf));
     }
   }
 }
@@ -272,9 +273,9 @@ auto FileProducer::produce(const char* message, size_t len, bool flush) noexcept
 
 auto FileProducer::open() noexcept -> bool
 {
-  file.open(conf->output, ios::out);
+  file.open(config_output(conf), ios::out);
   if (!file.is_open()) {
-    Util::eprint("Failed to open file: ", conf->output);
+    Util::eprint("Failed to open file: ", config_output(conf));
     return false;
   }
 
@@ -289,10 +290,6 @@ auto FileProducer::get_max_bytes() const noexcept -> size_t
 /**
  * NullProducer
  */
-
-NullProducer::NullProducer(shared_ptr<Config> _conf) : conf(move(_conf)) {}
-
-NullProducer::~NullProducer() = default;
 
 auto NullProducer::produce(const char* message, size_t len, bool flush) noexcept
     -> bool

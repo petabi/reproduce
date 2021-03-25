@@ -25,10 +25,8 @@ static constexpr size_t kafka_buffer_safety_gap = 1024;
 atomic_bool stop = false;
 pcap_t* Controller::pcd = nullptr;
 
-Controller::Controller(Config const& _conf)
+Controller::Controller(Config* _conf) : conf(_conf)
 {
-  conf = make_shared<Config>(_conf);
-
   if (!set_converter()) {
     throw runtime_error("failed to set the converter");
   }
@@ -46,7 +44,7 @@ Controller::~Controller()
 
 void Controller::run()
 {
-  if (conf->input_type == InputType::Dir) {
+  if (config_input_type(conf) == InputType::Dir) {
     run_split();
   } else {
     run_single();
@@ -56,14 +54,14 @@ void Controller::run()
 void Controller::run_split()
 {
   string filename;
-  string dir_path = conf->input;
+  string dir_path = config_input(conf);
   std::vector<string> files, read_files;
 
   do {
-    files = traverse_directory(dir_path, conf->file_prefix, read_files);
+    files = traverse_directory(dir_path, config_file_prefix(conf), read_files);
 
     if (files.empty()) {
-      if (conf->mode_polling_dir) {
+      if (config_mode_polling_dir(conf)) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10000));
         continue;
       } else {
@@ -74,7 +72,7 @@ void Controller::run_split()
     sort(files.begin(), files.end());
 
     for (const auto& file : files) {
-      conf->input = file;
+      config_set_input(conf, file.c_str());
 
       if (!set_converter()) {
         throw runtime_error("failed to set the converter");
@@ -86,7 +84,7 @@ void Controller::run_split()
       close_log();
     }
 
-    if (conf->mode_polling_dir) {
+    if (config_mode_polling_dir(conf)) {
       for (auto& f : files) {
         read_files.push_back(f);
       }
@@ -112,10 +110,11 @@ void Controller::run_single()
     return;
   }
 
-  if (conf->count_skip) {
-    offset = conf->count_skip;
+  if (config_count_skip(conf)) {
+    offset = config_count_skip(conf);
   } else {
-    offset = read_offset(conf->input + "_" + conf->offset_prefix);
+    offset = read_offset(std::string(config_input(conf)) + "_" +
+                         config_offset_prefix(conf));
   }
 
   if (!invoke(skip_data, this, static_cast<size_t>(offset))) {
@@ -131,8 +130,8 @@ void Controller::run_single()
 
     // if user set the initial seq_no, the skip count will not be used for
     // numbering the seq_no
-    if (conf->initial_seq_no) {
-      seq_no = conf->initial_seq_no;
+    if (config_initial_seq_no(conf)) {
+      seq_no = config_initial_seq_no(conf);
     }
   }
 
@@ -170,8 +169,8 @@ void Controller::run_single()
       Util::eprint("failed to convert input data");
       break;
     } else if (gstat == GetData::Status::No_more) {
-      if (conf->input_type != InputType::Nic && conf->mode_grow &&
-          !conf->mode_polling_dir) {
+      if (config_input_type(conf) != InputType::Nic && config_mode_grow(conf) &&
+          !config_mode_polling_dir(conf)) {
         // TODO: optimize time interval
         std::this_thread::sleep_for(std::chrono::milliseconds(3000));
         continue;
@@ -201,7 +200,9 @@ void Controller::run_single()
                   serialization_buffer_len(buf), true);
   }
   forward_mode_free(msg);
-  write_offset(conf->input + "_" + conf->offset_prefix, offset + conv_cnt);
+  write_offset(std::string(config_input(conf)) + "_" +
+                   config_offset_prefix(conf),
+               offset + conv_cnt);
   report.end(get_seq_no(-1), launch_time);
 }
 
@@ -223,23 +224,24 @@ auto Controller::get_input_type() const -> InputType
                                                              0x0a};
 
   DIR* dir_chk = nullptr;
-  dir_chk = opendir(conf->input.c_str());
+  dir_chk = opendir(config_input(conf));
   if (dir_chk != nullptr) {
     closedir(dir_chk);
     return InputType::Dir;
   }
 
-  ifstream ifs(conf->input, ios::binary);
+  ifstream ifs(config_input(conf), ios::binary);
   if (!ifs) {
     pcap_t* pcd_chk;
     std::array<char, PCAP_ERRBUF_SIZE> errbuf{0};
-    pcd_chk = pcap_open_live(conf->input.c_str(), max_packet_length, 0, 1000,
+    pcd_chk = pcap_open_live(config_input(conf), max_packet_length, 0, 1000,
                              errbuf.data());
     if (pcd_chk != nullptr) {
       pcap_close(pcd_chk);
       return InputType::Nic;
     } else {
-      throw runtime_error("failed to open input file: " + conf->input);
+      throw runtime_error(string("failed to open input file: ") +
+                          config_input(conf));
     }
   }
 
@@ -259,11 +261,11 @@ auto Controller::get_input_type() const -> InputType
 
 auto Controller::get_output_type() const -> OutputType
 {
-  if (conf->output.empty()) {
+  if (!strlen(config_output(conf))) {
     return OutputType::Kafka;
   }
 
-  if (conf->output == "none") {
+  if (!strcmp(config_output(conf), "none")) {
     return OutputType::None;
   }
 
@@ -272,68 +274,68 @@ auto Controller::get_output_type() const -> OutputType
 
 auto Controller::set_converter() -> bool
 {
-  conf->input_type = get_input_type();
+  config_set_input_type(conf, int(get_input_type()));
   uint32_t l2_type;
 
   if (launch_time == 0) {
     launch_time = time(nullptr);
   }
 
-  switch (conf->input_type) {
+  switch (config_input_type(conf)) {
   case InputType::Nic:
-    l2_type = open_nic(conf->input);
+    l2_type = open_nic(config_input(conf));
     conv = make_unique<PacketConverter>(l2_type, launch_time);
-    if (!conf->pattern_file.empty()) {
+    if (strlen(config_pattern_file(conf))) {
       if (conv->get_matcher() == nullptr) {
-        conv->set_matcher(conf->pattern_file);
+        conv->set_matcher(config_pattern_file(conf));
       }
     }
     get_next_data = &Controller::get_next_nic;
     skip_data = &Controller::skip_null;
-    Util::iprint("input=", conf->input, ", input type=NIC");
+    Util::iprint("input=", config_input(conf), ", input type=NIC");
     if (conv->get_matcher() != nullptr) {
-      Util::iprint("pattern file=", conf->pattern_file);
+      Util::iprint("pattern file=", config_pattern_file(conf));
     }
-    conv->set_allowed_entropy_ratio(conf->entropy_ratio);
+    conv->set_allowed_entropy_ratio(config_entropy_ratio(conf));
     break;
   case InputType::Pcap:
   case InputType::Pcapng:
-    l2_type = open_pcap(conf->input);
+    l2_type = open_pcap(config_input(conf));
     conv = make_unique<PacketConverter>(l2_type, launch_time);
-    if (!conf->pattern_file.empty()) {
+    if (strlen(config_pattern_file(conf))) {
       if (conv->get_matcher() == nullptr) {
-        conv->set_matcher(conf->pattern_file);
+        conv->set_matcher(config_pattern_file(conf));
       }
     }
     get_next_data = &Controller::get_next_pcap;
     skip_data = &Controller::skip_pcap;
-    if (conf->input_type == InputType::Pcap)
-      Util::iprint("input=", conf->input, ", input type=PCAP");
+    if (config_input_type(conf) == int(InputType::Pcap))
+      Util::iprint("input=", config_input(conf), ", input type=PCAP");
     else
-      Util::iprint("input=", conf->input, ", input type=PCAPNG");
+      Util::iprint("input=", config_input(conf), ", input type=PCAPNG");
 
     if (conv->get_matcher() != nullptr) {
-      Util::iprint("pattern file=", conf->pattern_file);
+      Util::iprint("pattern file=", config_pattern_file(conf));
     }
-    conv->set_allowed_entropy_ratio(conf->entropy_ratio);
+    conv->set_allowed_entropy_ratio(config_entropy_ratio(conf));
     break;
   case InputType::Log:
-    open_log(conf->input);
+    open_log(config_input(conf));
     conv = make_unique<LogConverter>();
-    if (!conf->pattern_file.empty()) {
+    if (strlen(config_pattern_file(conf))) {
       if (conv->get_matcher() == nullptr) {
-        conv->set_matcher(conf->pattern_file);
+        conv->set_matcher(config_pattern_file(conf));
       }
     }
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
-    Util::iprint("input=", conf->input, ", input type=LOG");
+    Util::iprint("input=", config_input(conf), ", input type=LOG");
     if (conv->get_matcher() != nullptr) {
-      Util::iprint("pattern file=", conf->pattern_file);
+      Util::iprint("pattern file=", config_pattern_file(conf));
     }
     break;
   case InputType::Dir:
-    Util::iprint("input=", conf->input, ", input type=DIR");
+    Util::iprint("input=", config_input(conf), ", input type=DIR");
     break;
   default:
     return false;
@@ -344,19 +346,19 @@ auto Controller::set_converter() -> bool
 
 auto Controller::set_producer() -> bool
 {
-  conf->output_type = get_output_type();
-  switch (conf->output_type) {
+  config_set_output_type(conf, get_output_type());
+  switch (config_output_type(conf)) {
   case OutputType::Kafka:
     prod = make_unique<KafkaProducer>(conf);
-    Util::iprint("output=", conf->output, ", output type=KAFKA");
+    Util::iprint("output=", config_output(conf), ", output type=KAFKA");
     break;
   case OutputType::File:
     prod = make_unique<FileProducer>(conf);
-    Util::iprint("output=", conf->output, ", output type=FILE");
+    Util::iprint("output=", config_output(conf), ", output type=FILE");
     break;
   case OutputType::None:
-    prod = make_unique<NullProducer>(conf);
-    Util::iprint("output=", conf->output, ", output type=NONE");
+    prod = make_unique<NullProducer>();
+    Util::iprint("output=", config_output(conf), ", output type=NONE");
     break;
   default:
     return false;
@@ -388,17 +390,18 @@ auto Controller::open_nic(const std::string& devname) -> uint32_t
     Util::dprint(F, "non-blocking mode is set, it can cause cpu overhead");
   }
 
-  if (pcap_compile(pcd, &fp, conf->packet_filter.c_str(), 0, net) == -1) {
-    throw runtime_error("failed to compile the capture rules: " +
-                        conf->packet_filter);
+  if (pcap_compile(pcd, &fp, config_packet_filter(conf), 0, net) == -1) {
+    throw runtime_error(string("failed to compile the capture rules: ") +
+                        config_packet_filter(conf));
   }
 
   if (pcap_setfilter(pcd, &fp) == -1) {
-    throw runtime_error("failed to set the capture rules: " +
-                        conf->packet_filter);
+    throw runtime_error(string("failed to set the capture rules: ") +
+                        config_packet_filter(conf));
   }
 
-  Util::dprint(F, "capture rule setting completed: " + conf->packet_filter);
+  Util::dprint(F, string("capture rule setting completed: ") +
+                      config_packet_filter(conf));
 
   return pcap_datalink(pcd);
 }
@@ -422,17 +425,18 @@ auto Controller::open_pcap(const string& filename) -> uint32_t
                         ": " + errbuf.data());
   }
 
-  if (pcap_compile(pcd, &fp, conf->packet_filter.c_str(), 0, 0) == -1) {
-    throw runtime_error("failed to compile the capture rules: " +
-                        conf->packet_filter);
+  if (pcap_compile(pcd, &fp, config_packet_filter(conf), 0, 0) == -1) {
+    throw runtime_error(string("failed to compile the capture rules: ") +
+                        config_packet_filter(conf));
   }
 
   if (pcap_setfilter(pcd, &fp) == -1) {
-    throw runtime_error("failed to set the capture rules: " +
-                        conf->packet_filter);
+    throw runtime_error(string("failed to set the capture rules: ") +
+                        config_packet_filter(conf));
   }
 
-  Util::dprint(F, "capture rule setting completed: " + conf->packet_filter);
+  Util::dprint(F, string("capture rule setting completed: ") +
+                      config_packet_filter(conf));
 
   return pcap_datalink(pcd);
 }
@@ -461,7 +465,8 @@ void Controller::close_log()
 
 auto Controller::read_offset(const std::string& filename) const -> uint32_t
 {
-  if (conf->offset_prefix.empty() || conf->input_type == InputType::Nic) {
+  if (!strlen(config_offset_prefix(conf)) ||
+      config_input_type(conf) == int(InputType::Nic)) {
     return 0;
   }
 
@@ -485,7 +490,8 @@ auto Controller::read_offset(const std::string& filename) const -> uint32_t
 void Controller::write_offset(const std::string& filename,
                               uint32_t offset) const
 {
-  if (conf->offset_prefix.empty() || conf->input_type == InputType::Nic) {
+  if (!strlen(config_offset_prefix(conf)) ||
+      config_input_type(conf) == int(InputType::Nic)) {
     return;
   }
 
@@ -669,7 +675,7 @@ auto Controller::skip_null(const size_t count_skip) -> bool { return true; }
 
 auto Controller::check_count(const size_t sent_cnt) const noexcept -> bool
 {
-  if (conf->count_send == 0 || sent_cnt < conf->count_send) {
+  if (config_count_sent(conf) == 0 || sent_cnt < config_count_sent(conf)) {
     return false;
   }
 

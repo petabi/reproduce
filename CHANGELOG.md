@@ -14,7 +14,9 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - librdkafka is no longer needed.
-
+- An invalid command-line option value is not converted into the default value;
+  instead it results in an error.
+  
 ## [0.9.10] - 2020-09-08
 
 ### Changed

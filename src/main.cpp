@@ -5,12 +5,14 @@ using namespace std;
 
 auto main(int argc, char** argv) -> int
 {
-  try {
-    Config conf;
-    if (!conf.set(argc, argv)) {
-      exit(0);
-    }
+  Config* conf = config_new(argc, argv);
+  if (!conf) {
+    cerr << "cannot initiate configurations\n";
+    exit(1);
+  }
+  config_show(conf);
 
+  try {
     Controller ctrl(conf);
     cout << "reproduce start\n";
     ctrl.run();
@@ -19,6 +21,7 @@ auto main(int argc, char** argv) -> int
     cerr << "[EXCEPTION] " << e.what() << "\n";
   }
 
+  config_free(conf);
   return 0;
 }
 
