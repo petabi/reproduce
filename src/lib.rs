@@ -1,3 +1,4 @@
+#![allow(clippy::missing_panics_doc)]
 #![allow(clippy::missing_safety_doc)]
 
 mod config;
