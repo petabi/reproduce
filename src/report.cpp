@@ -6,6 +6,7 @@
 
 #include <pcap/pcap.h>
 
+#include "config.h"
 #include "report.h"
 #include "util.h"
 

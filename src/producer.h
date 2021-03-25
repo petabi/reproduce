@@ -4,12 +4,9 @@
 #include <chrono>
 #include <iostream>
 #include <map>
-#include <memory>
 #include <string>
 
-#include "config.h"
-#include "util.h"
-
+struct Config;
 struct InnerProducer;
 
 /**

@@ -1,6 +1,9 @@
 #include <array>
+#include <fstream>
 
+#include "config.h"
 #include "producer.h"
+#include "util.h"
 
 using namespace std;
 

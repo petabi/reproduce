@@ -13,8 +13,10 @@
 
 #include <pcap/pcap.h>
 
+#include "config.h"
 #include "controller.h"
 #include "event.h"
+#include "report.h"
 
 using namespace std;
 

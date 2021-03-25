@@ -3,9 +3,8 @@
 
 #include <chrono>
 #include <fstream>
-#include <memory>
 
-#include "config.h"
+struct Config;
 
 class Report {
 public:
