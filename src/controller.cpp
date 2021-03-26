@@ -292,14 +292,10 @@ auto Controller::set_converter() -> bool
   config_set_input_type(conf, int(get_input_type()));
   uint32_t l2_type;
 
-  if (launch_time == 0) {
-    launch_time = time(nullptr);
-  }
-
   switch (config_input_type(conf)) {
   case InputType::Nic:
     l2_type = open_nic(config_input(conf));
-    conv = make_unique<PacketConverter>(l2_type, launch_time);
+    conv = make_unique<PacketConverter>(l2_type);
     if (strlen(config_pattern_file(conf))) {
       if (conv->get_matcher() == nullptr) {
         conv->set_matcher(config_pattern_file(conf));
@@ -316,7 +312,7 @@ auto Controller::set_converter() -> bool
   case InputType::Pcap:
   case InputType::Pcapng:
     l2_type = open_pcap(config_input(conf));
-    conv = make_unique<PacketConverter>(l2_type, launch_time);
+    conv = make_unique<PacketConverter>(l2_type);
     if (strlen(config_pattern_file(conf))) {
       if (conv->get_matcher() == nullptr) {
         conv->set_matcher(config_pattern_file(conf));

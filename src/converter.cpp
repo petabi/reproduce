@@ -67,24 +67,6 @@ PacketConverter::PacketConverter(const uint32_t _l2_type)
 {
 }
 
-PacketConverter::PacketConverter(const uint32_t _l2_type, time_t launch_time)
-    : traffic(traffic_new()), l2_type(_l2_type)
-{ /* session.txt file will be created when sessions sent
-   if (!session_file.is_open()) {
-     char buf[80];
-
-     if (std::filesystem::is_directory("/report")) {
-       strftime(buf, sizeof(buf), "/report/sessions.txt-%Y%m%d%H%M%S",
-                std::localtime(&launch_time));
-     } else {
-       strftime(buf, sizeof(buf), "sessions.txt-%Y%m%d%H%M%S",
-                std::localtime(&launch_time));
-     }
-     session_file.open(buf, ios::out | ios::app);
-   } */
-  return;
-}
-
 void PacketConverter::save_session(uint64_t event_id, uint32_t src,
                                    uint32_t dst, uint8_t proto, uint16_t sport,
                                    uint16_t dport)

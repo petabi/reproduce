@@ -69,7 +69,6 @@ class PacketConverter : public Converter {
 public:
   PacketConverter() = delete;
   PacketConverter(const uint32_t _l2_type);
-  PacketConverter(const uint32_t _l2_type, time_t launch_time);
   PacketConverter(const PacketConverter&) = delete;
   auto operator=(const PacketConverter&) -> PacketConverter& = delete;
   PacketConverter(PacketConverter&&) = delete;

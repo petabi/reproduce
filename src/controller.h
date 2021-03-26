@@ -31,7 +31,6 @@ public:
   void run();
 
 private:
-  time_t launch_time{0};
   Config* conf;
   std::unique_ptr<Converter> conv;
   std::unique_ptr<Producer> prod;
