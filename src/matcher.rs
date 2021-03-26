@@ -3,7 +3,7 @@ use anyhow::Result;
 use hyperscan::prelude::*;
 #[cfg(not(all(target_arch = "x86_64", feature = "hyperscan")))]
 use regex::bytes::RegexSet;
-use std::fs;
+use std::io::Read;
 
 pub struct Matcher {
     #[cfg(all(target_arch = "x86_64", feature = "hyperscan"))]
@@ -16,17 +16,20 @@ pub struct Matcher {
 
 impl Matcher {
     #[cfg(all(target_arch = "x86_64", feature = "hyperscan"))]
-    pub fn with_file(filename: &str) -> Result<Self> {
-        let patterns: Patterns = fs::read_to_string(filename)?.parse()?;
+    pub fn from_read<R: Read>(mut r: R) -> Result<Self> {
+        let mut exps = String::new();
+        r.read_to_string(&mut exps)?;
+        let patterns: Patterns = exps.parse()?;
         let db: BlockDatabase = patterns.build()?;
         let scratch = db.alloc_scratch()?;
         Ok(Matcher { db, scratch })
     }
 
     #[cfg(not(all(target_arch = "x86_64", feature = "hyperscan")))]
-    pub fn with_file(filename: &str) -> Result<Self> {
-        let fs = fs::read_to_string(filename)?;
-        let rules = trim_to_rules(&fs);
+    pub fn from_read<R: Read>(mut r: R) -> Result<Self> {
+        let mut exps = String::new();
+        r.read_to_string(&mut exps)?;
+        let rules = trim_to_rules(&exps);
         let db: RegexSet = RegexSet::new(rules)?;
         Ok(Matcher { db })
     }
