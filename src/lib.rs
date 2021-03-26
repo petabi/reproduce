@@ -17,6 +17,7 @@ pub use producer::Kafka as KafkaProducer;
 use rmp_serde::Serializer;
 use serde::Serialize;
 use std::ffi::CStr;
+use std::fs::File;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
 use std::slice;
@@ -470,7 +471,11 @@ pub unsafe extern "C" fn matcher_new(filename_ptr: *const c_char) -> *mut Matche
         Ok(s) => s,
         Err(_) => return ptr::null_mut(),
     };
-    let matcher = match Matcher::with_file(filename) {
+    let exp_file = match File::open(filename) {
+        Ok(f) => f,
+        Err(_) => return ptr::null_mut(),
+    };
+    let matcher = match Matcher::from_read(exp_file) {
         Ok(m) => m,
         Err(_) => return ptr::null_mut(),
     };
