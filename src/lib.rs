@@ -5,11 +5,13 @@ mod config;
 mod fluentd;
 mod matcher;
 mod producer;
+mod report;
 mod session;
 
 use crate::config::{Config, InputType, OutputType};
 use crate::fluentd::SizedForwardMode;
 use crate::matcher::Matcher;
+use crate::report::Report;
 use crate::session::Traffic;
 pub use producer::Kafka as KafkaProducer;
 use rmp_serde::Serializer;
@@ -494,6 +496,43 @@ pub unsafe extern "C" fn matcher_match(ptr: *mut Matcher, data: *const u8, len: 
     } else {
         0
     }
+}
+
+#[no_mangle]
+pub extern "C" fn report_new(config: *const Config) -> *mut Report {
+    Box::into_raw(Box::new(Report::new(config)))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn report_free(ptr: *mut Report) {
+    if ptr.is_null() {
+        return;
+    }
+    Box::from_raw(ptr);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn report_start(ptr: *mut Report, id: u32) {
+    let report = &mut *ptr;
+    report.start(id)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn report_process(ptr: *mut Report, bytes: usize) {
+    let report = &mut *ptr;
+    report.process(bytes)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn report_skip(ptr: *mut Report, bytes: usize) {
+    let report = &mut *ptr;
+    report.skip(bytes)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn report_end(ptr: *mut Report, id: u32) {
+    let report = &mut *ptr;
+    if report.end(id).is_err() {}
 }
 
 #[no_mangle]

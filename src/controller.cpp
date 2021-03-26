@@ -16,7 +16,19 @@
 #include "config.h"
 #include "controller.h"
 #include "event.h"
-#include "report.h"
+
+struct Report;
+
+extern "C" {
+
+Report* report_new(const Config*);
+void report_free(Report*);
+void report_process(Report*, size_t);
+void report_start(Report*, uint32_t);
+void report_skip(Report*, size_t);
+void report_end(Report*, uint32_t);
+
+} // extern "C"
 
 using namespace std;
 
@@ -103,7 +115,7 @@ void Controller::run_single()
   size_t imessage_len = 0;
   size_t conv_cnt = 0;
   uint32_t offset = 0;
-  Report report(conf);
+  Report* report = report_new(conf);
 
   if (signal(SIGINT, signal_handler) == SIG_ERR ||
       signal(SIGTERM, signal_handler) == SIG_ERR ||
@@ -137,7 +149,7 @@ void Controller::run_single()
     }
   }
 
-  report.start(get_seq_no(0));
+  report_start(report, get_seq_no(0));
   auto msg = forward_mode_new();
   forward_mode_set_tag(msg, "REproduce");
   auto buf = serialization_buffer_new();
@@ -165,7 +177,7 @@ void Controller::run_single()
 
       if (cstat != Conv::Status::Success) {
         // TODO: handling exceptions due to convert failures
-        report.skip(imessage_len);
+        report_skip(report, imessage_len);
       }
     } else if (gstat == GetData::Status::Fail) {
       Util::eprint("failed to convert input data");
@@ -183,7 +195,7 @@ void Controller::run_single()
     }
 
     conv_cnt++;
-    report.process(imessage_len);
+    report_process(report, imessage_len);
 
     if (check_count(conv_cnt)) {
       break;
@@ -205,7 +217,8 @@ void Controller::run_single()
   write_offset(std::string(config_input(conf)) + "_" +
                    config_offset_prefix(conf),
                offset + conv_cnt);
-  report.end(get_seq_no(-1), launch_time);
+  report_end(report, get_seq_no(-1));
+  report_free(report);
 }
 
 auto Controller::get_input_type() const -> InputType

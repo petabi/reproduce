@@ -14,6 +14,8 @@ crate-type = ["staticlib"]
 [dependencies]
 anyhow = "1"
 byteorder = "1.3"
+bytesize = "1"
+chrono = "0.4"
 clap = { version = "2", features = ["wrap_help"] }
 eventio = "0.5"
 kafka = "0.8"

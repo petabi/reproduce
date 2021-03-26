@@ -1,6 +1,8 @@
 #include "config.h"
 #include "controller.h"
 
+#include <pcap/pcap.h>
+
 using namespace std;
 
 auto main(int argc, char** argv) -> int
