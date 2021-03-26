@@ -71,3 +71,16 @@ fn trim_to_rules(s: &str) -> Vec<&str> {
         })
         .collect::<Vec<_>>()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Matcher;
+
+    #[test]
+    fn scan() {
+        let exps = "abc\nxyz\n";
+        let mut matcher = Matcher::from_read(exps.as_bytes()).expect("valid exps");
+        assert_eq!(matcher.scan(b"hello").expect("Ok"), false);
+        assert_eq!(matcher.scan(b"00xyz00").expect("Ok"), true);
+    }
+}
