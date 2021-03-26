@@ -1,8 +1,8 @@
 # REproduce
 
-## Overview
+[![Coverage Status](https://codecov.io/gh/petabi/reproduce/branch/main/graph/badge.svg?token=2P7VSZ1KFV)](https://codecov.io/gh/petabi/reproduce)
 
-### Introduction
+## Introduction
 
 REproduce is a program that reads raw packet values such as a pcap file, converts them into log-type streams through specific field values or characteristics, and outputs the conversion result to a file or to a kafka server.
 
@@ -311,3 +311,24 @@ Run with the following command
 docker run --mount type=bind,source=[the directory containing the target],target=/data \
            --mount type=bind,source=[report or log directory],target=/report reproduce:latest -i [the target file] -b localhost:9092 -t topic
 ```
+
+## License
+
+Copyright 2018-2021 Petabi, Inc.
+
+Licensed under [Apache License, Version 2.0][apache-license] (the "License");
+you may not use this crate except in compliance with the License.
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See [LICENSE](LICENSE) for
+the specific language governing permissions and limitations under the License.
+
+## Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the [Apache-2.0
+license][apache-license], shall be licensed as above, without any additional
+terms or conditions.
+
+[apache-license]: http://www.apache.org/licenses/LICENSE-2.0
