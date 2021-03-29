@@ -35,11 +35,6 @@ size_t traffic_update_session(Traffic*, uint32_t, uint32_t, uint16_t, uint16_t,
 
 } // extern "C"
 
-#define SESSION_EXTRA_BYTES                                                    \
-  (src_key.size() + dst_key.size() + sport_key.size() + dport_key.size() +     \
-   proto_key.size() + 2 * 5 + (2 * sizeof(uint32_t)) +                         \
-   (2 * sizeof(uint16_t)) + sizeof(uint8_t))
-
 using namespace std;
 
 inline auto BOUNDARY_SAFE(const size_t& remain_size, const size_t& struct_size)
