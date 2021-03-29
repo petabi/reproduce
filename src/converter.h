@@ -116,10 +116,6 @@ private:
   uint8_t l4_type;
   uint8_t proto = 0;
   uint8_t vlan = 0;
-  std::ofstream session_file;
-
-  void save_session(uint64_t event_id, uint32_t src, uint32_t dst,
-                    uint8_t proto, uint16_t sport, uint16_t dport);
 
   auto get_l2_process()
       -> bool (PacketConverter::*)(unsigned char* offset, size_t length);

@@ -67,17 +67,6 @@ PacketConverter::PacketConverter(const uint32_t _l2_type)
 {
 }
 
-void PacketConverter::save_session(uint64_t event_id, uint32_t src,
-                                   uint32_t dst, uint8_t proto, uint16_t sport,
-                                   uint16_t dport)
-{
-  if (session_file.is_open()) {
-    session_file << event_id << "," << src << "," << dst << ","
-                 << (static_cast<uint16_t>(proto)) << "," << sport << ","
-                 << dport << endl;
-  }
-}
-
 auto PacketConverter::convert(uint64_t event_id, char* in, size_t in_len,
                               ForwardMode* msg) -> Conv::Status
 {
@@ -334,11 +323,8 @@ void PacketConverter::update_pack_message(uint64_t event_id, ForwardMode* msg,
   }
   size_t data_offset =
       sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl + vlan;
-  if (traffic_update_session(traffic, src, dst, sport, dport, proto,
-                             in + data_offset, in_len - data_offset,
-                             event_id)) {
-    save_session(event_id, src, dst, proto, sport, dport);
-  }
+  traffic_update_session(traffic, src, dst, sport, dport, proto,
+                         in + data_offset, in_len - data_offset, event_id);
 
   size_t estimated_data = (traffic_session_count(traffic) *
                            (SESSION_EXTRA_BYTES + message_n_label_bytes)) +
