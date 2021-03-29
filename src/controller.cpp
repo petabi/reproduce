@@ -201,12 +201,6 @@ void Controller::run_single()
       break;
     }
   }
-  // only use when processing session data
-  /*
-  if (conv->remaining_data()) {
-    conv->update_pack_message(event_id(), pm.fm, nullptr, 0);
-  }
-  */
 
   if (forward_mode_size(msg) > 0) {
     forward_mode_serialize(msg, buf);

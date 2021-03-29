@@ -35,21 +35,10 @@ size_t traffic_update_session(Traffic*, uint32_t, uint32_t, uint16_t, uint16_t,
 
 } // extern "C"
 
-constexpr std::array<char, 4> src_key{"src"};
-constexpr std::array<char, 4> dst_key{"dst"};
-constexpr std::array<char, 6> sport_key{"sport"};
-constexpr std::array<char, 6> dport_key{"dport"};
-constexpr std::array<char, 6> proto_key{"proto"};
 #define SESSION_EXTRA_BYTES                                                    \
   (src_key.size() + dst_key.size() + sport_key.size() + dport_key.size() +     \
    proto_key.size() + 2 * 5 + (2 * sizeof(uint32_t)) +                         \
    (2 * sizeof(uint16_t)) + sizeof(uint8_t))
-
-constexpr auto message_label = "message";
-
-// size of message_label includes null terminator.
-constexpr size_t message_n_label_bytes =
-    (sizeof(message_label) - 1) + sizeof(size_t);
 
 using namespace std;
 
@@ -308,31 +297,6 @@ auto PacketConverter::payload_only_message(uint64_t event_id, ForwardMode* msg,
   }
 
   return Conv::Status::Success;
-}
-
-void PacketConverter::update_pack_message(uint64_t event_id, ForwardMode* msg,
-                                          size_t max_bytes, const char* in,
-                                          size_t in_len)
-{
-  if (in == nullptr && in_len == 0) {
-    traffic_make_next_message(traffic, event_id, msg, max_bytes);
-    return;
-  }
-  if (in == nullptr || in_len == 0) {
-    return;
-  }
-  size_t data_offset =
-      sizeof(pcap_sf_pkthdr) + sizeof(ether_header) + ip_hl + l4_hl + vlan;
-  traffic_update_session(traffic, src, dst, sport, dport, proto,
-                         in + data_offset, in_len - data_offset, event_id);
-
-  size_t estimated_data = (traffic_session_count(traffic) *
-                           (SESSION_EXTRA_BYTES + message_n_label_bytes)) +
-                          traffic_data_len(traffic) +
-                          forward_mode_serialized_len(msg);
-  if (estimated_data >= max_bytes) {
-    traffic_make_next_message(traffic, event_id, msg, max_bytes);
-  }
 }
 
 /**
