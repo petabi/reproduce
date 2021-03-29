@@ -41,9 +41,6 @@ public:
   [[nodiscard]] virtual auto remaining_data() const -> bool = 0;
   virtual void set_allowed_entropy_ratio(float e) = 0;
   virtual void set_matcher(const std::string& filename) = 0;
-  virtual void update_pack_message(uint64_t event_id, ForwardMode* pm,
-                                   size_t max_bytes, const char* in = nullptr,
-                                   size_t in_len = 0) = 0;
 };
 
 /**
@@ -94,9 +91,6 @@ public:
     matcher_free(matc);
     matc = matcher_new(filename.c_str());
   }
-  void update_pack_message(uint64_t event_id, ForwardMode* msg,
-                           size_t max_bytes, const char* in = nullptr,
-                           size_t in_len = 0) override;
 
   auto payload_only_message(uint64_t event_id, ForwardMode* pm, const char* in,
                             size_t in_len) -> Conv::Status;
@@ -156,11 +150,6 @@ public:
   {
     matcher_free(matc);
     matc = matcher_new(filename.c_str());
-  }
-  void update_pack_message(uint64_t event_id, ForwardMode* pm, size_t max_bytes,
-                           const char* in = nullptr, size_t in_len = 0) override
-  {
-    return;
   }
 
 private:
