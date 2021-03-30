@@ -24,9 +24,3 @@ ExternalProject_Add(libevent
   INSTALL_COMMAND ""
   BUILD_ALWAYS ON
   LOG_BUILD ON)
-
-find_package(GTest)
-if(GTEST_FOUND)
-  enable_testing()
-  add_subdirectory(tests)
-endif()

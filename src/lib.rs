@@ -13,6 +13,7 @@ use crate::config::{Config, InputType, OutputType};
 use crate::converter::Converter;
 use crate::fluentd::SizedForwardMode;
 use crate::matcher::Matcher;
+use crate::producer::{KafkaInput, Producer};
 use crate::report::Report;
 use crate::session::Traffic;
 pub use producer::Kafka as KafkaProducer;
@@ -23,7 +24,6 @@ use std::fs::File;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
 use std::slice;
-use std::time::Duration;
 
 #[no_mangle]
 pub extern "C" fn config_default() -> *const Config {
@@ -409,44 +409,6 @@ pub unsafe extern "C" fn forward_mode_serialize(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn kafka_producer_new(
-    broker: *const c_char,
-    topic: *const c_char,
-) -> *mut KafkaProducer {
-    const IDLE_TIMEOUT_MS: u32 = 540_000;
-    const ACK_TIMEOUT_MS: u32 = 5_000;
-
-    let topic = match CStr::from_ptr(topic).to_str() {
-        Ok(topic) => topic,
-        Err(_) => return ptr::null_mut(),
-    };
-    let idle_timeout = Duration::new(
-        (IDLE_TIMEOUT_MS / 1_000).into(),
-        ACK_TIMEOUT_MS % 1_000 * 1_000_000,
-    );
-    let ack_timeout = Duration::new(
-        (IDLE_TIMEOUT_MS / 1_000).into(),
-        ACK_TIMEOUT_MS % 1_000 * 1_000_000,
-    );
-    let producer = match CStr::from_ptr(broker).to_str() {
-        Ok(broker) => match KafkaProducer::new(broker, topic, idle_timeout, ack_timeout) {
-            Ok(producer) => producer,
-            Err(_) => return ptr::null_mut(),
-        },
-        Err(_) => return ptr::null_mut(),
-    };
-    Box::into_raw(Box::new(producer))
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn kafka_producer_free(ptr: *mut KafkaProducer) {
-    if ptr.is_null() {
-        return;
-    }
-    Box::from_raw(ptr);
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn kafka_producer_send(
     ptr: *mut KafkaProducer,
     msg: *const u8,
@@ -493,6 +455,91 @@ pub unsafe extern "C" fn matcher_match(ptr: *mut Matcher, data: *const u8, len: 
         .scan(slice::from_raw_parts(data, len))
         .unwrap_or_default()
     {
+        1
+    } else {
+        0
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn producer_new_file(filename: *const u8, len: usize) -> *mut Producer {
+    let filename =
+        if let Ok(filename) = String::from_utf8(slice::from_raw_parts(filename, len).to_vec()) {
+            filename
+        } else {
+            return ptr::null_mut();
+        };
+    let producer = if let Ok(producer) = Producer::new_file(&filename) {
+        producer
+    } else {
+        return ptr::null_mut();
+    };
+    Box::into_raw(Box::new(producer))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn producer_new_kafka(
+    broker: *const c_char,
+    topic: *const c_char,
+    input_type: c_int,
+    queue_size: usize,
+    queue_period: i64,
+    grow: usize,
+) -> *mut Producer {
+    let topic = match CStr::from_ptr(topic).to_str() {
+        Ok(topic) => topic,
+        Err(_) => return ptr::null_mut(),
+    };
+    let input_type = match input_type {
+        0 => KafkaInput::Pcap,
+        1 => KafkaInput::PcapNg,
+        2 => KafkaInput::Nic,
+        3 => KafkaInput::Log,
+        4 => KafkaInput::Dir,
+        _ => return ptr::null_mut(),
+    };
+    let producer = match CStr::from_ptr(broker).to_str() {
+        Ok(broker) => {
+            match Producer::new_kafka(
+                broker,
+                topic,
+                input_type,
+                queue_size,
+                queue_period,
+                grow > 0,
+            ) {
+                Ok(producer) => producer,
+                Err(_) => return ptr::null_mut(),
+            }
+        }
+        Err(_) => return ptr::null_mut(),
+    };
+    Box::into_raw(Box::new(producer))
+}
+
+#[no_mangle]
+pub extern "C" fn producer_new_null() -> *mut Producer {
+    Box::into_raw(Box::new(Producer::new_null()))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn producer_free(ptr: *mut Producer) {
+    if ptr.is_null() {
+        return;
+    }
+    Box::from_raw(ptr);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn producer_max_bytes() -> usize {
+    Producer::max_bytes()
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn producer_produce(ptr: *mut Producer, msg: *const u8, len: usize) -> c_int {
+    let producer = &mut *ptr;
+    let msg = slice::from_raw_parts(msg, len);
+    if producer.produce(msg, true).is_ok() {
         1
     } else {
         0

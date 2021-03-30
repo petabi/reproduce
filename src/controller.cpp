@@ -65,6 +65,13 @@ Converter* packet_converter_new(uint32_t, const char*);
 void converter_free(Converter*);
 int converter_convert(Converter*, uint64_t, const char*, size_t, ForwardMode*);
 size_t converter_has_matcher(const Converter*);
+Producer* producer_new_kafka(const char*, const char*, int, size_t, int64_t,
+                             size_t);
+Producer* producer_new_file(const char*);
+Producer* producer_new_null();
+void producer_free(Producer*);
+size_t producer_max_bytes();
+int producer_produce(Producer*, const char*, size_t);
 Report* report_new(const Config*);
 void report_free(Report*);
 void report_process(Report*, size_t);
@@ -83,7 +90,7 @@ static constexpr size_t kafka_buffer_safety_gap = 1024;
 atomic_bool stop = false;
 pcap_t* Controller::pcd = nullptr;
 
-Controller::Controller(Config* _conf) : conf(_conf), converter(nullptr)
+Controller::Controller(Config* _conf) : conf(_conf)
 {
   if (!set_converter()) {
     throw runtime_error("failed to set the converter");
@@ -99,6 +106,7 @@ Controller::~Controller()
   close_pcap();
   close_log();
   converter_free(converter);
+  producer_free(producer);
 }
 
 void Controller::run()
@@ -205,11 +213,12 @@ void Controller::run_single()
         invoke(get_next_data, this, imessage.data(), imessage_len);
     if (gstat == GetData::Status::Success) {
       if ((forward_mode_serialized_len(msg) + imessage_len) >=
-          prod->get_max_bytes() - kafka_buffer_safety_gap) {
+          producer_max_bytes() - kafka_buffer_safety_gap) {
         forward_mode_serialize(msg, buf);
-        if (!prod->produce(
+        if (!producer_produce(
+                producer,
                 reinterpret_cast<const char*>(serialization_buffer_data(buf)),
-                serialization_buffer_len(buf), true)) {
+                serialization_buffer_len(buf))) {
           break;
         }
         forward_mode_clear(msg);
@@ -249,8 +258,9 @@ void Controller::run_single()
 
   if (forward_mode_size(msg) > 0) {
     forward_mode_serialize(msg, buf);
-    prod->produce(reinterpret_cast<const char*>(serialization_buffer_data(buf)),
-                  serialization_buffer_len(buf), true);
+    producer_produce(
+        producer, reinterpret_cast<const char*>(serialization_buffer_data(buf)),
+        serialization_buffer_len(buf));
   }
   forward_mode_free(msg);
   write_offset(std::string(config_input(conf)) + "_" +
@@ -382,22 +392,25 @@ auto Controller::set_producer() -> bool
   config_set_output_type(conf, get_output_type());
   switch (config_output_type(conf)) {
   case OutputType::Kafka:
-    prod = make_unique<KafkaProducer>(conf);
+    producer = producer_new_kafka(
+        config_kafka_broker(conf), config_kafka_topic(conf),
+        config_input_type(conf), config_queue_size(conf),
+        int64_t(config_queue_period(conf)), config_mode_grow(conf));
     Util::iprint("output=", config_output(conf), ", output type=KAFKA");
     break;
   case OutputType::File:
-    prod = make_unique<FileProducer>(conf);
+    producer = producer_new_file(config_output(conf));
     Util::iprint("output=", config_output(conf), ", output type=FILE");
     break;
   case OutputType::None:
-    prod = make_unique<NullProducer>();
+    producer = producer_new_null();
     Util::iprint("output=", config_output(conf), ", output type=NONE");
     break;
   default:
     return false;
   }
 
-  return true;
+  return producer != nullptr;
 }
 
 auto Controller::open_nic(const std::string& devname) -> uint32_t
