@@ -54,7 +54,9 @@ static const array<KafkaConf, 5> kafka_conf = {{
 
 Producer::~Producer() = default;
 
-KafkaProducer::KafkaProducer(const Config* _conf) : conf(_conf)
+KafkaProducer::KafkaProducer(const Config* conf)
+    : queue_period(config_queue_period(conf)),
+      queue_size(config_queue_size(conf))
 {
   if (!strlen(config_kafka_broker(conf)) || !strlen(config_kafka_topic(conf))) {
     throw runtime_error("Invalid constructor parameter");
@@ -188,7 +190,7 @@ auto KafkaProducer::period_queue_flush() noexcept -> bool
   current_time = std::chrono::steady_clock::now();
   time_diff = std::chrono::duration_cast<std::chrono::duration<double>>(
       current_time - last_time);
-  if (time_diff.count() > static_cast<double>(config_queue_period(conf))) {
+  if (time_diff.count() > static_cast<double>(queue_period)) {
     Util::dprint(
         F, "Time lapse since last message queue entry: ", time_diff.count());
     return true;
@@ -206,8 +208,7 @@ auto KafkaProducer::produce(const char* message, size_t len,
     queue_data_cnt++;
   }
 
-  if (flush || period_queue_flush() ||
-      queue_data.length() >= config_queue_size(conf)) {
+  if (flush || period_queue_flush() || queue_data.length() >= queue_size) {
     if (!produce_core(queue_data)) {
       queue_data.clear();
       queue_data_cnt = 0;
@@ -245,10 +246,13 @@ KafkaProducer::~KafkaProducer()
  * FileProducer
  */
 
-FileProducer::FileProducer(const Config* _conf) : conf(_conf)
+FileProducer::FileProducer(const Config* conf)
 {
-  if (strlen(config_output(conf))) {
-    if (!open()) {
+  auto filename = config_output(conf);
+  if (strlen(filename)) {
+    file.open(config_output(conf), ios::out);
+    if (!file.is_open()) {
+      Util::eprint("Failed to open file: ", config_output(conf));
       throw runtime_error(string("Failed to open output file: ") +
                           config_output(conf));
     }
@@ -270,17 +274,6 @@ auto FileProducer::produce(const char* message, size_t len, bool flush) noexcept
   file.flush();
 
   // FIXME: check error?
-
-  return true;
-}
-
-auto FileProducer::open() noexcept -> bool
-{
-  file.open(config_output(conf), ios::out);
-  if (!file.is_open()) {
-    Util::eprint("Failed to open file: ", config_output(conf));
-    return false;
-  }
 
   return true;
 }
