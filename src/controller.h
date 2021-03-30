@@ -12,10 +12,10 @@
 
 #include <pcap/pcap.h>
 
-#include "producer.h"
 #include "util.h"
 
 struct Converter;
+struct Producer;
 
 namespace GetData {
 enum class Status { Fail = -2, No_more = -1, Success = 0 };
@@ -34,8 +34,8 @@ public:
 
 private:
   Config* conf;
-  Converter* converter;
-  std::unique_ptr<Producer> prod;
+  Converter* converter{nullptr};
+  Producer* producer{nullptr};
   uint32_t seq_no = 1; /* use lower 24-bit */
   static pcap_t* pcd;
   FILE* pcapfile{nullptr};
