@@ -2,6 +2,7 @@
 #![allow(clippy::missing_safety_doc)]
 
 mod config;
+mod converter;
 mod fluentd;
 mod matcher;
 mod producer;
@@ -9,6 +10,7 @@ mod report;
 mod session;
 
 use crate::config::{Config, InputType, OutputType};
+use crate::converter::Converter;
 use crate::fluentd::SizedForwardMode;
 use crate::matcher::Matcher;
 use crate::report::Report;
@@ -268,6 +270,79 @@ pub unsafe extern "C" fn config_set_queue_size(ptr: *mut Config, size: usize) {
 }
 
 #[no_mangle]
+pub unsafe extern "C" fn log_converter_new(pattern_file: *const c_char) -> *mut Converter {
+    let filename = CStr::from_ptr(pattern_file).to_str().unwrap();
+    let matcher = if filename.is_empty() {
+        None
+    } else if let Ok(f) = File::open(filename) {
+        if let Ok(m) = Matcher::from_read(f) {
+            Some(m)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    Box::into_raw(Box::new(Converter::with_log(matcher)))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn packet_converter_new(
+    l2_type: u32,
+    pattern_file: *const c_char,
+) -> *mut Converter {
+    let filename = CStr::from_ptr(pattern_file).to_str().unwrap();
+    let matcher = if filename.is_empty() {
+        None
+    } else if let Ok(f) = File::open(filename) {
+        if let Ok(m) = Matcher::from_read(f) {
+            Some(m)
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+    Box::into_raw(Box::new(Converter::with_packet(l2_type, matcher)))
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn converter_free(ptr: *mut Converter) {
+    if ptr.is_null() {
+        return;
+    }
+    Box::from_raw(ptr);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn converter_convert(
+    ptr: *mut Converter,
+    event_id: u64,
+    input: *const u8,
+    len: usize,
+    msg: *mut SizedForwardMode,
+) -> c_int {
+    let converter = &mut *ptr;
+    let input = slice::from_raw_parts(input, len);
+    let msg = &mut *msg;
+    match converter.convert(event_id, input, msg) {
+        Ok(true) => 0,   // Success
+        Ok(false) => -1, // Pass
+        Err(_) => -2,    // Fail
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn converter_has_matcher(ptr: *const Converter) -> usize {
+    let converter = &*ptr;
+    if converter.has_matcher() {
+        1
+    } else {
+        0
+    }
+}
+
+#[no_mangle]
 pub extern "C" fn forward_mode_new() -> *mut SizedForwardMode {
     Box::into_raw(Box::new(SizedForwardMode::default()))
 }
@@ -308,27 +383,6 @@ pub unsafe extern "C" fn forward_mode_set_tag(
         Err(_) => return false,
     };
     forward_mode.set_tag(rstag.to_string()).is_ok()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn forward_mode_append_raw(
-    ptr: *mut SizedForwardMode,
-    time: u64,
-    key: *const c_char,
-    value: *const u8,
-    len: usize,
-) -> bool {
-    assert!(!ptr.is_null());
-    let forward_mode = &mut *ptr;
-    assert!(!key.is_null());
-    let c_key = CStr::from_ptr(key);
-    let rs_key = match c_key.to_str() {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    assert!(!value.is_null());
-    let value = slice::from_raw_parts(value, len);
-    forward_mode.push_raw(time, rs_key, value).is_ok()
 }
 
 #[no_mangle]
