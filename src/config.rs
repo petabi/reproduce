@@ -17,7 +17,6 @@ pub struct Config {
     pub packet_filter: CString,
     pub kafka_broker: CString,
     pub kafka_topic: CString,
-    pub kafka_conf: CString,
     pub pattern_file: CString,
     pub file_prefix: CString, // file name prefix when sending multiple files or a directory
 
@@ -61,7 +60,6 @@ impl Default for Config {
             packet_filter: CString::new(Vec::new()).expect("no 0 byte"),
             kafka_broker: CString::new(Vec::new()).expect("no 0 byte"),
             kafka_topic: CString::new(Vec::new()).expect("no 0 byte"),
-            kafka_conf: CString::new(Vec::new()).expect("no 0 byte"),
             pattern_file: CString::new(Vec::new()).expect("no 0 byte"),
             file_prefix: CString::new(Vec::new()).expect("no 0 byte"),
             datasource_id: 1,
@@ -119,11 +117,6 @@ impl fmt::Display for Config {
             f,
             "kafka_topic={}",
             self.kafka_topic.clone().into_string().expect("valid UTF-8")
-        )?;
-        writeln!(
-            f,
-            "kafka_conf={}",
-            self.kafka_conf.clone().into_string().expect("valid UTF-8")
         )?;
         writeln!(
             f,
@@ -197,13 +190,6 @@ pub fn parse(args: &[&str]) -> Config {
             .short("j")
             .takes_value(true)
             .help("Sets the initial sequence number (0-16777215).")
-    )
-    .arg(
-        Arg::with_name("config")
-            .short("k")
-            .takes_value(true)
-            .value_name("FILE")
-            .help("Kafka config filename to override default Kafka configuration values.")
     )
     .arg(
         Arg::with_name("pattern")
@@ -327,7 +313,6 @@ pub fn parse(args: &[&str]) -> Config {
             }
         })
         .unwrap_or_default();
-    let kafka_conf = CString::new(m.value_of("config").unwrap_or_default()).expect("no 0 byte");
     let pattern_file = CString::new(m.value_of("pattern").unwrap_or_default()).expect("no 0 byte");
     let file_prefix = CString::new(m.value_of("prefix").unwrap_or_default()).expect("no 0 byte");
     let output = CString::new(m.value_of("output").unwrap_or_default()).expect("no 0 byte");
@@ -401,7 +386,6 @@ pub fn parse(args: &[&str]) -> Config {
         packet_filter,
         kafka_broker,
         kafka_topic,
-        kafka_conf,
         pattern_file,
         file_prefix,
         datasource_id,

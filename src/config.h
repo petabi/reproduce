@@ -24,7 +24,6 @@ int config_input_type(const Config*);
 void config_set_input_type(Config*, int);
 const char* config_kafka_broker(const Config*);
 void config_set_kafka_broker(Config*, const char*);
-const char* config_kafka_conf(const Config*);
 const char* config_kafka_topic(const Config*);
 void config_set_kafka_topic(Config*, const char*);
 size_t config_mode_eval(const Config*);

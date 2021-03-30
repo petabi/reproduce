@@ -48,8 +48,6 @@ public:
 private:
   InnerProducer* inner{nullptr};
   produce_ack_cnt pac;
-  std::map<std::string, std::string> kafka_gconf;
-  std::map<std::string, std::string> kafka_tconf;
   const size_t queue_period;
   const size_t queue_size;
   std::string queue_data;
@@ -61,9 +59,6 @@ private:
       (std::chrono::milliseconds::zero())};
   std::chrono::duration<double> time_diff{0.0};
   auto produce_core(const std::string& message) noexcept -> bool;
-  void set_kafka_conf();
-  void set_kafka_conf_file(const std::string& conf_file);
-  void show_kafka_conf() const;
   auto period_queue_flush() noexcept -> bool;
 };
 
