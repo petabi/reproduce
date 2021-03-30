@@ -151,12 +151,6 @@ pub unsafe extern "C" fn config_set_kafka_broker(ptr: *mut Config, output: *cons
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn config_kafka_conf(ptr: *const Config) -> *const c_char {
-    let config = &*ptr;
-    config.kafka_conf.as_ptr()
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn config_kafka_topic(ptr: *const Config) -> *const c_char {
     let config = &*ptr;
     config.kafka_topic.as_ptr()
@@ -417,20 +411,21 @@ pub unsafe extern "C" fn forward_mode_serialize(
 pub unsafe extern "C" fn kafka_producer_new(
     broker: *const c_char,
     topic: *const c_char,
-    idle_timeout_ms: u32,
-    ack_timeout_ms: u32,
 ) -> *mut KafkaProducer {
+    const IDLE_TIMEOUT_MS: u32 = 540_000;
+    const ACK_TIMEOUT_MS: u32 = 5_000;
+
     let topic = match CStr::from_ptr(topic).to_str() {
         Ok(topic) => topic,
         Err(_) => return ptr::null_mut(),
     };
     let idle_timeout = Duration::new(
-        (idle_timeout_ms / 1_000).into(),
-        idle_timeout_ms % 1_000 * 1_000_000,
+        (IDLE_TIMEOUT_MS / 1_000).into(),
+        ACK_TIMEOUT_MS % 1_000 * 1_000_000,
     );
     let ack_timeout = Duration::new(
-        (ack_timeout_ms / 1_000).into(),
-        ack_timeout_ms % 1_000 * 1_000_000,
+        (IDLE_TIMEOUT_MS / 1_000).into(),
+        ACK_TIMEOUT_MS % 1_000 * 1_000_000,
     );
     let producer = match CStr::from_ptr(broker).to_str() {
         Ok(broker) => match KafkaProducer::new(broker, topic, idle_timeout, ack_timeout) {
