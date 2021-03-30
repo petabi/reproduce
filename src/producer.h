@@ -48,9 +48,10 @@ public:
 private:
   InnerProducer* inner{nullptr};
   produce_ack_cnt pac;
-  const Config* conf;
   std::map<std::string, std::string> kafka_gconf;
   std::map<std::string, std::string> kafka_tconf;
+  const size_t queue_period;
+  const size_t queue_size;
   std::string queue_data;
   size_t queue_data_cnt{0};
   bool period_chk{false};
@@ -84,9 +85,7 @@ public:
   auto get_max_bytes() const noexcept -> size_t override;
 
 private:
-  const Config* conf;
   std::ofstream file;
-  auto open() noexcept -> bool;
 };
 
 /**
