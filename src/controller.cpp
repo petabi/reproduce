@@ -15,7 +15,27 @@
 
 #include "config.h"
 #include "controller.h"
-#include "event.h"
+
+struct ForwardMode;
+struct SerializationBuffer;
+
+extern "C" {
+
+void forward_mode_clear(ForwardMode* ptr);
+void forward_mode_free(ForwardMode* ptr);
+auto forward_mode_new() -> ForwardMode*;
+auto forward_mode_serialize(const ForwardMode* ptr, SerializationBuffer* buf)
+    -> bool;
+auto forward_mode_serialized_len(const ForwardMode* ptr) -> uintptr_t;
+auto forward_mode_set_tag(ForwardMode* ptr, const char* ctag) -> bool;
+auto forward_mode_size(const ForwardMode* ptr) -> uintptr_t;
+void serialization_buffer_free(SerializationBuffer* ptr);
+auto serialization_buffer_data(const SerializationBuffer* buf)
+    -> const uint8_t*;
+auto serialization_buffer_len(const SerializationBuffer* buf) -> uintptr_t;
+auto serialization_buffer_new() -> SerializationBuffer*;
+
+} // extern "C"
 
 using bpf_int32 = int32_t;
 using bpf_u_int32 = uint32_t;
@@ -43,8 +63,7 @@ extern "C" {
 Converter* log_converter_new(const char*);
 Converter* packet_converter_new(uint32_t, const char*);
 void converter_free(Converter*);
-int converter_convert(Converter*, uint64_t, const char*, size_t,
-                      ForwardMode*);
+int converter_convert(Converter*, uint64_t, const char*, size_t, ForwardMode*);
 size_t converter_has_matcher(const Converter*);
 Report* report_new(const Config*);
 void report_free(Report*);

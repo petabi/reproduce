@@ -386,59 +386,6 @@ pub unsafe extern "C" fn forward_mode_set_tag(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn forward_mode_append_packet(
-    ptr: *mut SizedForwardMode,
-    time: u64,
-    key: *const c_char,
-    payload: *const u8,
-    len: usize,
-    src_ip: u32,
-    dst_ip: u32,
-    src_port: u16,
-    dst_port: u16,
-    proto: u8,
-) -> bool {
-    assert!(!ptr.is_null());
-    let forward_mode = &mut *ptr;
-    assert!(!key.is_null());
-    let c_key = CStr::from_ptr(key);
-    let rs_key = match c_key.to_str() {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    assert!(!payload.is_null());
-    let payload = slice::from_raw_parts(payload, len);
-    forward_mode
-        .push_packet(
-            time, rs_key, payload, src_ip, dst_ip, src_port, dst_port, proto,
-        )
-        .is_ok()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn forward_mode_add_option(
-    ptr: *mut SizedForwardMode,
-    key: *const c_char,
-    value: *const c_char,
-) -> bool {
-    assert!(!ptr.is_null());
-    let forward_mode = &mut *ptr;
-    assert!(!key.is_null());
-    let c_key = CStr::from_ptr(key);
-    let rs_key = match c_key.to_str() {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    assert!(!value.is_null());
-    let c_value = CStr::from_ptr(value);
-    let rs_value = match c_value.to_str() {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    forward_mode.push_option(rs_key, rs_value).is_ok()
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn forward_mode_clear(ptr: *mut SizedForwardMode) {
     assert!(!ptr.is_null());
     let forward_mode = &mut *ptr;
