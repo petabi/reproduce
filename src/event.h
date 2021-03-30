@@ -13,8 +13,6 @@ auto forward_mode_append_packet(ForwardMode* ptr, uint64_t time,
                                 uintptr_t len, uint32_t src, uint32_t dst,
                                 uint16_t sport, uint16_t dport, uint8_t proto)
     -> bool;
-auto forward_mode_append_raw(ForwardMode* ptr, uint64_t time, const char* key,
-                             const uint8_t* value, uintptr_t len) -> bool;
 void forward_mode_clear(ForwardMode* ptr);
 void forward_mode_free(ForwardMode* ptr);
 auto forward_mode_new() -> ForwardMode*;

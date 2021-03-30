@@ -4,6 +4,7 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -11,9 +12,10 @@
 
 #include <pcap/pcap.h>
 
-#include "converter.h"
 #include "producer.h"
 #include "util.h"
+
+struct Converter;
 
 namespace GetData {
 enum class Status { Fail = -2, No_more = -1, Success = 0 };
@@ -32,7 +34,7 @@ public:
 
 private:
   Config* conf;
-  std::unique_ptr<Converter> conv;
+  Converter* converter;
   std::unique_ptr<Producer> prod;
   uint32_t seq_no = 1; /* use lower 24-bit */
   static pcap_t* pcd;

@@ -19,6 +19,7 @@ chrono = "0.4"
 clap = { version = "2", features = ["wrap_help"] }
 eventio = "0.5"
 kafka = "0.8"
+nom = "6"
 openssl = {version = "0.10", features = ["vendored"] }
 regex = "1"
 rmp-serde = "0.15"

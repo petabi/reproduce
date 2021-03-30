@@ -17,10 +17,35 @@
 #include "controller.h"
 #include "event.h"
 
+using bpf_int32 = int32_t;
+using bpf_u_int32 = uint32_t;
+using u_short = unsigned short;
+
+struct pcap_timeval {
+  bpf_int32 tv_sec;  /* seconds */
+  bpf_int32 tv_usec; /* microseconds */
+};
+
+struct pcap_sf_pkthdr {
+  struct pcap_timeval ts; /* time stamp */
+  bpf_u_int32 caplen;     /* length of portion present */
+  bpf_u_int32 len;        /* length this packet (off wire) */
+};
+
+namespace Conv {
+enum Status { Fail = -2, Pass = -1, Success = 0 };
+}
+
 struct Report;
 
 extern "C" {
 
+Converter* log_converter_new(const char*);
+Converter* packet_converter_new(uint32_t, const char*);
+void converter_free(Converter*);
+int converter_convert(Converter*, uint64_t, const char*, size_t,
+                      ForwardMode*);
+size_t converter_has_matcher(const Converter*);
 Report* report_new(const Config*);
 void report_free(Report*);
 void report_process(Report*, size_t);
@@ -39,7 +64,7 @@ static constexpr size_t kafka_buffer_safety_gap = 1024;
 atomic_bool stop = false;
 pcap_t* Controller::pcd = nullptr;
 
-Controller::Controller(Config* _conf) : conf(_conf)
+Controller::Controller(Config* _conf) : conf(_conf), converter(nullptr)
 {
   if (!set_converter()) {
     throw runtime_error("failed to set the converter");
@@ -54,6 +79,7 @@ Controller::~Controller()
   close_nic();
   close_pcap();
   close_log();
+  converter_free(converter);
 }
 
 void Controller::run()
@@ -171,8 +197,8 @@ void Controller::run_single()
         forward_mode_set_tag(msg, "REproduce");
       }
 
-      Conv::Status cstat =
-          conv->convert(event_id(), imessage.data(), imessage_len, msg);
+      auto cstat = converter_convert(converter, event_id(), imessage.data(),
+                                     imessage_len, msg);
       seq_no++;
 
       if (cstat != Conv::Status::Success) {
@@ -289,29 +315,18 @@ auto Controller::set_converter() -> bool
   switch (config_input_type(conf)) {
   case InputType::Nic:
     l2_type = open_nic(config_input(conf));
-    conv = make_unique<PacketConverter>(l2_type);
-    if (strlen(config_pattern_file(conf))) {
-      if (conv->get_matcher() == nullptr) {
-        conv->set_matcher(config_pattern_file(conf));
-      }
-    }
+    converter = packet_converter_new(l2_type, config_pattern_file(conf));
     get_next_data = &Controller::get_next_nic;
     skip_data = &Controller::skip_null;
     Util::iprint("input=", config_input(conf), ", input type=NIC");
-    if (conv->get_matcher() != nullptr) {
+    if (converter_has_matcher(converter)) {
       Util::iprint("pattern file=", config_pattern_file(conf));
     }
-    conv->set_allowed_entropy_ratio(config_entropy_ratio(conf));
     break;
   case InputType::Pcap:
   case InputType::Pcapng:
     l2_type = open_pcap(config_input(conf));
-    conv = make_unique<PacketConverter>(l2_type);
-    if (strlen(config_pattern_file(conf))) {
-      if (conv->get_matcher() == nullptr) {
-        conv->set_matcher(config_pattern_file(conf));
-      }
-    }
+    converter = packet_converter_new(l2_type, config_pattern_file(conf));
     get_next_data = &Controller::get_next_pcap;
     skip_data = &Controller::skip_pcap;
     if (config_input_type(conf) == int(InputType::Pcap))
@@ -319,23 +334,17 @@ auto Controller::set_converter() -> bool
     else
       Util::iprint("input=", config_input(conf), ", input type=PCAPNG");
 
-    if (conv->get_matcher() != nullptr) {
+    if (converter_has_matcher(converter)) {
       Util::iprint("pattern file=", config_pattern_file(conf));
     }
-    conv->set_allowed_entropy_ratio(config_entropy_ratio(conf));
     break;
   case InputType::Log:
     open_log(config_input(conf));
-    conv = make_unique<LogConverter>();
-    if (strlen(config_pattern_file(conf))) {
-      if (conv->get_matcher() == nullptr) {
-        conv->set_matcher(config_pattern_file(conf));
-      }
-    }
+    converter = log_converter_new(config_pattern_file(conf));
     get_next_data = &Controller::get_next_log;
     skip_data = &Controller::skip_log;
     Util::iprint("input=", config_input(conf), ", input type=LOG");
-    if (conv->get_matcher() != nullptr) {
+    if (converter_has_matcher(converter)) {
       Util::iprint("pattern file=", config_pattern_file(conf));
     }
     break;
