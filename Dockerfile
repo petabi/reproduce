@@ -1,40 +1,19 @@
-FROM ubuntu:20.04 as builder
-
-ARG RUSTUP_VERSION=1.23.1
-ARG RUST_VERSION=1.50
+FROM rust:1.51 as builder
 
 RUN set -eux; \
     apt-get update; \
     env DEBIAN_FRONTEND="noninteractive" \
     apt-get install -y --no-install-recommends \
-    ca-certificates \
-    cmake \
-    g++ \
     libhyperscan-dev \
     libpcap-dev \
-    libssl-dev \
-    make \
-    pkgconf \
-    wget
-
-ENV RUSTUP_HOME=/usr/local/rustup \
-    CARGO_HOME=/usr/local/cargo \
-    PATH=/usr/local/cargo/bin:$PATH
-
-RUN RUST_ARCH='x86_64-unknown-linux-gnu'; \
-    url="https://static.rust-lang.org/rustup/archive/${RUSTUP_VERSION}/${RUST_ARCH}/rustup-init"; \
-    wget "$url"; \
-    chmod +x rustup-init; \
-    ./rustup-init -y --no-modify-path --default-toolchain ${RUST_VERSION}; \
-    rm rustup-init
+    libssl-dev
 
 WORKDIR /work/
 
-COPY Cargo.toml Cargo.lock CMakeLists.txt version.h.in /work/
+COPY Cargo.toml Cargo.lock /work/
 COPY src /work/src/
-COPY ext /work/ext/
 
-RUN mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -j
+RUN cargo install --path .
 
 FROM ubuntu:20.04
 
@@ -44,7 +23,7 @@ RUN set -eux; \
     libhyperscan5 \
     libpcap0.8
 
-COPY --from=builder /work/build/src/reproduce /usr/local/bin/
+COPY --from=builder /usr/local/cargo/bin/reproduce /usr/local/bin/
 
 VOLUME /data
 WORKDIR /data

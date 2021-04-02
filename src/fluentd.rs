@@ -32,6 +32,12 @@ impl Default for SizedForwardMode {
 }
 
 impl SizedForwardMode {
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    #[must_use]
     pub fn len(&self) -> usize {
         self.message.entries.len()
     }
@@ -43,10 +49,14 @@ impl SizedForwardMode {
         self.size = EMPTY_FORWARD_MODE_SIZE;
     }
 
+    #[must_use]
     pub fn serialized_len(&self) -> usize {
         self.size
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if `tag` is too long, causing a `SerializationError`.
     pub fn set_tag(&mut self, tag: String) -> Result<(), SerializationError> {
         let new_len = match msgpack_str_len(tag.len()) {
             Some(len) => len,
@@ -60,6 +70,10 @@ impl SizedForwardMode {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if there is no more space in `self.message` for the new
+    /// entry.
     pub fn push_raw(
         &mut self,
         time: u64,
@@ -88,6 +102,10 @@ impl SizedForwardMode {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if there is no more space in `self.message` for the new
+    /// packet.
     #[allow(clippy::too_many_arguments)]
     pub fn push_packet(
         &mut self,
@@ -148,6 +166,10 @@ impl SizedForwardMode {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if there is no more space in `self.message.options` for
+    /// the new value.
     pub fn push_option(&mut self, key: &str, value: &str) -> Result<(), SerializationError> {
         if self.message.option.is_none() {
             self.message.option = Some(HashMap::new());
