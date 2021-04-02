@@ -1,7 +1,8 @@
 #![allow(clippy::missing_panics_doc)]
 #![allow(clippy::missing_safety_doc)]
 
-mod config;
+pub mod config;
+mod controller;
 mod converter;
 mod fluentd;
 mod matcher;
@@ -10,11 +11,12 @@ mod report;
 mod session;
 
 use crate::config::{Config, InputType, OutputType};
+pub use crate::controller::Controller;
 use crate::converter::Converter;
-use crate::fluentd::SizedForwardMode;
+pub use crate::fluentd::SizedForwardMode;
 use crate::matcher::Matcher;
-use crate::producer::{KafkaInput, Producer};
-use crate::report::Report;
+pub use crate::producer::Producer;
+pub use crate::report::Report;
 use crate::session::Traffic;
 pub use producer::Kafka as KafkaProducer;
 use rmp_serde::Serializer;
@@ -32,39 +34,11 @@ pub extern "C" fn config_default() -> *const Config {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn config_new(
-    arg_count: c_int,
-    mut arg_values: *const *const i8,
-) -> *const Config {
-    #[allow(clippy::cast_sign_loss)] // argc in C++ is non-negative.
-    let mut arg_count = arg_count as usize;
-    let mut args = Vec::with_capacity(arg_count);
-    while arg_count > 0 {
-        let arg = match CStr::from_ptr(*arg_values).to_str() {
-            Ok(s) => s,
-            Err(_) => return ptr::null(),
-        };
-        args.push(arg);
-        arg_count -= 1;
-        arg_values = arg_values.add(1);
-    }
-
-    let config = config::parse(&args);
-    Box::into_raw(Box::new(config))
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn config_free(ptr: *mut Config) {
     if ptr.is_null() {
         return;
     }
     Box::from_raw(ptr);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_show(ptr: *const Config) {
-    let config = &*ptr;
-    println!("{}", config);
 }
 
 #[no_mangle]
@@ -92,35 +66,10 @@ pub unsafe extern "C" fn config_entropy_ratio(ptr: *const Config) -> f64 {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn config_file_prefix(ptr: *const Config) -> *const c_char {
-    let config = &*ptr;
-    config.file_prefix.as_ptr()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_initial_seq_no(ptr: *const Config) -> u32 {
-    let config = &*ptr;
-    config.initial_seq_no
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_input(ptr: *const Config) -> *const c_char {
-    let config = &*ptr;
-    config.input.as_ptr()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_set_input(ptr: *mut Config, input: *const c_char) {
-    let config = &mut *ptr;
-    config.input = CStr::from_ptr(input).into();
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn config_input_type(ptr: *const Config) -> c_int {
     let config = &*ptr;
     match config.input_type {
         InputType::Pcap => 0,
-        InputType::PcapNg => 1,
         InputType::Nic => 2,
         InputType::Log => 3,
         InputType::Dir => 4,
@@ -132,36 +81,11 @@ pub unsafe extern "C" fn config_set_input_type(ptr: *mut Config, input_type: c_i
     let config = &mut *ptr;
     config.input_type = match input_type {
         0 => InputType::Pcap,
-        1 => InputType::PcapNg,
         2 => InputType::Nic,
         3 => InputType::Log,
         4 => InputType::Dir,
         _ => panic!(),
     };
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_kafka_broker(ptr: *const Config) -> *const c_char {
-    let config = &*ptr;
-    config.kafka_broker.as_ptr()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_set_kafka_broker(ptr: *mut Config, output: *const c_char) {
-    let config = &mut *ptr;
-    config.kafka_broker = CStr::from_ptr(output).into();
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_kafka_topic(ptr: *const Config) -> *const c_char {
-    let config = &*ptr;
-    config.kafka_topic.as_ptr()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_set_kafka_topic(ptr: *mut Config, output: *const c_char) {
-    let config = &mut *ptr;
-    config.kafka_topic = CStr::from_ptr(output).into();
 }
 
 #[no_mangle]
@@ -195,24 +119,6 @@ pub unsafe extern "C" fn config_mode_polling_dir(ptr: *const Config) -> usize {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn config_offset_prefix(ptr: *const Config) -> *const c_char {
-    let config = &*ptr;
-    config.offset_prefix.as_ptr()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_output(ptr: *const Config) -> *const c_char {
-    let config = &*ptr;
-    config.output.as_ptr()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_set_output(ptr: *mut Config, output: *const c_char) {
-    let config = &mut *ptr;
-    config.output = CStr::from_ptr(output).into();
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn config_output_type(ptr: *const Config) -> c_int {
     let config = &*ptr;
     match config.output_type {
@@ -231,30 +137,6 @@ pub unsafe extern "C" fn config_set_output_type(ptr: *mut Config, output_type: c
         2 => OutputType::File,
         _ => panic!(),
     };
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_packet_filter(ptr: *const Config) -> *const c_char {
-    let config = &*ptr;
-    config.packet_filter.as_ptr()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_pattern_file(ptr: *const Config) -> *const c_char {
-    let config = &*ptr;
-    config.pattern_file.as_ptr()
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_queue_period(ptr: *const Config) -> usize {
-    let config = &*ptr;
-    config.queue_period
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn config_set_queue_period(ptr: *mut Config, period: usize) {
-    let config = &mut *ptr;
-    config.queue_period = period;
 }
 
 #[no_mangle]
@@ -284,26 +166,6 @@ pub unsafe extern "C" fn log_converter_new(pattern_file: *const c_char) -> *mut 
         None
     };
     Box::into_raw(Box::new(Converter::with_log(matcher)))
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn packet_converter_new(
-    l2_type: u32,
-    pattern_file: *const c_char,
-) -> *mut Converter {
-    let filename = CStr::from_ptr(pattern_file).to_str().unwrap();
-    let matcher = if filename.is_empty() {
-        None
-    } else if let Ok(f) = File::open(filename) {
-        if let Ok(m) = Matcher::from_read(f) {
-            Some(m)
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-    Box::into_raw(Box::new(Converter::with_packet(l2_type, matcher)))
 }
 
 #[no_mangle]
@@ -491,11 +353,10 @@ pub unsafe extern "C" fn producer_new_kafka(
         Err(_) => return ptr::null_mut(),
     };
     let input_type = match input_type {
-        0 => KafkaInput::Pcap,
-        1 => KafkaInput::PcapNg,
-        2 => KafkaInput::Nic,
-        3 => KafkaInput::Log,
-        4 => KafkaInput::Dir,
+        0 => InputType::Pcap,
+        2 => InputType::Nic,
+        3 => InputType::Log,
+        4 => InputType::Dir,
         _ => return ptr::null_mut(),
     };
     let producer = match CStr::from_ptr(broker).to_str() {
@@ -503,10 +364,9 @@ pub unsafe extern "C" fn producer_new_kafka(
             match Producer::new_kafka(
                 broker,
                 topic,
-                input_type,
                 queue_size,
                 queue_period,
-                grow > 0,
+                grow > 0 || input_type == InputType::Nic,
             ) {
                 Ok(producer) => producer,
                 Err(_) => return ptr::null_mut(),
@@ -547,22 +407,11 @@ pub unsafe extern "C" fn producer_produce(ptr: *mut Producer, msg: *const u8, le
 }
 
 #[no_mangle]
-pub extern "C" fn report_new(config: *const Config) -> *mut Report {
-    Box::into_raw(Box::new(Report::new(config)))
-}
-
-#[no_mangle]
 pub unsafe extern "C" fn report_free(ptr: *mut Report) {
     if ptr.is_null() {
         return;
     }
     Box::from_raw(ptr);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn report_start(ptr: *mut Report, id: u32) {
-    let report = &mut *ptr;
-    report.start(id)
 }
 
 #[no_mangle]

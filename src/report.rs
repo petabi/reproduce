@@ -1,18 +1,14 @@
 use crate::Config;
-use crate::{
-    config_datasource_id, config_input, config_input_type, config_kafka_broker, config_kafka_topic,
-    config_mode_eval, config_output, config_output_type,
-};
+use crate::{config_datasource_id, config_input_type, config_mode_eval, config_output_type};
 use bytesize::ByteSize;
 use chrono::{DateTime, Duration, Utc};
-use std::ffi::CStr;
 use std::fs::OpenOptions;
 use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
 pub struct Report {
-    config: *const Config,
-    start_id: u32,
+    config: Config,
+    start_id: usize,
     end_id: u32,
     sum_bytes: usize,
     min_bytes: usize,
@@ -27,7 +23,8 @@ pub struct Report {
 }
 
 impl Report {
-    pub fn new(config: *const Config) -> Self {
+    #[must_use]
+    pub fn new(config: Config) -> Self {
         Report {
             config,
             start_id: 0,
@@ -45,8 +42,8 @@ impl Report {
         }
     }
 
-    pub fn start(&mut self, id: u32) {
-        if unsafe { config_mode_eval(self.config) } == 0 {
+    pub fn start(&mut self, id: usize) {
+        if unsafe { config_mode_eval(&self.config) } == 0 {
             return;
         }
 
@@ -55,7 +52,7 @@ impl Report {
     }
 
     pub fn process(&mut self, bytes: usize) {
-        if unsafe { config_mode_eval(self.config) } == 0 {
+        if unsafe { config_mode_eval(&self.config) } == 0 {
             return;
         }
 
@@ -69,27 +66,28 @@ impl Report {
     }
 
     pub fn skip(&mut self, bytes: usize) {
-        if unsafe { config_mode_eval(self.config) } == 0 {
+        if unsafe { config_mode_eval(&self.config) } == 0 {
             return;
         }
         self.skip_bytes += bytes;
         self.skip_cnt += 1;
     }
 
+    /// # Errors
+    ///
+    /// * `io::Error` when writing to the report file fails.
     #[allow(clippy::too_many_lines)]
     pub fn end(&mut self, id: u32) -> io::Result<()> {
         const PCAP_FILE_HEADER_LEN: usize = 24;
         const PCAP_PKTHDR_LEN: usize = 8;
         const ARRANGE_VAR: usize = 28;
 
-        if unsafe { config_mode_eval(self.config) } == 0 {
+        if unsafe { config_mode_eval(&self.config) } == 0 {
             return Ok(());
         }
 
         let report_dir = Path::new("/report");
-        let topic = unsafe { CStr::from_ptr(config_kafka_topic(self.config)) }
-            .to_str()
-            .expect("valid UTF-8");
+        let topic = &&self.config.kafka_topic;
         let report_path = if report_dir.is_dir() {
             report_dir.join(topic)
         } else {
@@ -116,10 +114,8 @@ impl Report {
             self.time_now,
             width = ARRANGE_VAR,
         ))?;
-        let input_type = unsafe { config_input_type(self.config) };
-        let input = unsafe { CStr::from_ptr(config_input(self.config)) }
-            .to_str()
-            .expect("valid UTF-8");
+        let input_type = unsafe { config_input_type(&self.config) };
+        let input = &&self.config.input;
         let (header, processed_bytes) = match input_type {
             0 => {
                 let processed_bytes = (self.sum_bytes + PCAP_FILE_HEADER_LEN) as u64;
@@ -150,7 +146,7 @@ impl Report {
         report_file.write_fmt(format_args!(
             "{:width$}{}\n",
             "Data source ID:",
-            u32::from(unsafe { config_datasource_id(self.config) }),
+            u32::from(unsafe { config_datasource_id(&self.config) }),
             width = ARRANGE_VAR,
         ))?;
         report_file.write_fmt(format_args!(
@@ -161,15 +157,13 @@ impl Report {
             width = ARRANGE_VAR,
         ))?;
 
-        let output_type = unsafe { config_output_type(self.config) };
+        let output_type = unsafe { config_output_type(&self.config) };
         match output_type {
             0 => {
                 report_file.write_all(b"Output(NONE):\n")?;
             }
             1 => {
-                let broker = unsafe { CStr::from_ptr(config_kafka_broker(self.config)) }
-                    .to_str()
-                    .expect("valid UTF-8");
+                let broker = &&self.config.kafka_broker;
                 report_file.write_fmt(format_args!(
                     "{:width$}{} ({})\n",
                     "Output(KAFKA):",
@@ -179,9 +173,7 @@ impl Report {
                 ))?;
             }
             2 => {
-                let output = unsafe { CStr::from_ptr(config_output(self.config)) }
-                    .to_str()
-                    .expect("valid UTF-8");
+                let output = &&self.config.output;
                 let size = if let Ok(meta) = Path::new(input).metadata() {
                     ByteSize(meta.len()).to_string()
                 } else {

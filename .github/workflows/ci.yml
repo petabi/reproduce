@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install libraries
-      run: sudo apt-get install libhyperscan-dev
+      run: sudo apt-get install libhyperscan-dev libpcap-dev
     - name: Install Rust
       uses: hecrj/setup-rust-action@v1
       with:
@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install libraries
-      run: sudo apt-get install libhyperscan-dev
+      run: sudo apt-get install libhyperscan-dev libpcap-dev
     - name: Install Rust
       uses: hecrj/setup-rust-action@v1
       with:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Install libraries
-      run: sudo apt-get install libhyperscan-dev
+      run: sudo apt-get install libhyperscan-dev libpcap-dev
     - name: Install Rust
       uses: hecrj/setup-rust-action@v1
       with:

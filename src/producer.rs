@@ -13,6 +13,9 @@ pub enum Producer {
 }
 
 impl Producer {
+    /// # Errors
+    ///
+    /// Returns an error if file creation fails.
     pub fn new_file(filename: &str) -> Result<Self> {
         let output = File::create(filename)?;
         Ok(Producer::File(output))
@@ -26,10 +29,9 @@ impl Producer {
     pub fn new_kafka(
         broker: &str,
         topic: &str,
-        input_type: KafkaInput,
         queue_size: usize,
         queue_period: i64,
-        grow: bool,
+        periodic: bool,
     ) -> Result<Self, KafkaError> {
         const IDLE_TIMEOUT: u64 = 540;
         const ACK_TIMEOUT: u64 = 5;
@@ -37,7 +39,6 @@ impl Producer {
             .with_connection_idle_timeout(std::time::Duration::new(IDLE_TIMEOUT, 0))
             .with_ack_timeout(std::time::Duration::new(ACK_TIMEOUT, 0))
             .create()?;
-        let period_check = grow && input_type == KafkaInput::Nic;
         let last_time = Utc::now();
         Ok(Self::Kafka(Kafka {
             inner: producer,
@@ -46,20 +47,25 @@ impl Producer {
             queue_data_cnt: 0,
             queue_size,
             queue_period: Duration::seconds(queue_period),
-            period_check,
+            period_check: periodic,
             last_time,
         }))
     }
 
+    #[must_use]
     pub fn new_null() -> Self {
         Self::Null
     }
 
+    #[must_use]
     pub fn max_bytes() -> usize {
         const DEFAULT_MAX_BYTES: usize = 100_000;
         DEFAULT_MAX_BYTES
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if any writing operation fails.
     pub fn produce(&mut self, message: &[u8], flush: bool) -> Result<()> {
         match self {
             Producer::File(f) => {
@@ -97,15 +103,6 @@ impl Producer {
             Producer::Null => Ok(()),
         }
     }
-}
-
-#[derive(Clone, Copy, PartialEq)]
-pub enum KafkaInput {
-    Pcap,
-    PcapNg,
-    Nic,
-    Log,
-    Dir,
 }
 
 pub struct Kafka {
