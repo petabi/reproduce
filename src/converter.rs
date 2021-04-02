@@ -15,14 +15,19 @@ pub enum Converter {
 }
 
 impl Converter {
+    #[must_use]
     pub fn with_log(matcher: Option<Matcher>) -> Self {
         Self::Log(LogConverter::new(matcher))
     }
 
+    #[must_use]
     pub fn with_packet(l2_type: Linktype, matcher: Option<Matcher>) -> Self {
         Self::Packet(PacketConverter::new(l2_type, matcher))
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if storing `input` in `msg` fails.
     pub fn convert(
         &mut self,
         event_id: u64,
@@ -35,6 +40,7 @@ impl Converter {
         }
     }
 
+    #[must_use]
     pub fn has_matcher(&self) -> bool {
         match self {
             Self::Log(c) => c.matcher.is_some(),

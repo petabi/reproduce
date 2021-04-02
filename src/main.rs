@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use reproduce::{config::Config, Controller};
+use reproduce::{Config, Controller};
 use std::num::{NonZeroI64, NonZeroU8};
 
 pub fn main() {

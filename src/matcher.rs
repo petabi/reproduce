@@ -15,6 +15,10 @@ pub struct Matcher {
 }
 
 impl Matcher {
+    /// # Errors
+    ///
+    /// Returns an error if reading from `r` fails, or building a regular
+    /// expression matcher fails.
     #[cfg(all(target_arch = "x86_64", feature = "hyperscan"))]
     pub fn from_read<R: Read>(mut r: R) -> Result<Self> {
         let mut exps = String::new();
@@ -25,6 +29,10 @@ impl Matcher {
         Ok(Matcher { db, scratch })
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if reading from `r` fails, or building a regular
+    /// expression matcher fails.
     #[cfg(not(all(target_arch = "x86_64", feature = "hyperscan")))]
     pub fn from_read<R: Read>(mut r: R) -> Result<Self> {
         let mut exps = String::new();
@@ -34,6 +42,9 @@ impl Matcher {
         Ok(Matcher { db })
     }
 
+    /// # Errors
+    ///
+    /// Returns an error if underlying regular expression matching fails.
     #[cfg(all(target_arch = "x86_64", feature = "hyperscan"))]
     pub fn scan(&mut self, data: &[u8]) -> Result<bool> {
         let mut is_matched = false;

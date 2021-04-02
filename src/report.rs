@@ -1,5 +1,4 @@
-use crate::Config;
-use crate::{config_datasource_id, config_input_type, config_mode_eval, config_output_type};
+use crate::{Config, InputType, OutputType};
 use bytesize::ByteSize;
 use chrono::{DateTime, Duration, Utc};
 use std::fs::OpenOptions;
@@ -43,7 +42,7 @@ impl Report {
     }
 
     pub fn start(&mut self, id: usize) {
-        if unsafe { config_mode_eval(&self.config) } == 0 {
+        if !self.config.mode_eval {
             return;
         }
 
@@ -52,7 +51,7 @@ impl Report {
     }
 
     pub fn process(&mut self, bytes: usize) {
-        if unsafe { config_mode_eval(&self.config) } == 0 {
+        if !self.config.mode_eval {
             return;
         }
 
@@ -66,7 +65,7 @@ impl Report {
     }
 
     pub fn skip(&mut self, bytes: usize) {
-        if unsafe { config_mode_eval(&self.config) } == 0 {
+        if !self.config.mode_eval {
             return;
         }
         self.skip_bytes += bytes;
@@ -82,7 +81,7 @@ impl Report {
         const PCAP_PKTHDR_LEN: usize = 8;
         const ARRANGE_VAR: usize = 28;
 
-        if unsafe { config_mode_eval(&self.config) } == 0 {
+        if !self.config.mode_eval {
             return Ok(());
         }
 
@@ -114,27 +113,23 @@ impl Report {
             self.time_now,
             width = ARRANGE_VAR,
         ))?;
-        let input_type = unsafe { config_input_type(&self.config) };
+        let input_type = self.config.input_type;
         let input = &&self.config.input;
         let (header, processed_bytes) = match input_type {
-            0 => {
+            InputType::Pcap => {
                 let processed_bytes = (self.sum_bytes + PCAP_FILE_HEADER_LEN) as u64;
                 ("Input(PCAP)", processed_bytes)
             }
-            1 => {
-                let processed_bytes = (self.sum_bytes + PCAP_FILE_HEADER_LEN) as u64;
-                ("Input(PCAPNG)", processed_bytes)
-            }
-            2 => {
+            InputType::Nic => {
                 let processed_bytes = (self.sum_bytes + PCAP_PKTHDR_LEN) as u64;
                 ("Input(NIC)", processed_bytes)
             }
-            3 => {
+            InputType::Log => {
                 // add 1 byte newline character per line
                 let processed_bytes = (self.sum_bytes + self.process_cnt) as u64;
                 ("Input(LOG)", processed_bytes)
             }
-            _ => ("", 0),
+            InputType::Dir => ("", 0),
         };
         report_file.write_fmt(format_args!(
             "{:width$}{} ({})\n",
@@ -146,7 +141,7 @@ impl Report {
         report_file.write_fmt(format_args!(
             "{:width$}{}\n",
             "Data source ID:",
-            u32::from(unsafe { config_datasource_id(&self.config) }),
+            u32::from(self.config.datasource_id),
             width = ARRANGE_VAR,
         ))?;
         report_file.write_fmt(format_args!(
@@ -157,12 +152,12 @@ impl Report {
             width = ARRANGE_VAR,
         ))?;
 
-        let output_type = unsafe { config_output_type(&self.config) };
+        let output_type = self.config.output_type;
         match output_type {
-            0 => {
+            OutputType::None => {
                 report_file.write_all(b"Output(NONE):\n")?;
             }
-            1 => {
+            OutputType::Kafka => {
                 let broker = &&self.config.kafka_broker;
                 report_file.write_fmt(format_args!(
                     "{:width$}{} ({})\n",
@@ -172,7 +167,7 @@ impl Report {
                     width = ARRANGE_VAR,
                 ))?;
             }
-            2 => {
+            OutputType::File => {
                 let output = &&self.config.output;
                 let size = if let Ok(meta) = Path::new(input).metadata() {
                     ByteSize(meta.len()).to_string()
@@ -187,7 +182,6 @@ impl Report {
                     width = ARRANGE_VAR,
                 ))?;
             }
-            _ => {}
         }
         report_file.write_fmt(format_args!(
             "{:width$}{}/{}/{:.2} bytes\n",
