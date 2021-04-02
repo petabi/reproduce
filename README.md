@@ -96,23 +96,6 @@ When transferring the converted result via kafka, various options can be set thr
 The configuration consists of two sections: global settings and topic settings. Each section consists of properties and values.
 An example of a configuration file is following.
 
-#### Kafka Config File Format
-
-```
-[global]
-client.id=rdkafka
-message.max.bytes=1000000
-message.copy.max.bytes=65535
-
-[topic]
-request.required.acks=1
-message.timeout.ms=5000
-offset.store.method=broker
-```
-
-For a detailed description of the property, see the following URL:
-https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
-
 ### Examples
 
 * Convert pcap file and send it to kafka server:
@@ -133,8 +116,6 @@ https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
     * ```reproduce -i /data/LOG -n msg -b 192.168.4.5:9092 -t syslog -e```
 * Send all log files in the '/data/LOG' directory and it's subdirectory. And polling the directory periodically (default 3 seconds). If new files found, send it too.
     * ```reproduce -i /data/LOG -v -b 192.168.4.5:9092 -t syslog -e```
-
-
 
 ### Report Example
 
