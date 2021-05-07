@@ -55,6 +55,9 @@ impl Matcher {
         Ok(is_matched)
     }
 
+    /// # Errors
+    ///
+    /// Always returns `Ok`.
     #[cfg(not(all(target_arch = "x86_64", feature = "hyperscan")))]
     pub fn scan(&mut self, data: &[u8]) -> Result<bool> {
         Ok(self.db.is_match(data))
