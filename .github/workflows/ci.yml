@@ -44,8 +44,8 @@ jobs:
         rust-version: stable
     - uses: actions/checkout@v2
     - name: Install Tarpaulin
-      run: cargo install cargo-tarpaulin
+      run: cargo install cargo-tarpaulin --version 0.18.0-alpha3
     - name: Generate coverage report
-      run: cargo tarpaulin --out Xml
+      run: cargo tarpaulin --out Xml --avoid-cfg-tarpaulin
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
