@@ -1,12 +1,11 @@
-FROM rust:1.51 as builder
+FROM rust:1.52 as builder
 
 RUN set -eux; \
     apt-get update; \
     env DEBIAN_FRONTEND="noninteractive" \
     apt-get install -y --no-install-recommends \
     libhyperscan-dev \
-    libpcap-dev \
-    libssl-dev
+    libpcap-dev
 
 WORKDIR /work/
 
