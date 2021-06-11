@@ -5,7 +5,7 @@ use pcap::{Active, Capture, Offline};
 use rmp_serde::Serializer;
 use serde::Serialize;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Read, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -118,7 +118,7 @@ impl Controller {
             InputType::Log => {
                 let (mut converter, log_file) = log_converter(filename, &pattern_file)
                     .map_err(|e| anyhow!("failed to set the converter: {}", e))?;
-                let mut lines = BufReader::new(log_file).lines().skip(offset);
+                let mut lines = BinaryLines::new(BufReader::new(log_file)).skip(offset);
                 while running.load(Ordering::SeqCst) {
                     let line = match lines.next() {
                         Some(Ok(line)) => line,
@@ -146,10 +146,7 @@ impl Controller {
                     }
 
                     self.seq_no += 1;
-                    if converter
-                        .convert(self.event_id(), line.as_bytes(), &mut msg)
-                        .is_err()
-                    {
+                    if converter.convert(self.event_id(), &line, &mut msg).is_err() {
                         // TODO: error handling for conversion failure
                         report.skip(line.len());
                     }
@@ -454,6 +451,38 @@ fn producer(config: &Config, is_nic: bool) -> Producer {
         OutputType::None => {
             println!("output={}, output type=NONE", &config.output);
             Producer::new_null()
+        }
+    }
+}
+
+struct BinaryLines<B> {
+    buf: B,
+}
+
+impl<B> BinaryLines<B> {
+    /// Returns an iterator for binary strings separated by '\n'.
+    fn new(buf: B) -> Self {
+        Self { buf }
+    }
+}
+
+impl<B: BufRead> Iterator for BinaryLines<B> {
+    type Item = Result<Vec<u8>, io::Error>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut buf = Vec::new();
+        match self.buf.read_until(b'\n', &mut buf) {
+            Ok(0) => None,
+            Ok(_n) => {
+                if matches!(buf.last(), Some(b'\n')) {
+                    buf.pop();
+                    if matches!(buf.last(), Some(b'\r')) {
+                        buf.pop();
+                    }
+                }
+                Some(Ok(buf))
+            }
+            Err(e) => Some(Err(e)),
         }
     }
 }
