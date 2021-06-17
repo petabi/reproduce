@@ -49,7 +49,7 @@ impl Converter {
     }
 }
 
-#[allow(clippy::clippy::module_name_repetitions)]
+#[allow(clippy::module_name_repetitions)]
 pub struct LogConverter {
     matcher: Option<Matcher>,
 }
@@ -70,7 +70,7 @@ impl LogConverter {
     }
 }
 
-#[allow(clippy::clippy::module_name_repetitions)]
+#[allow(clippy::module_name_repetitions)]
 pub struct PacketConverter {
     l2_type: Linktype,
     matcher: Option<Matcher>,

@@ -73,7 +73,7 @@ impl Controller {
         Ok(())
     }
 
-    #[allow(clippy::clippy::too_many_lines)]
+    #[allow(clippy::too_many_lines)]
     fn run_single(&mut self, filename: &Path, producer: &mut Producer) -> Result<()> {
         let input_type = input_type(&filename.to_string_lossy());
         if input_type == InputType::Dir {

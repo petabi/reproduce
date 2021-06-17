@@ -67,7 +67,7 @@ impl Matcher {
 #[cfg(not(all(target_arch = "x86_64", feature = "hyperscan")))]
 fn trim_to_rules(s: &str) -> Vec<&str> {
     s.lines()
-        .flat_map(|line| {
+        .filter_map(|line| {
             let line = line.trim();
 
             if line.is_empty() || line.starts_with('#') {
