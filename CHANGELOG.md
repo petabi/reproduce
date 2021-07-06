@@ -7,9 +7,15 @@ Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- Support for x86_64-unknown-linux-musl.
+
 ### Removed
 
 - Dropped support for packets. Run zeek and read its log files instead.
+- Dropped Docker support. Instead, instructions to build a portable binary was
+  added to README.
 
 ## [0.10.0] - 2021-06-11
 

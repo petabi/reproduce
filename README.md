@@ -9,13 +9,23 @@ data source ID (8 bits).
 
 ## Build
 
-The following command builds REproduce as a static binary file that runs on any
-Linux x86_64 machine. The binary, `reproduce`, will be created in
-`target/x86_64-unknown-linux-musl/release`.
+REproduce may be built as a single binary for portability. Make sure that the
+musl target is available. The following command installs the Rust compiler for
+`x86_64-unknown-linux-musl` if it is not already installed:
+
+```sh
+rustup target add x86_64-unknown-linux-musl
+```
+
+Then the portable REproduce binary, `reproduce`, can be created with the
+following command:
 
 ```sh
 cargo build --target x86_64-unknown-linux-musl --release
 ```
+
+The compiled binary will be created in
+`target/x86_64-unknown-linux-musl/release`.
 
 ## Usage
 
