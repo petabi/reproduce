@@ -1,7 +1,6 @@
 use crate::config::{Config, InputType, OutputType};
 use crate::{Converter, Matcher, Producer, Report, SizedForwardMode};
 use anyhow::{anyhow, Result};
-use pcap::{Active, Capture, Offline};
 use rmp_serde::Serializer;
 use serde::Serialize;
 use std::fs::File;
@@ -34,8 +33,7 @@ impl Controller {
     /// Returns an error if creating a converter fails.
     pub fn run(&mut self) -> Result<()> {
         let input_type = input_type(&self.config.input);
-        let is_nic = input_type == InputType::Nic;
-        let mut producer = producer(&self.config, is_nic);
+        let mut producer = producer(&self.config);
 
         if input_type == InputType::Dir {
             self.run_split(&mut producer)
@@ -92,7 +90,7 @@ impl Controller {
 
         let offset = if self.config.count_skip > 0 {
             self.config.count_skip
-        } else if self.config.offset_prefix.is_empty() || input_type == InputType::Nic {
+        } else if self.config.offset_prefix.is_empty() {
             0
         } else {
             let filename = self.config.input.clone() + "_" + &self.config.offset_prefix;
@@ -152,94 +150,6 @@ impl Controller {
                     }
                     conv_cnt += 1;
                     report.process(line.len());
-                    if self.config.count_sent != 0 && conv_cnt >= self.config.count_sent {
-                        break;
-                    }
-                }
-            }
-            InputType::Nic => {
-                let input = self.config.input.to_string();
-                let (mut converter, mut cap) = nic_converter(&input, &pattern_file)
-                    .map_err(|e| anyhow!("failed to set the converter: {}", e))?;
-                while running.load(Ordering::SeqCst) {
-                    let pkt = match cap.next() {
-                        Ok(pkt) => pkt,
-                        Err(e) => {
-                            eprintln!("WARN: cannot read packet: {}", e);
-                            break;
-                        }
-                    };
-                    if msg.serialized_len() + pkt.data.len()
-                        >= Producer::max_bytes() - KAFKA_BUFFER_SAFETY_GAP
-                    {
-                        msg.message.serialize(&mut Serializer::new(&mut buf))?;
-                        if producer.produce(buf.as_slice(), true).is_err() {
-                            break;
-                        }
-                        msg.clear();
-                        msg.set_tag("REproduce".to_string())?;
-                    }
-
-                    self.seq_no += 1;
-                    if converter
-                        .convert(self.event_id(), pkt.data, &mut msg)
-                        .is_err()
-                    {
-                        // TODO: error handling for conversion failure
-                        report.skip(pkt.data.len());
-                    }
-                    conv_cnt += 1;
-                    report.process(pkt.data.len());
-                    if self.config.count_sent != 0 && conv_cnt >= self.config.count_sent {
-                        break;
-                    }
-                }
-            }
-            InputType::Pcap => {
-                let (mut converter, mut cap) = pcap_converter(filename, &pattern_file)
-                    .map_err(|e| anyhow!("failed to set the converter: {}", e))?;
-                for _ in 0..offset {
-                    if let Err(e) = cap.next() {
-                        eprintln!("failed to skip packets: {}", e);
-                        break;
-                    }
-                }
-                while running.load(Ordering::SeqCst) {
-                    let pkt = match cap.next() {
-                        Ok(pkt) => pkt,
-                        Err(pcap::Error::NoMorePackets) => {
-                            if self.config.mode_grow && !self.config.mode_polling_dir {
-                                thread::sleep(Duration::from_millis(3_000));
-                                continue;
-                            }
-                            break;
-                        }
-                        Err(e) => {
-                            eprintln!("WARN: cannot read packet: {}", e);
-                            break;
-                        }
-                    };
-                    if msg.serialized_len() + pkt.data.len()
-                        >= Producer::max_bytes() - KAFKA_BUFFER_SAFETY_GAP
-                    {
-                        msg.message.serialize(&mut Serializer::new(&mut buf))?;
-                        if producer.produce(buf.as_slice(), true).is_err() {
-                            break;
-                        }
-                        msg.clear();
-                        msg.set_tag("REproduce".to_string())?;
-                    }
-
-                    self.seq_no += 1;
-                    if converter
-                        .convert(self.event_id(), pkt.data, &mut msg)
-                        .is_err()
-                    {
-                        // TODO: error handling for conversion failure
-                        report.skip(pkt.data.len());
-                    }
-                    conv_cnt += 1;
-                    report.process(pkt.data.len());
                     if self.config.count_sent != 0 && conv_cnt >= self.config.count_sent {
                         break;
                     }
@@ -319,26 +229,9 @@ fn files_in_dir(path: &str, prefix: &str, skip: &[PathBuf]) -> Vec<PathBuf> {
 fn input_type(input: &str) -> InputType {
     let path = Path::new(input);
     if path.is_dir() {
-        return InputType::Dir;
-    }
-    if !path.is_file() {
-        let cap = match Capture::from_device(input) {
-            Ok(c) => c,
-            Err(e) => {
-                eprintln!("failed to access {}: {}", input, e);
-                std::process::exit(1);
-            }
-        };
-        if let Err(e) = cap.open() {
-            eprintln!("failed to open {}: {}", input, e);
-            std::process::exit(1);
-        }
-        return InputType::Nic;
-    }
-
-    match Capture::from_file(path) {
-        Ok(_) => InputType::Pcap,
-        Err(_) => InputType::Log,
+        InputType::Dir
+    } else {
+        InputType::Log
     }
 }
 
@@ -392,35 +285,10 @@ fn log_converter<P: AsRef<Path>>(input: P, pattern_file: &str) -> Result<(Conver
     if matcher.is_some() {
         println!("pattern file={}", pattern_file);
     }
-    Ok((Converter::with_log(matcher), log_file))
+    Ok((Converter::new(matcher), log_file))
 }
 
-fn nic_converter(input: &str, pattern_file: &str) -> Result<(Converter, Capture<Active>)> {
-    let matcher = matcher(pattern_file);
-    let cap = Capture::from_device(input)?.open()?;
-    let l2_type = cap.get_datalink();
-    println!("input={}, input type=NIC", input);
-    if matcher.is_some() {
-        println!("pattern file={}", pattern_file);
-    }
-    Ok((Converter::with_packet(l2_type, matcher), cap))
-}
-
-fn pcap_converter<P: AsRef<Path>>(
-    input: P,
-    pattern_file: &str,
-) -> Result<(Converter, Capture<Offline>)> {
-    let matcher = matcher(pattern_file);
-    let cap = Capture::from_file(input.as_ref())?;
-    let l2_type = cap.get_datalink();
-    println!("input={:?}, input type=NIC", input.as_ref());
-    if matcher.is_some() {
-        println!("pattern file={}", pattern_file);
-    }
-    Ok((Converter::with_packet(l2_type, matcher), cap))
-}
-
-fn producer(config: &Config, is_nic: bool) -> Producer {
+fn producer(config: &Config) -> Producer {
     match output_type(&config.output) {
         OutputType::File => {
             println!("output={}, output type=FILE", &config.output);
@@ -439,7 +307,7 @@ fn producer(config: &Config, is_nic: bool) -> Producer {
                 &config.kafka_topic,
                 config.queue_size,
                 config.queue_period,
-                config.mode_grow || is_nic,
+                config.mode_grow,
             ) {
                 Ok(p) => p,
                 Err(e) => {

@@ -12,7 +12,6 @@ pub struct Config {
     pub input: String,          // input: packet/log/none
     pub output: String,         // output: kafka/file/none
     pub offset_prefix: String,  // prefix of offset file to read from and write to
-    pub packet_filter: String,
     pub kafka_broker: String,
     pub kafka_topic: String,
     pub pattern_file: String,
@@ -20,8 +19,6 @@ pub struct Config {
 
     pub datasource_id: u8,
     pub initial_seq_no: usize,
-
-    pub entropy_ratio: f64,
 
     // internal
     pub count_sent: usize,
@@ -31,8 +28,6 @@ pub struct Config {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum InputType {
-    Pcap,
-    Nic,
     Log,
     Dir,
 }
@@ -56,16 +51,14 @@ impl Default for Config {
             input: String::new(),
             output: String::new(),
             offset_prefix: String::new(),
-            packet_filter: String::new(),
             kafka_broker: String::new(),
             kafka_topic: String::new(),
             pattern_file: String::new(),
             file_prefix: String::new(),
             datasource_id: 1,
             initial_seq_no: 0,
-            entropy_ratio: 0.9,
             count_sent: 0,
-            input_type: InputType::Pcap,
+            input_type: InputType::Log,
             output_type: OutputType::None,
         }
     }
@@ -81,7 +74,6 @@ impl fmt::Display for Config {
         writeln!(f, "input={}", self.input)?;
         writeln!(f, "output={}", self.output)?;
         writeln!(f, "offset_prefix={}", self.offset_prefix)?;
-        writeln!(f, "packet_filter={}", self.packet_filter)?;
         writeln!(f, "kafka_broker={}", self.kafka_broker)?;
         writeln!(f, "kafka_topic={}", self.kafka_topic)?;
         writeln!(f, "file_prefix={}", self.file_prefix.clone())?;

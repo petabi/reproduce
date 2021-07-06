@@ -404,16 +404,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "12b8adadd720df158f4d70dfe7ccc6adb0472d7c55ca83445f6a5ab3e36f8fb6"
 
 [[package]]
-name = "libloading"
-version = "0.6.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "351a32417a12d5f7e82c368a66781e307834dae04c6ce0cd4456d52989229883"
-dependencies = [
- "cfg-if 1.0.0",
- "winapi",
-]
-
-[[package]]
 name = "log"
 version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -505,18 +495,6 @@ name = "object"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a5b3dd1c072ee7963717671d1ca129f1048fda25edea6b752bfc71ac8854170"
-
-[[package]]
-name = "pcap"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "637123ced9e43bec44bf0bbd024f3de61fbf6dfd31767023f639fc5b8ac92c49"
-dependencies = [
- "libc",
- "libloading",
- "regex",
- "widestring",
-]
 
 [[package]]
 name = "pcap-parser"
@@ -643,8 +621,6 @@ dependencies = [
  "eventio",
  "hyperscan",
  "kafka",
- "nom",
- "pcap",
  "regex",
  "rmp-serde",
  "serde",
@@ -885,12 +861,6 @@ name = "wasi"
 version = "0.10.0+wasi-snapshot-preview1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
-
-[[package]]
-name = "widestring"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7157704c2e12e3d2189c507b7482c52820a16dfa4465ba91add92f266667cadb"
 
 [[package]]
 name = "winapi"

@@ -77,8 +77,6 @@ impl Report {
     /// * `io::Error` when writing to the report file fails.
     #[allow(clippy::too_many_lines)]
     pub fn end(&mut self, id: u32) -> io::Result<()> {
-        const PCAP_FILE_HEADER_LEN: usize = 24;
-        const PCAP_PKTHDR_LEN: usize = 8;
         const ARRANGE_VAR: usize = 28;
 
         if !self.config.mode_eval {
@@ -116,14 +114,6 @@ impl Report {
         let input_type = self.config.input_type;
         let input = &&self.config.input;
         let (header, processed_bytes) = match input_type {
-            InputType::Pcap => {
-                let processed_bytes = (self.sum_bytes + PCAP_FILE_HEADER_LEN) as u64;
-                ("Input(PCAP)", processed_bytes)
-            }
-            InputType::Nic => {
-                let processed_bytes = (self.sum_bytes + PCAP_PKTHDR_LEN) as u64;
-                ("Input(NIC)", processed_bytes)
-            }
             InputType::Log => {
                 // add 1 byte newline character per line
                 let processed_bytes = (self.sum_bytes + self.process_cnt) as u64;

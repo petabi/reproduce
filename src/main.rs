@@ -41,26 +41,9 @@ pub fn parse() -> Config {
             .help("Data source ID (1-255)"),
     )
     .arg(
-        Arg::with_name("ratio")
-            .short("E")
-            .takes_value(true)
-            .default_value("0.9")
-            .help(
-                "Entropy ratio. The amount of maximum entropy allowed for a session (0.0-1.0). \
-                 Only relevant for network packets.",
-            ),
-    )
-    .arg(
         Arg::with_name("eval")
             .short("e")
             .help("Evaluation mode. Outputs statistics of transmission.")
-    )
-    .arg(
-        Arg::with_name("filter")
-            .short("f")
-            .takes_value(true)
-            .help("tcpdump filter (when input is NIC or PCAP). \
-                   See https://www.tcpdump.org/manpages/pcap-filter.7.html.")
     )
     .arg(
         Arg::with_name("continuous")
@@ -71,7 +54,7 @@ pub fn parse() -> Config {
         Arg::with_name("input")
             .short("i")
             .takes_value(true)
-            .help("Input [PCAPFILE/LOGFILE/DIR/NIC] \
+            .help("Input [LOGFILE/DIR] \
 	    	   If not given, internal sample data will be used.")
     )
     .arg(
@@ -120,7 +103,7 @@ pub fn parse() -> Config {
             .takes_value(true)
             .help("Record (prefix of offset file). Using this option will start the conversation \
                    after the previous conversation. The offset file name is managed by \
-                   <input_file>_<prefix>. Not used if input is NIC.")
+                   <input_file>_<prefix>.")
     )
     .arg(
         Arg::with_name("skip")
@@ -167,25 +150,7 @@ pub fn parse() -> Config {
             }
         }
     });
-    let entropy_ratio = m.value_of("source").map_or(0.9, |v| {
-        let result = v.parse::<f64>();
-        match result {
-            Ok(v) => {
-                if v <= 0.0 || v > 1.0 {
-                    eprintln!("ERROR: entropy ratio should be in [0,1)");
-                    std::process::exit(1);
-                }
-                v
-            }
-            Err(e) => {
-                eprintln!("ERROR: invalid entropy ratio: {}", v);
-                eprintln!("\t{}", e);
-                std::process::exit(1);
-            }
-        }
-    });
     let mode_eval = m.is_present("eval");
-    let packet_filter = m.value_of("filter").unwrap_or_default();
     let mode_grow = m.is_present("continuous");
     let input = m.value_of("input").unwrap_or_default();
     let initial_seq_no = m
@@ -272,14 +237,12 @@ pub fn parse() -> Config {
         input: input.to_string(),
         output: output.to_string(),
         offset_prefix: offset_prefix.to_string(),
-        packet_filter: packet_filter.to_string(),
         kafka_broker: kafka_broker.to_string(),
         kafka_topic: kafka_topic.to_string(),
         pattern_file: pattern_file.to_string(),
         file_prefix: file_prefix.to_string(),
         datasource_id,
         initial_seq_no,
-        entropy_ratio,
         count_sent,
         ..Config::default()
     }
