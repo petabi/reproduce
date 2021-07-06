@@ -7,9 +7,19 @@ data source ID (8 bits).
 
 [![Coverage Status](https://codecov.io/gh/petabi/reproduce/branch/main/graph/badge.svg?token=2P7VSZ1KFV)](https://codecov.io/gh/petabi/reproduce)
 
+## Build
+
+The following command builds REproduce as a static binary file that runs on any
+Linux x86_64 machine. The binary, `reproduce`, will be created in
+`target/x86_64-unknown-linux-musl/release`.
+
+```sh
+cargo build --target x86_64-unknown-linux-musl --release
+```
+
 ## Usage
 
-The following command shows its usage:
+To diplay the usage, type:
 
 ```sh
 reproduce -h
@@ -32,23 +42,6 @@ reproduce -h
     ```sh
     reproduce -i /data/LOG -v -b 192.168.4.5:9092 -t syslog -e
     ```
-
-## Building a Docker Image
-
-Run the following command in a directory that has a Dockerfile:
-
-```
-docker build -t reproduce .
-```
-
-## Running with Docker
-
-Run with the following command
-
-```sh
-docker run --mount type=bind,source=[the directory containing the target],target=/data \
-           --mount type=bind,source=[report or log directory],target=/report reproduce:latest -i [the target file] -b localhost:9092 -t topic
-```
 
 ## License
 
